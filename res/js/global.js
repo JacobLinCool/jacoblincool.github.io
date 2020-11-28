@@ -1,8 +1,8 @@
 // Curtain
 let curtain = new Curtain();
 curtain.text("Jacob Lin's Website");
-document.addEventListener("DOMContentLoaded", () => {curtain.progress(25)});
-document.addEventListener("load", () => {curtain.out()});
+document.addEventListener("DOMContentLoaded", async () => {curtain.progress(25)});
+window.addEventListener("load", async () => {curtain.out()});
 function Curtain() {
     let curtain = ".first_curtain", words = ".curtain_words", words_bg = ".curtain_words_bg", bar = ".curtain_bar";
     let self = this;
