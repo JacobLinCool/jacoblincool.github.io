@@ -5,11 +5,45 @@ body {
     font-family: "IBM Plex Sans", Verdana, sans-serif;
 }
 
+/* Curtain CSS */
+.first_curtain.removed {
+    animation: curtain_out 1.2s forwards;
+}
+.first_curtain.removed > .curtain_words, .first_curtain.removed > .curtain_words_bg {
+    animation: curtain_words_out 0.5s forwards;
+}
+.first_curtain.removed > .curtain_bar {
+    animation: curtain_bar_out 0.5s forwards;
+}
+
 @keyframes curtain_out {
   0% {
       top: 0vh;
-  }
+  },
+  50% {
+      top: 0vh;
+  },
   100% {
       top: -100vh;
+  }
+}
+
+@keyframes curtain_words_out {
+  0% {
+      top: calc(75% + 0rem);
+      height: 4rem;
+  },
+  100% {
+      top: calc(75% + 4rem);
+      height: 0rem;
+  }
+}
+
+@keyframes curtain_bar_out {
+  0% {
+      top: 0;
+  },
+  100% {
+      top: -10px;
   }
 }
