@@ -1,0 +1,15 @@
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans&display=swap');
+
+body {
+    font-family: "IBM Plex Sans", Verdana, sans-serif;
+}
+
+@keyframes curtain_out {
+  0% {
+      top: 0vh;
+  }
+  100% {
+      top: -100vh;
+  }
+}
