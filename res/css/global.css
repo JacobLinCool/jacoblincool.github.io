@@ -19,7 +19,7 @@ body {
 @keyframes curtain_out {
   0% {
       top: 0vh;
-  },
+  }
   100% {
       top: -100vh;
   }
@@ -29,7 +29,7 @@ body {
   0% {
       top: calc(75% + 0rem);
       height: 4rem;
-  },
+  }
   100% {
       top: calc(75% + 4rem);
       height: 0rem;
@@ -39,7 +39,7 @@ body {
 @keyframes curtain_bar_out {
   0% {
       top: 0;
-  },
+  }
   100% {
       top: -10px;
   }
