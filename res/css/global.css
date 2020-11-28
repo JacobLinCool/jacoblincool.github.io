@@ -7,13 +7,13 @@ body {
 
 /* Curtain CSS */
 .first_curtain.removed {
-    animation: curtain_out 0.6s linear 0.6s 1 forwards;
+    animation: curtain_out 0.3s linear 0.5s 1 forwards;
 }
 .first_curtain.removed > .curtain_words, .first_curtain.removed > .curtain_words_bg {
-    animation: curtain_words_out 0.5s linear 0s 1 forwards;
+    animation: curtain_words_out 0.4s linear 0s 1 forwards;
 }
 .first_curtain.removed > .curtain_bar {
-    animation: curtain_bar_out 0.5s linear 0s 1 forwards;
+    animation: curtain_bar_out 0.4s linear 0s 1 forwards;
 }
 
 @keyframes curtain_out {
@@ -29,10 +29,12 @@ body {
   0% {
       top: calc(75% + 0rem);
       height: 4rem;
+      color: #696969ff;
   }
   100% {
       top: calc(75% + 4rem);
       height: 0rem;
+      color: #69696900;
   }
 }
 
