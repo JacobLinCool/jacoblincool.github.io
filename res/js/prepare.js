@@ -1,3 +1,4 @@
 (function(){
-    console.log(`Do Nothing.`);
+    window.preparations = {};
+    preparations.bg_html = fetch(`/res/html/bg.html`).then(r => r.text());
 })();
