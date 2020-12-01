@@ -19,12 +19,18 @@ function Curtain() {
         if(n == 100) {
             await wait(600);
             document.querySelector(curtain).classList.add("removed");
+            await wait(400);
+            return true;
         }
+        return false;
     };
     self.add = async function(n) {
         if(typeof n != "number") n = 0;
         p += n;
         return self.progress(p);
+    };
+    self.check  = function() {
+        return p >= 1;
     };
     self.out = function() { self.progress(1) };
     self.text = function(s) {
