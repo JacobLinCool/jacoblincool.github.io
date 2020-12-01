@@ -37,7 +37,7 @@ function Curtain() {
 (async function() {
     let bg_html = await preparations.bg_html;
     document.body.innerHTML += bg_html;
-    let BG = new bg;
+    window.BG = new bg;
     curtain.add(50);
 })();
 
