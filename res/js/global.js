@@ -2,6 +2,16 @@
 let curtain = new Curtain();
 curtain.text("Jacob Lin's Website");
 curtain.add(25);
+window.addEventListener("Library_Loaded", function() {
+    curtain.add(25 / libraries.libraries.length);
+    console.log(libraries.libraries.filter(l => l.loaded == true));
+});
+libraries = new js_libraries;
+libraries.add([
+    {name: "sweetalert2", url: "/res/js/sweetalert2.all.min.js"},
+    {name: "lodash", url: "https://cdn.jsdelivr.net/npm/lodash@4.17.20/lodash.min.js"}
+]);
+libraries.load();
 window.addEventListener("load", async () => {curtain.add(25)});
 
 function Curtain() {
@@ -54,6 +64,61 @@ function bg(elm=document.querySelector(".background")) {
 
     self.t = function(a=1, b=0, c=0, d=1, e=0, f=0) {
         self.elm.style.transform = `matrix(${a}, ${b}, ${c}, ${d}, ${e}, ${f})`;
+    };
+}
+
+function js_libraries() {
+    let self = this;
+    self.libraries = [];
+    self.event = new Event("Library_Loaded");
+    self.add = function(...arg) {
+        let standardized = [];
+        if(arg.length == 1) {
+            if(Array.isArray(arg[0])) {
+                standardized = arg[0];
+            }
+            else {
+                standardized.push(arg[0]);
+            }
+        }
+        else if(arg.length > 1) {
+            let name = null;
+            for(let i = 0; i < arg.length; i++) {
+                if(typeof arg[i] == "object") {
+                    standardized.push(arg[i]);
+                }
+                else if(name) {
+                    standardized.push({ name: name, url: arg[i] });
+                    name = null;
+                }
+                else {
+                    name = arg[i];
+                }
+            }
+        }
+        standardized.forEach(library => {
+            if(!self.libraries.find(l => l.name == library.name)) {
+                self.libraries.push({
+                    name: library.name,
+                    url: library.url,
+                    loaded: false
+                });
+            }
+        });
+    };
+    self.load = function() {
+        self.libraries.forEach((library, index) => {
+            if(!library.loaded) {
+                let tag = document.createElement("script");
+                tag.id = "js_libraries_" + library.name;
+                tag.src = library.url;
+                tag.addEventListener("load", function() {
+                    self.libraries[index].loaded = true;
+                    window.dispatchEvent(self.event);
+                });
+                document.head.appendChild(tag);
+            }
+        });
     };
 }
 
