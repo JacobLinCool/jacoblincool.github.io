@@ -44,6 +44,7 @@ function Curtain() {
     let bg_html = await preparations.bg_html;
     document.body.innerHTML += bg_html;
     window.BG = new bg;
+    document.dispatchEvent(Event_BG_Ready);
     curtain.add(50);
 })();
 

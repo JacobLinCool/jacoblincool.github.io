@@ -18,11 +18,13 @@ body {
 
 @keyframes curtain_out {
   0% {
-      top: 0vh;
       background: #b5bfffff;
   }
+  99% {
+      background: #b5bfff00;
+  }
   100% {
-      top: -100vh;
+      z-index: -100;
       background: #b5bfff00;
   }
 }
