@@ -17,48 +17,50 @@ body {
 }
 
 @keyframes curtain_out {
-  0% {
-      background: #b5bfffff;
-  }
-  99% {
-      background: #b5bfff00;
-  }
-  100% {
-      z-index: -100;
-      background: #b5bfff00;
-  }
+    0% {
+        background: #b5bfffff;
+    }
+    99% {
+        background: #b5bfff00;
+    }
+    100% {
+        z-index: -100;
+        background: #b5bfff00;
+    }
 }
 
 @keyframes curtain_words_out {
-  0% {
-      top: calc(75% + 0rem);
-      height: 4rem;
-      color: #696969ff;
-  }
-  100% {
-      top: calc(75% + 4rem);
-      height: 0rem;
-      color: #69696900;
-  }
+    0% {
+        transform: scale(1);
+        transform-origin: 50% 100%;
+    }
+    20% {
+        transform: scale(1.05);
+        transform-origin: 50% 100%;
+    }
+    100% {
+        transform: scale(0);
+        transform-origin: 50% 100%;
+    }
 }
 
 @keyframes curtain_bar_out {
-  0% {
-      top: 0;
-  }
-  100% {
-      top: -10px;
-  }
+    0% {
+        top: 0;
+    }
+    100% {
+        top: -10px;
+    }
 }
 
 @keyframes twinkle {
-  0% {
-      filter: brightness(1);
-  }
-  50% {
-      filter: brightness(1.3);
-  }
-  100% {
-      filter: brightness(1);
-  }
+    0% {
+        filter: brightness(1);
+    }
+    50% {
+        filter: brightness(1.3);
+    }
+    100% {
+        filter: brightness(1);
+    }
 }
