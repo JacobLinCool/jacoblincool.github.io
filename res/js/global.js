@@ -3,15 +3,17 @@ let curtain = new Curtain();
 curtain.text("Jacob Lin's Website");
 curtain.add(25);
 window.addEventListener("Library_Loaded", function() {
-    curtain.add(25 / libraries.libraries.length);
-    console.log(libraries.libraries.filter(l => l.loaded == true));
+    curtain.add(25 / js_librarian.libraries.length);
+    console.log(js_librarian.libraries.filter(l => l.loaded == true));
 });
-libraries = new js_libraries;
-libraries.add([
+js_librarian = new librarian;
+js_librarian.add([
     {name: "sweetalert2", url: "/res/js/sweetalert2.all.min.js"},
-    {name: "lodash", url: "https://cdn.jsdelivr.net/npm/lodash@4.17.20/lodash.min.js"}
+    {name: "lodash", url: "https://cdn.jsdelivr.net/npm/lodash@4.17.20/lodash.min.js"},
+    {name: "popper", url: "https://unpkg.com/@popperjs/core@2"},
+    {name: "tippy", url: "https://unpkg.com/tippy.js@6"}
 ]);
-libraries.load();
+js_librarian.load();
 window.addEventListener("load", async () => {curtain.add(25)});
 
 function Curtain() {
@@ -67,7 +69,7 @@ function bg(elm=document.querySelector(".background")) {
     };
 }
 
-function js_libraries() {
+function librarian() {
     let self = this;
     self.libraries = [];
     self.event = new Event("Library_Loaded");
@@ -110,7 +112,7 @@ function js_libraries() {
         self.libraries.forEach((library, index) => {
             if(!library.loaded) {
                 let tag = document.createElement("script");
-                tag.id = "js_libraries_" + library.name;
+                tag.id = "librarian_" + library.name;
                 tag.src = library.url;
                 tag.addEventListener("load", function() {
                     self.libraries[index].loaded = true;
