@@ -10,11 +10,20 @@
         </transition>
         <transition name="menu" mode="out-in">
             <div id="main-menu" v-show="menu_open">
-                <div class="menu-item">Home</div>
-                <div class="menu-item">Blog</div>
-                <div class="menu-item">Project</div>
-                <div class="menu-item">About</div>
+                <div class="menu-item" @click="navigate_to('home')">Home</div>
+                <div class="menu-item" @click="navigate_to('blog')">Blog</div>
+                <div class="menu-item" @click="navigate_to('project')">
+                    Project
+                </div>
+                <div class="menu-item" @click="navigate_to('about')">About</div>
             </div>
+        </transition>
+        <transition name="fade" mode="out-in">
+            <div
+                v-show="menu_open"
+                class="menu-barrier"
+                @click="menu_open = false"
+            ></div>
         </transition>
         <transition name="fade" mode="out-in">
             <router-view />
@@ -28,6 +37,12 @@ export default {
     name: "App",
     data() {
         return { menu_open: false };
+    },
+    methods: {
+        navigate_to(page = "home") {
+            this.$router.push(page);
+            this.menu_open = false;
+        },
     },
     mounted() {
         console.log(`%c[Jacob] Welcome to my website!`, `color:#a0e7e5;`);
@@ -132,5 +147,15 @@ body {
     /*opacity: 0;*/
     height: 0 !important;
     width: 0 !important;
+}
+
+.menu-barrier {
+    z-index: 80;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #15253133;
 }
 </style>
