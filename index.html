@@ -1,55 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-Hant-TW">
-<head>
-    <title>Home | Jacob Lin's Website.</title>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Display -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/res/media/favicon/apple-icon-180x180.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/res/media/favicon/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/res/media/favicon/favicon-16x16.png" />
-    <link rel="icon" href="/res/media/favicon/favicon.ico" />
-    <meta name="theme-color" content="#b5bfff">
-    <!-- SEO Meta -->
-    <meta name="language" content="zh-Hant-TW" />
-    <meta name="description" content="Jacob Lin's Website. " />
-    <meta name="keywords" content="Jacob Lin, Jacob, Lin, JacobLinCool" />
-    <meta property="og:image" content="/res/media/og/f160.png" />
-    <!-- CSS -->
-    <style>
-    .first_curtain {
-        position: fixed; top: 0; left: 0;
-        width: 100vw; height: 100vh;
-        background: #b5bfff;
-        z-index: 9999;
-    }
-    .first_curtain > .curtain_words, .first_curtain > .curtain_words_bg {
-        position: absolute; bottom: 5%; left: 5%;
-        height: min(4rem, 10vmin);
-        font-size: min(3rem, 8vmin);
-        overflow: hidden;
-    }
-    .first_curtain > .curtain_bar {
-        position: absolute; top: 0; left: 0;
-        width: 0; height: 3px;
-        background: deepskyblue;
-        box-shadow: 0px 1px 4px 0px deepskyblue;
-        transition: width .6s;
-        animation: twinkle 2s linear 0s infinite forwards;
-    }
-    </style>
-    <link rel="stylesheet" href="/res/css/global.css" />
-    <!-- Script -->
-    <script type="text/javascript" src="/res/js/prepare.js"></script>
-</head>
-<body>
-    <div class="first_curtain">
-        <div class="curtain_bar"></div>
-        <div class="curtain_words" style="color: dimgray; width: 0; transition: width .3s;"></div>
-        <div class="curtain_words_bg" style="color: #69696977;"></div>
-    </div>
-    <div class="content"></div>
-    <script> document.addEventListener("BG_Ready", () => {BG.t(0.5, 0.15, -0.35, 0.5, -2550, -1100)}); </script>
-    <script type="text/javascript" src="/res/js/global.js" async></script>
-</body>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+        <link rel="icon" href="static/images/favicon/favicon-96x96.png" type="image/x-icon" />
+        <title>Jacob Lin</title>
+    </head>
+    <body>
+        <div id="app"></div>
+        <!-- built files will be auto injected -->
+    </body>
 </html>
