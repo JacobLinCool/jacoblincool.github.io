@@ -22,7 +22,7 @@ export default {
     name: "home",
     data() {
         return {
-            title: "Home",
+            title: "Jacob Lin",
         };
     },
     methods: {},
@@ -48,7 +48,7 @@ export default {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    font-size: 48px;
+    font-size: min(15vmin, 72px);
     font-weight: bold;
     white-space: nowrap;
 }
@@ -94,7 +94,7 @@ export default {
     animation: wave_animate 36s linear infinite;
 }
 #bottom-white-block {
-    z-index: 8;
+    z-index: 9;
     position: absolute;
     bottom: 0;
     width: 100%;

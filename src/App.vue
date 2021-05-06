@@ -135,6 +135,13 @@ body {
     padding: 6px 12px;
     margin: 6px 0;
     cursor: pointer;
+    transition: all 0.3s;
+}
+#main-menu > .menu-item:hover {
+    font-weight: bold;
+    color: #cdd9e2;
+    padding: 6px 20px;
+    margin: 6px 0;
 }
 
 .menu-enter-active,
