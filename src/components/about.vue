@@ -11,6 +11,12 @@
             </div>
             <div id="contact">
                 <a
+                    id="email"
+                    target="_blank"
+                    href="mailto:jacoblincool@gmail.com"
+                    ><i class="fas fa-envelope"></i> Email</a
+                >
+                <a
                     id="github"
                     target="_blank"
                     href="https://github.com/JacobLinCool"
@@ -79,7 +85,6 @@ export default {
     width: 150px;
     height: 150px;
     border-radius: 50%;
-    filter: grayscale(0.75);
 }
 
 #info,

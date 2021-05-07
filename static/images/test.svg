@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="300">
+  <path stroke="#333333" stroke-width="3" fill="none" opacity="1" stroke-linecap="round" stroke-linejoin="round" d="M0,100 C 153,-118 173,291 300,100 C 403,-59 571,262 728,100 C 832,-8 878,245 1000,100" />
+</svg>

@@ -4,11 +4,15 @@ import "sweetalert2/dist/sweetalert2.css";
 
 /* js libraries */
 import swal from "sweetalert2";
+import gsap from "gsap";
 import ClipboardJS from "clipboard";
 import { Edura } from "./js/dev";
 import utils from "./js/utils";
 import app from "./js/app";
 import "@fortawesome/fontawesome-free/js/all";
+
+// Injest GSAP
+window.gsap = gsap;
 
 // Inject ClipboardJS
 window.ClipboardJS = ClipboardJS;

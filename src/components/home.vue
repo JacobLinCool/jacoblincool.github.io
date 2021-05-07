@@ -105,13 +105,13 @@ export default {
 
 @keyframes wave_animate {
     0% {
-        transform: translateX(0) translateZ(0) scaleY(1);
+        transform: translateX(0) scaleY(1);
     }
     50% {
-        transform: translateX(-25%) translateZ(0) scaleY(0.75);
+        transform: translateX(-25%) scaleY(0.75);
     }
     100% {
-        transform: translateX(-50%) translateZ(0) scaleY(1);
+        transform: translateX(-50%) scaleY(1);
     }
 }
 </style>
