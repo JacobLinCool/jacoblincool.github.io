@@ -31,9 +31,48 @@ export default {
             title: "Jacob's Blog",
         };
     },
-    methods: {},
+    methods: {
+        title_split() {
+            let title_1 = document.querySelector("#big_title > span");
+            let title_2 = document.querySelector("#big_title > h1");
+            let text_1 = title_1.innerText;
+            let text_2 = title_2.innerText;
+            title_1.innerHTML = title_2.innerHTML = "";
+            Array.from(text_1).forEach((w) => {
+                let span = document.createElement("span");
+                span.innerHTML = w;
+                title_1.appendChild(span);
+            });
+            Array.from(text_2).forEach((w) => {
+                let span = document.createElement("span");
+                span.innerHTML = w;
+                title_2.appendChild(span);
+            });
+        },
+        main_animation() {
+            let tl = gsap.timeline();
+            tl.from("#big_title > span > span", {
+                top: -30,
+                left: (index, target, targets) =>
+                    (index / (targets.length - 1) - 0.5) * 60,
+                opacity: 0,
+                duration: 0.5,
+                stagger: 0.1,
+            });
+            tl.from("#big_title > h1 > span", {
+                top: 60,
+                left: (index, target, targets) =>
+                    (index / (targets.length - 1) - 0.5) * 120,
+                opacity: 0,
+                duration: 0.5,
+                stagger: 0.1,
+            });
+        },
+    },
     mounted: function () {
         document.title = this.title || this.text_title || document.title || "";
+        this.title_split();
+        this.main_animation();
     },
 };
 </script>

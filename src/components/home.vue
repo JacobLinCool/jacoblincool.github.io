@@ -25,9 +25,71 @@ export default {
             title: "Jacob Lin",
         };
     },
-    methods: {},
+    methods: {
+        split_main_text() {
+            let main_text = document.querySelector("#main-text");
+            let text = main_text.innerText;
+            main_text.innerHTML = "";
+            Array.from(text).forEach((w) => {
+                let span = document.createElement("span");
+                span.innerHTML = w;
+                main_text.appendChild(span);
+            });
+        },
+        background_animation() {
+            let tl = gsap.timeline();
+            tl.from("#main-text > span", {
+                top: (index) => Math.pow(-1, index) * 70,
+                left: (index, target, targets) =>
+                    (index / (targets.length - 1) - 0.5) * 100,
+                opacity: 0,
+                duration: 0.5,
+                stagger: 0.1,
+            });
+            for (let i = 1; i <= 3; i++) {
+                tl.fromTo(
+                    ".wave" + i,
+                    { xPercent: 0 },
+                    {
+                        xPercent: -50,
+                        ease: "none",
+                        duration: () => gsap.utils.random(20, 36),
+                        repeat: -1,
+                    },
+                    i > 1 ? "<" : null
+                );
+            }
+
+            tl.from(
+                ".wave",
+                {
+                    scaleY: 0,
+                    opacity: 0,
+                    duration: 1,
+                    stagger: 0.2,
+                },
+                "<"
+            ).from("#bottom-white-block", { opacity: 0, duration: 1 }, "<");
+
+            for (let i = 1; i <= 3; i++) {
+                tl.to(
+                    ".wave" + i,
+                    {
+                        scaleY: () => gsap.utils.random(0.75, 1.1),
+                        ease: "none",
+                        yoyo: true,
+                        duration: () => gsap.utils.random(20, 36),
+                        repeat: -1,
+                    },
+                    i > 1 ? "<" : null
+                );
+            }
+        },
+    },
     mounted: function () {
         document.title = this.title || this.text_title || document.title || "";
+        this.split_main_text();
+        this.background_animation();
     },
 };
 </script>
@@ -52,6 +114,12 @@ export default {
     font-weight: bold;
     white-space: nowrap;
 }
+
+#main-text > span {
+    display: inline-block;
+    position: absolute;
+}
+
 .line {
     position: absolute;
     width: 100%;
@@ -83,15 +151,15 @@ export default {
 }
 .wave1 {
     background-size: 50% 60px;
-    animation: wave_animate 22s linear infinite;
+    /* animation: wave_animate 22s linear infinite; */
 }
 .wave2 {
     background-size: 50% 80px;
-    animation: wave_animate 24s linear infinite;
+    /* animation: wave_animate 24s linear infinite; */
 }
 .wave3 {
     background-size: 50% 60px;
-    animation: wave_animate 36s linear infinite;
+    /* animation: wave_animate 36s linear infinite; */
 }
 #bottom-white-block {
     z-index: 9;
@@ -100,7 +168,7 @@ export default {
     width: 100%;
     height: 20%;
     background-color: #b0b6b9;
-    transform: scaleY(1.05);
+    transform: scaleY(1.005);
 }
 
 @keyframes wave_animate {
