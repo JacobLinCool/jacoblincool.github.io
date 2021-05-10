@@ -7,15 +7,22 @@
             </div>
         </div>
         <div id="main_content">
-            <div v-for="i of [1, 2, 3, 4, 5]" :key="i" class="article-wrapper">
+            <div
+                v-for="(article, index) in articles"
+                :key="index"
+                class="article-wrapper"
+            >
                 <div class="article">
                     <div class="article-head">
-                        <h1 class="article-title">Title {{ i }}</h1>
+                        <h1 class="article-title">{{ article.title }}</h1>
                     </div>
-                    <div class="article-body"></div>
+                    <div class="article-body">
+                        {{ article.summary }}
+                    </div>
                     <div class="article-foot">
-                        <div class="article-tag"></div>
-                        <div class="article-tag"></div>
+                        <div class="article-tag">
+                            {{ article.tag.join(", ") }}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -29,6 +36,7 @@ export default {
     data() {
         return {
             title: "Jacob's Blog",
+            articles: [],
         };
     },
     methods: {
@@ -49,7 +57,7 @@ export default {
                 title_2.appendChild(span);
             });
         },
-        main_animation() {
+        async main_animation() {
             let tl = gsap.timeline();
             tl.from("#big_title > span > span", {
                 top: -30,
@@ -67,12 +75,30 @@ export default {
                 duration: 0.5,
                 stagger: 0.1,
             });
+            return true;
+        },
+        async load_article() {
+            let articles = fetch(
+                "https://api.jacob.workers.dev/blog/list"
+            ).then((r) => r.json());
+            await Promise.all([articles, wait(2000)]);
+            this.articles = await articles;
+            return articles;
+        },
+        async show_article(articles) {
+            let tl = gsap.timeline();
+            tl.to(".article", {
+                duration: 0.3,
+                stagger: 0.2,
+                scaleY: 1,
+            });
         },
     },
     mounted: function () {
         document.title = this.title || this.text_title || document.title || "";
         this.title_split();
         this.main_animation();
+        this.load_article().then(this.show_article);
     },
 };
 </script>
@@ -120,17 +146,19 @@ export default {
 .article {
     min-height: 260px;
     background-color: #243f52;
+    transform: scaleY(0);
+    transform-origin: top;
 }
 
 .article-head,
 .article-body,
 .article-foot {
     width: 100%;
+    padding: 0 12px;
 }
 .article-head {
     min-height: 60px;
     border-bottom: 1px dashed #9da6ad;
-    padding: 0 12px;
 }
 .article-body {
     min-height: 160px;

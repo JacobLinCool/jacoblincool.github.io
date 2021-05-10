@@ -39,9 +39,11 @@ export default {
         background_animation() {
             let tl = gsap.timeline();
             tl.from("#main-text > span", {
-                top: (index) => Math.pow(-1, index) * 70,
+                top: (index) =>
+                    Math.pow(-1, index) * gsap.utils.random(100, 150),
                 left: (index, target, targets) =>
-                    (index / (targets.length - 1) - 0.5) * 100,
+                    (index / (targets.length - 1) - 0.5) *
+                    gsap.utils.random(150, 250),
                 opacity: 0,
                 duration: 0.5,
                 stagger: 0.1,
