@@ -16,6 +16,7 @@
             <div
                 v-for="i of [0, 1, 2, 3, 4, 5]"
                 :key="'star' + i"
+                :id="'star' + i"
                 class="star"
             ></div>
         </div>
@@ -93,24 +94,26 @@ export default {
             }
 
             let star = gsap.timeline();
-            star.fromTo(
-                ".star",
-                {
-                    scale: () => gsap.utils.random(0, 0.3),
-                    opacity: () => gsap.utils.random(0, 0.3),
-                    rotation: 0,
-                    left: () => gsap.utils.random(0, 100) + "%",
-                    top: () => gsap.utils.random(0, 20) + "%",
-                },
-                {
-                    scale: () => gsap.utils.random(0.8, 1),
-                    opacity: () => gsap.utils.random(0.8, 1),
-                    duration: () => gsap.utils.random(1, 5),
-                    stagger: () => gsap.utils.random(0.3, 2),
-                    repeat: -1,
-                    yoyo: true,
-                }
-            );
+            for (let i = 0; i <= 5; i++)
+                star.fromTo(
+                    "#star" + i,
+                    {
+                        scale: 0,
+                        opacity: 0,
+                        rotation: 0,
+                        left: () => gsap.utils.random(0, 100) + "%",
+                        top: () => gsap.utils.random(0, 20) + "%",
+                    },
+                    {
+                        scale: () => gsap.utils.random(0.8, 1),
+                        opacity: () => gsap.utils.random(0.8, 1),
+                        duration: () => gsap.utils.random(1, 5),
+                        repeat: -1,
+                        yoyo: true,
+                        repeatRefresh: true,
+                    },
+                    "<"
+                );
         },
     },
     mounted: function () {
