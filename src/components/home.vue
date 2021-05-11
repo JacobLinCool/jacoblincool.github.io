@@ -13,6 +13,11 @@
                 ></div>
             </div>
             <div id="bottom-white-block"></div>
+            <div
+                v-for="i of [0, 1, 2, 3, 4, 5]"
+                :key="'star' + i"
+                class="star"
+            ></div>
         </div>
     </div>
 </template>
@@ -86,6 +91,26 @@ export default {
                     i > 1 ? "<" : null
                 );
             }
+
+            let star = gsap.timeline();
+            star.fromTo(
+                ".star",
+                {
+                    scale: () => gsap.utils.random(0, 0.3),
+                    opacity: () => gsap.utils.random(0, 0.3),
+                    rotation: 0,
+                    left: () => gsap.utils.random(0, 100) + "%",
+                    top: () => gsap.utils.random(0, 20) + "%",
+                },
+                {
+                    scale: () => gsap.utils.random(0.8, 1),
+                    opacity: () => gsap.utils.random(0.8, 1),
+                    duration: () => gsap.utils.random(1, 5),
+                    stagger: () => gsap.utils.random(0.3, 2),
+                    repeat: -1,
+                    yoyo: true,
+                }
+            );
         },
     },
     mounted: function () {
@@ -183,5 +208,14 @@ export default {
     100% {
         transform: translateX(-50%) scaleY(1);
     }
+}
+
+.star {
+    z-index: 8;
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #cdd9e2;
 }
 </style>
