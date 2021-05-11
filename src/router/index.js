@@ -2,6 +2,7 @@ import Vue from "vue";
 import Router from "vue-router";
 const home = () => import("@/components/home");
 const blog = () => import("@/components/blog");
+const blog_post = () => import("@/components/blog_post");
 const project = () => import("@/components/project");
 const about = () => import("@/components/about");
 
@@ -16,9 +17,18 @@ let router = new Router({
             component: home,
         },
         {
+            path: "/blog/post/:post_id",
+            name: "blog_post",
+            component: blog_post,
+        },
+        {
             path: "/blog",
             name: "blog",
             component: blog,
+        },
+        {
+            path: "/blog/post",
+            redirect: "/blog",
         },
         {
             path: "/project",

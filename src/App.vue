@@ -1,7 +1,11 @@
 <template>
     <div id="app" class="">
         <transition name="fade" mode="out-in">
-            <div id="main-menu-button" @click="menu_open = !menu_open">
+            <div
+                v-show="true"
+                id="main-menu-button"
+                @click="menu_open = !menu_open"
+            >
                 <i
                     class="fas fa-bars"
                     style="font-size: 36px; color: #cdd9e2"
@@ -10,12 +14,14 @@
         </transition>
         <transition name="menu" mode="out-in">
             <div id="main-menu" v-show="menu_open">
-                <div class="menu-item" @click="navigate_to('home')">Home</div>
-                <div class="menu-item" @click="navigate_to('blog')">Blog</div>
-                <div class="menu-item" @click="navigate_to('project')">
+                <div class="menu-item" @click="navigate_to('/')">Home</div>
+                <div class="menu-item" @click="navigate_to('/blog')">Blog</div>
+                <div class="menu-item" @click="navigate_to('/project')">
                     Project
                 </div>
-                <div class="menu-item" @click="navigate_to('about')">About</div>
+                <div class="menu-item" @click="navigate_to('/about')">
+                    About
+                </div>
             </div>
         </transition>
         <transition name="fade" mode="out-in">
@@ -39,7 +45,7 @@ export default {
         return { menu_open: false };
     },
     methods: {
-        navigate_to(page = "home") {
+        navigate_to(page = "/") {
             this.$router.push(page);
             this.menu_open = false;
         },

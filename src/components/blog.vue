@@ -13,7 +13,10 @@
                 class="article-wrapper"
             >
                 <div class="article">
-                    <div class="article-head">
+                    <div
+                        class="article-head"
+                        @click="$router.push('/blog/post/' + article.time)"
+                    >
                         <h1 class="article-title">{{ article.title }}</h1>
                     </div>
                     <div class="article-body">
@@ -21,7 +24,14 @@
                     </div>
                     <div class="article-foot">
                         <div class="article-tag">
-                            {{ article.tag.join(", ") }}
+                            <i class="fas fa-tag" style="top: 2px"></i>
+                            <span
+                                class="tag"
+                                v-for="tag in article.tag"
+                                :key="tag"
+                            >
+                                {{ tag }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -82,15 +92,17 @@ export default {
                 "https://api.jacob.workers.dev/blog/list"
             ).then((r) => r.json());
             await Promise.all([articles, wait(2000)]);
-            this.articles = await articles;
+            this.articles = (await articles).sort((a, b) => b.time - a.time);
             return articles;
         },
         async show_article(articles) {
             let tl = gsap.timeline();
             tl.to(".article", {
-                duration: 0.3,
+                duration: 0.4,
                 stagger: 0.2,
-                scaleY: 1,
+                scale: 1,
+                opacity: 1,
+                ease: "back",
             });
         },
     },
@@ -146,7 +158,8 @@ export default {
 .article {
     min-height: 260px;
     background-color: #243f52;
-    transform: scaleY(0);
+    transform: scale(0);
+    opacity: 0;
     transform-origin: top;
 }
 
@@ -157,18 +170,28 @@ export default {
     padding: 0 12px;
 }
 .article-head {
-    min-height: 60px;
+    min-height: 50px;
     border-bottom: 1px dashed #9da6ad;
+    cursor: pointer;
 }
 .article-body {
-    min-height: 160px;
+    min-height: 170px;
     border-bottom: 1px dashed #9da6ad;
 }
 .article-foot {
     min-height: 40px;
 }
 .article-title {
+    font-size: 2rem;
     padding: 6px 0;
     margin: 0;
+}
+.article-tag {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.tag {
+    margin: 0 2px;
 }
 </style>
