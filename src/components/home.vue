@@ -2,24 +2,30 @@
     <div class="home">
         <div class="full-screen">
             <div id="main-text">Jacob Lin</div>
-            <div v-for="id of [1, 2, 3]" :key="id" :class="'line line' + id">
+            <div id="full-screen-background">
                 <div
-                    :class="'wave wave' + id"
-                    :style="
-                        'background-image: url(/static/images/waves/' +
-                        id +
-                        '.png);'
-                    "
+                    v-for="id of [1, 2, 3]"
+                    :key="id"
+                    :class="'line line' + id"
+                >
+                    <div
+                        :class="'wave wave' + id"
+                        :style="
+                            'background-image: url(/static/images/waves/' +
+                            id +
+                            '.png);'
+                        "
+                    ></div>
+                </div>
+                <div id="bottom-white-block"></div>
+                <div
+                    v-for="i of [0, 1, 2, 3, 4, 5]"
+                    :key="'star' + i"
+                    :id="'star' + i"
+                    class="star"
                 ></div>
+                <div id="meteor"></div>
             </div>
-            <div id="bottom-white-block"></div>
-            <div
-                v-for="i of [0, 1, 2, 3, 4, 5]"
-                :key="'star' + i"
-                :id="'star' + i"
-                class="star"
-            ></div>
-            <div id="meteor"></div>
         </div>
     </div>
 </template>
@@ -186,8 +192,13 @@ export default {
     width: 100%;
     height: 100%;
 }
+#full-screen-background {
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+}
 #main-text {
-    z-index: 10;
+    z-index: 50;
     position: absolute;
     left: 50%;
     top: 50%;
@@ -206,19 +217,19 @@ export default {
     position: absolute;
     width: 100%;
     height: 100%;
-    background: #152531;
+    background: transparent;
     overflow: hidden;
 }
 .line1 {
-    z-index: 6;
+    z-index: 9;
     opacity: 0.3;
 }
 .line2 {
-    z-index: 5;
+    z-index: 8;
     opacity: 0.4;
 }
 .line3 {
-    z-index: 4;
+    z-index: 7;
     opacity: 0.2;
 }
 .wave {
@@ -233,15 +244,12 @@ export default {
 }
 .wave1 {
     background-size: 50% 60px;
-    /* animation: wave_animate 22s linear infinite; */
 }
 .wave2 {
     background-size: 50% 80px;
-    /* animation: wave_animate 24s linear infinite; */
 }
 .wave3 {
     background-size: 50% 60px;
-    /* animation: wave_animate 36s linear infinite; */
 }
 #bottom-white-block {
     z-index: 9;
@@ -253,20 +261,8 @@ export default {
     transform: scaleY(1.005);
 }
 
-@keyframes wave_animate {
-    0% {
-        transform: translateX(0) scaleY(1);
-    }
-    50% {
-        transform: translateX(-25%) scaleY(0.75);
-    }
-    100% {
-        transform: translateX(-50%) scaleY(1);
-    }
-}
-
 .star {
-    z-index: 8;
+    z-index: 3;
     position: absolute;
     width: 8px;
     height: 8px;
@@ -275,7 +271,7 @@ export default {
 }
 
 #meteor {
-    z-index: 9;
+    z-index: 5;
     position: absolute;
     width: 10px;
     height: 10px;

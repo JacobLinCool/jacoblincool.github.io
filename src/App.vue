@@ -115,6 +115,7 @@ body {
     background: #1f3648;
     border-radius: 0 0 10px 0;
     cursor: pointer;
+    transform: translateZ(10000px);
 }
 
 #main-menu {
@@ -132,6 +133,7 @@ body {
     background: #1f3648;
     transition: all 0.3s;
     overflow: hidden;
+    transform: translateZ(9000px);
 }
 #main-menu > .menu-item {
     width: 100%;
@@ -170,5 +172,6 @@ body {
     width: 100%;
     height: 100%;
     background-color: #15253133;
+    transform: translateZ(8000px);
 }
 </style>

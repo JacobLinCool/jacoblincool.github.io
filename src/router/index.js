@@ -6,6 +6,8 @@ const blog_post = () => import("@/components/blog_post");
 const project = () => import("@/components/project");
 const about = () => import("@/components/about");
 
+const upload_post = () => import("@/components/upload_post");
+
 Vue.use(Router);
 
 let router = new Router({
@@ -39,6 +41,11 @@ let router = new Router({
             path: "/about",
             name: "about",
             component: about,
+        },
+        {
+            path: "/upload",
+            name: "upload_post",
+            component: upload_post,
         },
         {
             path: "/*",
