@@ -101,11 +101,11 @@ export default {
                     opacity: 1,
                 });
                 tl.to(id + " > i", {
-                    duration: 0.3,
+                    duration: 0.25,
                     left: -20,
                 });
                 tl.from(id + " > span", {
-                    duration: 0.5,
+                    duration: 0.4,
                     opacity: 0,
                     stagger: 0.1,
                 });

@@ -103,7 +103,7 @@ body {
 }
 
 #main-menu-button {
-    z-index: 100;
+    z-index: 10000;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -118,7 +118,7 @@ body {
 }
 
 #main-menu {
-    z-index: 90;
+    z-index: 9000;
     display: flex;
     flex-direction: column;
     justify-content: start;
@@ -163,7 +163,7 @@ body {
 }
 
 .menu-barrier {
-    z-index: 80;
+    z-index: 8000;
     position: fixed;
     left: 0;
     top: 0;

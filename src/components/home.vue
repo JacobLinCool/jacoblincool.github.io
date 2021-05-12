@@ -19,6 +19,7 @@
                 :id="'star' + i"
                 class="star"
             ></div>
+            <div id="meteor"></div>
         </div>
     </div>
 </template>
@@ -100,20 +101,71 @@ export default {
                     {
                         scale: 0,
                         opacity: 0,
-                        rotation: 0,
                         left: () => gsap.utils.random(0, 100) + "%",
                         top: () => gsap.utils.random(0, 20) + "%",
                     },
                     {
                         scale: () => gsap.utils.random(0.8, 1),
                         opacity: () => gsap.utils.random(0.8, 1),
-                        duration: () => gsap.utils.random(1, 5),
+                        duration: () => gsap.utils.random(2, 8),
                         repeat: -1,
                         yoyo: true,
                         repeatRefresh: true,
                     },
                     "<"
                 );
+
+            let meteor = gsap.timeline({
+                repeat: -1,
+                repeatRefresh: true,
+                repeatDelay: 15,
+                delay: 15,
+            });
+            meteor.fromTo(
+                "#meteor",
+                {
+                    left: () => gsap.utils.random(20, 80) + "%",
+                    top: () => gsap.utils.random(0, 10) + "%",
+                    x: 0,
+                    y: 0,
+                    rotation: 0,
+                },
+                {
+                    x: -250,
+                    y: 500,
+                    rotation: 1440,
+                    duration: 1.5,
+                    ease: "slow(0.1, 0.4, false)",
+                }
+            );
+            meteor.fromTo(
+                "#meteor",
+                {
+                    rotation: 0,
+                },
+                {
+                    rotation: 1440,
+                    duration: 1.5,
+                    ease: "power3.out",
+                },
+                "<"
+            );
+            meteor.fromTo(
+                "#meteor",
+                {
+                    scale: 0,
+                    opacity: 0,
+                },
+                {
+                    scale: () => gsap.utils.random(0.8, 1),
+                    opacity: () => gsap.utils.random(0.8, 1),
+                    duration: 0.75,
+                    ease: "slow(0.1, 0.4, false)",
+                    repeat: 1,
+                    yoyo: true,
+                },
+                "<"
+            );
         },
     },
     mounted: function () {
@@ -220,5 +272,14 @@ export default {
     height: 8px;
     border-radius: 50%;
     background: #cdd9e2;
+}
+
+#meteor {
+    z-index: 9;
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #ffc74f;
+    border-radius: 20%;
 }
 </style>
