@@ -1,5 +1,5 @@
 <template>
-    <div class="home">
+    <div class="home" @click="page_click($event)">
         <div class="full-screen">
             <div id="main-text">Jacob Lin</div>
             <div id="full-screen-background">
@@ -26,6 +26,14 @@
                 ></div>
                 <div id="meteor"></div>
             </div>
+        </div>
+        <div id="pointer_power">
+            <div
+                v-for="i of [0, 1, 2, 3, 4, 5, 6, 7, 8]"
+                :key="'power' + i"
+                :id="'power' + i"
+                class="power"
+            ></div>
         </div>
     </div>
 </template>
@@ -171,6 +179,33 @@ export default {
                 "<"
             );
         },
+        page_click(event) {
+            console.log(event);
+            const x = event.pageX,
+                y = event.pageY;
+            for (let i = 0; i <= 8; i++) {
+                const theta = gsap.utils.random(0, 2 * Math.PI);
+                const color = `rgb(95,${gsap.utils.random(95, 190, 1)},255)`;
+                gsap.fromTo(
+                    "#power" + i,
+                    {
+                        x: 0,
+                        y: 0,
+                        top: y + "px",
+                        left: x + "px",
+                        background: color,
+                        scale: gsap.utils.random(0.5, 1),
+                    },
+                    {
+                        x: Math.cos(theta) * gsap.utils.random(20, 40),
+                        y: Math.sin(theta) * gsap.utils.random(20, 40),
+                        background: color,
+                        duration: 0.8,
+                        scale: 0,
+                    }
+                );
+            }
+        },
     },
     mounted: function () {
         document.title = this.title || this.text_title || document.title || "";
@@ -276,5 +311,21 @@ export default {
     height: 10px;
     background: #ffc14f;
     border-radius: 0%;
+}
+
+#pointer_power {
+    z-index: 100000;
+    transform: translateZ(100000px);
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+.power {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: rgb(95, 164, 255);
+    transform: translate3d(-50%, -50%, 0) scale(0);
 }
 </style>
