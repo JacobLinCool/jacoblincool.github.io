@@ -130,16 +130,14 @@ export default {
             meteor.fromTo(
                 "#meteor",
                 {
-                    left: () => gsap.utils.random(20, 80) + "%",
-                    top: () => gsap.utils.random(0, 10) + "%",
+                    left: () => gsap.utils.random(30, 90) + "%",
+                    top: () => gsap.utils.random(-10, 10) + "%",
                     x: 0,
                     y: 0,
-                    rotation: 0,
                 },
                 {
-                    x: -250,
-                    y: 500,
-                    rotation: 1440,
+                    x: -300,
+                    y: 400,
                     duration: 1.5,
                     ease: "slow(0.1, 0.4, false)",
                 }
@@ -150,9 +148,9 @@ export default {
                     rotation: 0,
                 },
                 {
-                    rotation: 1440,
+                    rotation: 2160,
                     duration: 1.5,
-                    ease: "power3.out",
+                    ease: "none",
                 },
                 "<"
             );
@@ -196,6 +194,7 @@ export default {
     z-index: 1;
     width: 100%;
     height: 100%;
+    background-color: #152531;
 }
 #main-text {
     z-index: 50;
@@ -275,7 +274,7 @@ export default {
     position: absolute;
     width: 10px;
     height: 10px;
-    background: #ffc74f;
-    border-radius: 20%;
+    background: #ffc14f;
+    border-radius: 0%;
 }
 </style>

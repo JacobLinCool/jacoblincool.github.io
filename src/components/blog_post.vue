@@ -8,7 +8,10 @@
                 <h1>{{ article ? article.title : "" }}</h1>
             </div>
             <div id="body">
-                <div id="content" v-html="article ? article.rendered_content : ''"></div>
+                <div
+                    id="content"
+                    v-html="article ? article.rendered_content : ''"
+                ></div>
             </div>
         </div>
     </div>
@@ -33,6 +36,13 @@ export default {
         },
         build_article(article) {
             document.title = `${article.title} | ${this.title}`;
+
+            let tl = gsap.timeline();
+
+            tl.to("#main_content", {
+                duration: 0.3,
+                opacity: 1,
+            });
         },
     },
     mounted: function () {
@@ -67,6 +77,7 @@ export default {
 }
 
 #main_content {
+    opacity: 0;
     display: flex;
     flex-direction: column;
     justify-content: start;

@@ -25,13 +25,13 @@
                     <div class="article-foot">
                         <div class="article-tag">
                             <i class="fas fa-tag" style="top: 2px"></i>
-                            <span
+                            <router-link
+                                :to="'/blog/tag/' + tag"
                                 class="tag"
                                 v-for="tag in article.tag"
                                 :key="tag"
+                                >{{ tag }}</router-link
                             >
-                                {{ tag }}
-                            </span>
                         </div>
                     </div>
                 </div>
@@ -192,6 +192,22 @@ export default {
     transform: translateY(-50%);
 }
 .tag {
-    margin: 0 2px;
+    color: #cdd9e2;
+    margin: 0 3px;
+}
+.tag:hover {
+    text-decoration: none;
+}
+.tag::before {
+    content: "";
+    width: 0;
+    position: absolute;
+    height: 2px;
+    bottom: 1px;
+    background-color: #cdd9e2;
+    transition: all 0.3s;
+}
+.tag:hover::before {
+    width: 100%;
 }
 </style>
