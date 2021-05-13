@@ -71,7 +71,7 @@ export default {
             list.forEach((id, index) => {
                 let elm = document.querySelector(id);
                 let text = elm.innerText;
-                elm.innerHTML = `<i class="contact-icon" style="position: absolute; left: 50%; transform: translateX(-50%); opacity: 0;"><i class="${icon[index]}"></i></i> `;
+                elm.innerHTML = `<i class="contact-icon" style="position: absolute; left: calc(50% - 16px); transform: translateX(-50%); opacity: 0;"><i class="${icon[index]}"></i></i> `;
                 Array.from(text).forEach((w) => {
                     let span = document.createElement("span");
                     span.innerHTML = w;
@@ -101,11 +101,11 @@ export default {
                     opacity: 1,
                 });
                 tl.to(id + " > i", {
-                    duration: 0.3,
+                    duration: 0.25,
                     left: -20,
                 });
                 tl.from(id + " > span", {
-                    duration: 0.5,
+                    duration: 0.4,
                     opacity: 0,
                     stagger: 0.1,
                 });
@@ -145,6 +145,7 @@ export default {
 .img-holder {
     border-radius: 50%;
     border: 8px #24435a solid;
+    transform: translateZ(200px);
 }
 
 #avatar {

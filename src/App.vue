@@ -1,7 +1,11 @@
 <template>
-    <div id="app" class="">
+    <div id="app">
         <transition name="fade" mode="out-in">
-            <div id="main-menu-button" @click="menu_open = !menu_open">
+            <div
+                v-show="true"
+                id="main-menu-button"
+                @click="menu_open = !menu_open"
+            >
                 <i
                     class="fas fa-bars"
                     style="font-size: 36px; color: #cdd9e2"
@@ -10,12 +14,14 @@
         </transition>
         <transition name="menu" mode="out-in">
             <div id="main-menu" v-show="menu_open">
-                <div class="menu-item" @click="navigate_to('home')">Home</div>
-                <div class="menu-item" @click="navigate_to('blog')">Blog</div>
-                <div class="menu-item" @click="navigate_to('project')">
+                <div class="menu-item" @click="navigate_to('/')">Home</div>
+                <div class="menu-item" @click="navigate_to('/blog')">Blog</div>
+                <div class="menu-item" @click="navigate_to('/project')">
                     Project
                 </div>
-                <div class="menu-item" @click="navigate_to('about')">About</div>
+                <div class="menu-item" @click="navigate_to('/about')">
+                    About
+                </div>
             </div>
         </transition>
         <transition name="fade" mode="out-in">
@@ -39,7 +45,7 @@ export default {
         return { menu_open: false };
     },
     methods: {
-        navigate_to(page = "home") {
+        navigate_to(page = "/") {
             this.$router.push(page);
             this.menu_open = false;
         },
@@ -97,7 +103,7 @@ body {
 }
 
 #main-menu-button {
-    z-index: 100;
+    z-index: 10000;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -109,10 +115,11 @@ body {
     background: #1f3648;
     border-radius: 0 0 10px 0;
     cursor: pointer;
+    transform: translateZ(10000px);
 }
 
 #main-menu {
-    z-index: 90;
+    z-index: 9000;
     display: flex;
     flex-direction: column;
     justify-content: start;
@@ -126,6 +133,7 @@ body {
     background: #1f3648;
     transition: all 0.3s;
     overflow: hidden;
+    transform: translateZ(9000px);
 }
 #main-menu > .menu-item {
     width: 100%;
@@ -157,12 +165,13 @@ body {
 }
 
 .menu-barrier {
-    z-index: 80;
+    z-index: 8000;
     position: fixed;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
     background-color: #15253133;
+    transform: translateZ(8000px);
 }
 </style>

@@ -1,18 +1,39 @@
 <template>
-    <div class="home">
+    <div class="home" @click="page_click($event)">
         <div class="full-screen">
             <div id="main-text">Jacob Lin</div>
-            <div v-for="id of [1, 2, 3]" :key="id" :class="'line line' + id">
+            <div id="full-screen-background">
                 <div
-                    :class="'wave wave' + id"
-                    :style="
-                        'background-image: url(/static/images/waves/' +
-                        id +
-                        '.png);'
-                    "
+                    v-for="id of [1, 2, 3]"
+                    :key="id"
+                    :class="'line line' + id"
+                >
+                    <div
+                        :class="'wave wave' + id"
+                        :style="
+                            'background-image: url(/static/images/waves/' +
+                            id +
+                            '.png);'
+                        "
+                    ></div>
+                </div>
+                <div id="bottom-white-block"></div>
+                <div
+                    v-for="i of [0, 1, 2, 3, 4, 5]"
+                    :key="'star' + i"
+                    :id="'star' + i"
+                    class="star"
                 ></div>
+                <div id="meteor"></div>
             </div>
-            <div id="bottom-white-block"></div>
+        </div>
+        <div id="pointer_power">
+            <div
+                v-for="i of [0, 1, 2, 3, 4, 5, 6, 7, 8]"
+                :key="'power' + i"
+                :id="'power' + i"
+                class="power"
+            ></div>
         </div>
     </div>
 </template>
@@ -86,6 +107,104 @@ export default {
                     i > 1 ? "<" : null
                 );
             }
+
+            let star = gsap.timeline();
+            for (let i = 0; i <= 5; i++)
+                star.fromTo(
+                    "#star" + i,
+                    {
+                        scale: 0,
+                        opacity: 0,
+                        left: () => gsap.utils.random(0, 100) + "%",
+                        top: () => gsap.utils.random(0, 20) + "%",
+                    },
+                    {
+                        scale: () => gsap.utils.random(0.8, 1),
+                        opacity: () => gsap.utils.random(0.8, 1),
+                        duration: () => gsap.utils.random(2, 8),
+                        repeat: -1,
+                        yoyo: true,
+                        repeatRefresh: true,
+                    },
+                    "<"
+                );
+
+            let meteor = gsap.timeline({
+                repeat: -1,
+                repeatRefresh: true,
+                repeatDelay: 15,
+                delay: 15,
+            });
+            meteor.fromTo(
+                "#meteor",
+                {
+                    left: () => gsap.utils.random(30, 90) + "%",
+                    top: () => gsap.utils.random(-10, 10) + "%",
+                    x: 0,
+                    y: 0,
+                },
+                {
+                    x: -300,
+                    y: 400,
+                    duration: 1.5,
+                    ease: "slow(0.1, 0.4, false)",
+                }
+            );
+            meteor.fromTo(
+                "#meteor",
+                {
+                    rotation: 0,
+                },
+                {
+                    rotation: 2160,
+                    duration: 1.5,
+                    ease: "none",
+                },
+                "<"
+            );
+            meteor.fromTo(
+                "#meteor",
+                {
+                    scale: 0,
+                    opacity: 0,
+                },
+                {
+                    scale: () => gsap.utils.random(0.8, 1),
+                    opacity: () => gsap.utils.random(0.8, 1),
+                    duration: 0.75,
+                    ease: "slow(0.1, 0.4, false)",
+                    repeat: 1,
+                    yoyo: true,
+                },
+                "<"
+            );
+        },
+        page_click(event) {
+            console.log(event);
+            const x = event.pageX,
+                y = event.pageY;
+            for (let i = 0; i <= 8; i++) {
+                const theta = gsap.utils.random(0, 2 * Math.PI);
+                const color = `rgb(95,${gsap.utils.random(95, 190, 1)},255)`;
+                gsap.fromTo(
+                    "#power" + i,
+                    {
+                        x: 0,
+                        y: 0,
+                        top: y + "px",
+                        left: x + "px",
+                        background: color,
+                        scale: gsap.utils.random(0.5, 1),
+                    },
+                    {
+                        x: Math.cos(theta) * gsap.utils.random(20, 40),
+                        y: Math.sin(theta) * gsap.utils.random(20, 40),
+                        background: color,
+                        duration: 0.8,
+                        scale: 0,
+                    }
+                );
+            }
         },
     },
     mounted: function () {
@@ -106,8 +225,14 @@ export default {
     width: 100%;
     height: 100%;
 }
+#full-screen-background {
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    background-color: #152531;
+}
 #main-text {
-    z-index: 10;
+    z-index: 50;
     position: absolute;
     left: 50%;
     top: 50%;
@@ -126,19 +251,19 @@ export default {
     position: absolute;
     width: 100%;
     height: 100%;
-    background: #152531;
+    background: transparent;
     overflow: hidden;
 }
 .line1 {
-    z-index: 6;
+    z-index: 9;
     opacity: 0.3;
 }
 .line2 {
-    z-index: 5;
+    z-index: 8;
     opacity: 0.4;
 }
 .line3 {
-    z-index: 4;
+    z-index: 7;
     opacity: 0.2;
 }
 .wave {
@@ -153,15 +278,12 @@ export default {
 }
 .wave1 {
     background-size: 50% 60px;
-    /* animation: wave_animate 22s linear infinite; */
 }
 .wave2 {
     background-size: 50% 80px;
-    /* animation: wave_animate 24s linear infinite; */
 }
 .wave3 {
     background-size: 50% 60px;
-    /* animation: wave_animate 36s linear infinite; */
 }
 #bottom-white-block {
     z-index: 9;
@@ -173,15 +295,37 @@ export default {
     transform: scaleY(1.005);
 }
 
-@keyframes wave_animate {
-    0% {
-        transform: translateX(0) scaleY(1);
-    }
-    50% {
-        transform: translateX(-25%) scaleY(0.75);
-    }
-    100% {
-        transform: translateX(-50%) scaleY(1);
-    }
+.star {
+    z-index: 3;
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #cdd9e2;
+}
+
+#meteor {
+    z-index: 5;
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #ffc14f;
+    border-radius: 0%;
+}
+
+#pointer_power {
+    z-index: 100000;
+    transform: translateZ(100000px);
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+.power {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: rgb(95, 164, 255);
+    transform: translate3d(-50%, -50%, 0) scale(0);
 }
 </style>
