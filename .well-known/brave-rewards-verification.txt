@@ -1,0 +1,4 @@
+This is a Brave Rewards publisher verification file.
+
+Domain: jacoblincool.github.io
+Token: b94cc8030f65d2339e169cc9691e4b19a22a0ea143db8c3f8b35d04e8926ced3
