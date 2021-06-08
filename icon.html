@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+        <title>Jacob Lin</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/gsap.min.js"></script>
+    </head>
+    <body>
+        <div id="container"></div>
+        <script>
+            function draw(container = null) {
+                if (!container) {
+                    container = document.createElement("div");
+                    document.body.appendChild(container);
+                }
+
+                const size = 1024;
+
+                let wrapper = document.createElement("div");
+                wrapper.style.height = size + "px";
+                wrapper.style.width = size + "px";
+                // wrapper.style.border = "3px solid black";
+                container.appendChild(wrapper);
+
+                let bg_circle = document.createElement("div");
+                bg_circle.style.position = "absolute";
+                bg_circle.style.top = size * 0.0375 + "px";
+                bg_circle.style.left = size * 0.0375 + "px";
+                bg_circle.style.height = size * 0.95 + "px";
+                bg_circle.style.width = size * 0.95 + "px";
+                bg_circle.style.borderRadius = size * 0.475 + "px";
+                bg_circle.style.background = "#ffeed2";
+                wrapper.appendChild(bg_circle);
+
+                let left_1 = document.createElement("div");
+                left_1.style.position = "absolute";
+                left_1.style.top = size * 0.1 + "px";
+                left_1.style.left = size * 0.35 + "px";
+                left_1.style.height = size * 0.6 + "px";
+                left_1.style.width = size * 0.1 + "px";
+                left_1.style.borderRadius = size * 0.05 + "px";
+                left_1.style.background = "#82e4e2";
+                left_1.style.transformOrigin = "bottom";
+                wrapper.appendChild(left_1);
+
+                let left_2 = document.createElement("div");
+                left_2.style.position = "absolute";
+                left_2.style.top = size * 0.63625 + "px";
+                left_2.style.left = size * 0.39 + "px";
+                left_2.style.height = size * 0.3 + "px";
+                left_2.style.width = size * 0.1 + "px";
+                left_2.style.borderRadius = size * 0.05 + "px";
+                left_2.style.background = "#82e4e2";
+                left_2.style.transformOrigin = "top";
+                left_2.style.transform = "rotate(70deg)";
+                wrapper.appendChild(left_2);
+
+                let right_1 = document.createElement("div");
+                right_1.style.position = "absolute";
+                right_1.style.top = size * 0.15 + "px";
+                right_1.style.left = size * 0.55 + "px";
+                right_1.style.height = size * 0.6 + "px";
+                right_1.style.width = size * 0.1 + "px";
+                right_1.style.borderRadius = size * 0.05 + "px";
+                right_1.style.background = "#ffaebc";
+                right_1.style.transformOrigin = "bottom";
+                wrapper.appendChild(right_1);
+
+                let right_2 = document.createElement("div");
+                right_2.style.position = "absolute";
+                right_2.style.top = size * 0.68625 + "px";
+                right_2.style.left = size * 0.51 + "px";
+                right_2.style.height = size * 0.3 + "px";
+                right_2.style.width = size * 0.1 + "px";
+                right_2.style.borderRadius = size * 0.05 + "px";
+                right_2.style.background = "#ffaebc";
+                right_2.style.transformOrigin = "top";
+                right_2.style.transform = "rotate(290deg)";
+                wrapper.appendChild(right_2);
+
+                let timeline = gsap.timeline();
+                timeline.from(bg_circle, {
+                    duration: 1.5,
+                    scale: 0,
+                    ease: "elastic.out(1,0.25)",
+                });
+                timeline.from(
+                    left_1,
+                    {
+                        duration: 1.5,
+                        scaleY: 0,
+                        ease: "elastic.out(1,0.25)",
+                    },
+                    "<1"
+                );
+                timeline.from(
+                    right_1,
+                    {
+                        duration: 1.5,
+                        scaleY: 0,
+                        ease: "elastic.out(1,0.25)",
+                    },
+                    "<0.5"
+                );
+                timeline.from(
+                    left_2,
+                    {
+                        duration: 1.5,
+                        scaleY: 0,
+                        ease: "elastic.out(1,0.25)",
+                    },
+                    "<0.5"
+                );
+                timeline.from(
+                    right_2,
+                    {
+                        duration: 1.5,
+                        scaleY: 0,
+                        ease: "elastic.out(1,0.25)",
+                    },
+                    "<0.5"
+                );
+            }
+
+            let container = document.querySelector("#container");
+            setTimeout(() => draw(container), 500);
+        </script>
+    </body>
+</html>
