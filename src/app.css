@@ -1,3 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+* {
+    @apply relative font-sans text-slate-900;
+}
+
+html, body, main {
+    @apply absolute h-full w-full m-0 p-0 overflow-hidden bg-slate-50;
+}
+
+main {
+    @apply overflow-auto;
+}
