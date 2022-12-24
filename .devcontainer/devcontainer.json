@@ -1,0 +1,17 @@
+{
+	"name": "workspace",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "workspace",
+	"workspaceFolder": "/workspace",
+	"settings": {},
+	"extensions": [
+		"dbaeumer.vscode-eslint",
+		"esbenp.prettier-vscode",
+		"GitHub.copilot",
+		"GitHub.copilot-labs",
+		"svelte.svelte-vscode",
+		"bradlc.vscode-tailwindcss"
+	],
+	"onCreateCommand": "pnpm config set store-dir /workspace/node_modules/.pnpm-store",
+	"postStartCommand": "pnpm i"
+}
