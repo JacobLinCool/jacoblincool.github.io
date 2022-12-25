@@ -19,7 +19,7 @@
 
 		mouse = new Mouse();
 
-		const edge = touchable() ? 50 : 10;
+		const edge = touchable() ? 50 : 20;
 		mouse.on("change", (e) => {
 			if (e.y[0] <= edge) {
 				show_nav = true;
