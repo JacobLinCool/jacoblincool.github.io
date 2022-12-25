@@ -2,6 +2,7 @@
 	import { page } from "$app/stores";
 
 	const links = [
+		["Blog", "/blog"],
 		["About", "/about"],
 		["Contact", "/contact"],
 	] as const;

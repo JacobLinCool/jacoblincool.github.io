@@ -1,0 +1,59 @@
+#blog {
+    @apply w-full h-full py-24 px-4 max-w-3xl mx-auto;
+}
+
+#blog h1, #blog h2, #blog h3, #blog h4, #blog h5, #blog h6, #blog p {
+    @apply mb-2 pb-2;
+}
+
+#blog h1 {
+    @apply text-4xl font-bold;
+}
+
+#blog h2 {
+    @apply text-3xl font-bold;
+}
+
+#blog h3 {
+    @apply text-2xl font-bold;
+}
+
+#blog h4 {
+    @apply text-xl font-bold;
+}
+
+#blog h5 {
+    @apply text-lg font-bold;
+}
+
+#blog h6 {
+    @apply text-base font-bold;
+}
+
+#blog p {
+    @apply text-base;
+}
+
+#blog a:not(.tag) {
+    @apply text-sky-400 underline;
+}
+
+#blog ul {
+    @apply list-disc;
+}
+
+#blog ol {
+    @apply list-decimal;
+}
+
+#blog blockquote {
+    @apply border-l-4 border-slate-200 pl-4;
+}
+
+#blog blockquote p {
+    @apply text-slate-500;
+}
+
+#blog img {
+    @apply max-w-full rounded my-4 shadow shadow-slate-400;
+}
