@@ -1,3 +1,7 @@
+<svelte:head>
+	<title>Jacob Lin</title>
+</svelte:head>
+
 <div class="w-full pt-24 px-4 md:px-8 lg:px-16">
 	<h1 class="text-4xl leading-snug md:leading-snug md:text-6xl font-bold">
 		Hello! <br />
