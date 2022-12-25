@@ -2,8 +2,8 @@
 	import "../app.css";
 	import { onMount } from "svelte";
 	import { fly } from "svelte/transition";
-	import Nav from "./Nav.svelte";
-	import Footer from "./Footer.svelte";
+	import Nav from "$lib/components/Nav.svelte";
+	import Footer from "$lib/components/Footer.svelte";
 	import { page } from "$app/stores";
 	import { Mouse } from "$lib/mouse";
 	import { touchable } from "$lib/misc";
@@ -14,7 +14,6 @@
 	let show_footer = false;
 	let hover_footer = false;
 
-	let mounted = false;
 	onMount(() => {
 		show_nav = touchable();
 
@@ -34,8 +33,6 @@
 				show_footer = false;
 			}
 		});
-
-		mounted = true;
 	});
 
 	const duration = 300;
