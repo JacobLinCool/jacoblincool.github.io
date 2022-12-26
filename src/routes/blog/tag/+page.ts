@@ -1,8 +1,9 @@
 import type { Load } from "@sveltejs/kit";
 
-export const load: Load = async ({ fetch }) => {
-	const response = await fetch("/api/posts/tags/all");
-	const tags = await response.json();
+export const prerender = true;
 
-	return { tags };
+export const load: Load = async ({ fetch }) => {
+	return {
+		tags: await fetch("/api/blog/tags/_index").then((r) => r.json()),
+	};
 };

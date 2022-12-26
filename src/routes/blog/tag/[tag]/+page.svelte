@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from "$app/stores";
-	import type { PostMetadata } from "$lib/server/blog";
+	import type { PostMetadata } from "$lib/server/blog/db";
 
 	export let data: { posts: PostMetadata[] };
 </script>

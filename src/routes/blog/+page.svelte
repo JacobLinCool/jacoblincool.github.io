@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PostMetadata } from "$lib/server/blog";
+	import type { PostMetadata } from "$lib/server/blog/db";
 
 	export let data: { posts: PostMetadata[] };
 </script>

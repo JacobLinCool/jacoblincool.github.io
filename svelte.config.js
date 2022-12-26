@@ -13,6 +13,9 @@ const config = {
 
 	kit: {
 		adapter: adapter(),
+		alias: {
+			blog: "./blog",
+		},
 	},
 
 	extensions: [".svelte", ".md"],

@@ -1,14 +1,12 @@
 import { json } from "@sveltejs/kit";
-import { list_posts } from "$lib/server/blog";
+import { db } from "$lib/server/blog/db";
 
 export const prerender = true;
 
-const posts = await list_posts();
-const rev = new Map(posts.map((post) => [post.slug, post]));
-
 export async function GET({ params }: { params: { slug: string } }) {
-	const post = rev.get(params.slug);
+	const post = db.post[params.slug];
 	if (!post) {
+		console.log(params, db.post);
 		return json({ error: "Not found" }, { status: 404 });
 	}
 	return json(post);

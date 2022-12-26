@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { compile } from "mdsvex";
-import readtime from "./readtime";
+import readtime from "../readtime";
 
 let posts_cache: PostMetadata[] | null = null;
 export async function list_posts(): Promise<PostMetadata[]> {

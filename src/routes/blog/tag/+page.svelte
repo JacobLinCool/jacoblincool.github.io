@@ -1,5 +1,7 @@
 <script lang="ts">
-	export let data: { tags: string[] };
+	import type { TagMetadata } from "$lib/server/blog/db";
+
+	export let data: { tags: TagMetadata[] };
 </script>
 
 <svelte:head>
@@ -11,8 +13,11 @@
 	<hr class="w-1/2 border-2 border-slate-300 my-4" />
 
 	{#each data.tags as tag}
-		<a href="/blog/tag/{tag}" class="tag text-sm text-slate-500 hover:text-blue-700 transition-all">
-			#{tag}
+		<a
+			href="/blog/tag/{tag.slug}"
+			class="tag text-sm text-slate-500 hover:text-blue-700 transition-all"
+		>
+			#{tag.name}
 		</a>
 	{/each}
 </div>
