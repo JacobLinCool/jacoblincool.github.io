@@ -46,4 +46,5 @@
 	{/if}
 	<hr class="border-2 border-slate-300 mt-2 mb-4" />
 	<slot />
+	<div class="w-full h-20" />
 </div>
