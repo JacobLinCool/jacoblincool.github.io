@@ -40,7 +40,7 @@
 					<div class="w-full">
 						<div class="flex flex-row items-center">
 							{#each post.tags as tag}
-								<p class="ml-2 text-slate-400">
+								<p class="ml-2 text-slate-400 text-sm">
 									#{tag.name}
 								</p>
 							{/each}
