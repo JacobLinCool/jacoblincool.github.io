@@ -36,6 +36,14 @@ const all: Tag = {
 				},
 			},
 		},
+		project: {
+			name: "Project",
+			sub: {
+				unicourse: {
+					name: "UniCourse",
+				},
+			},
+		},
 	},
 };
 
