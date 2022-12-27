@@ -1,8 +1,9 @@
 import type { Load } from "@sveltejs/kit";
-import { db } from "$lib/server/blog/db";
+import { db, initialized } from "$lib/server/blog/db";
 
 export const load: Load = async ({ params }) => {
 	if (params.slug) {
+		await initialized;
 		return {
 			post: db.post[params.slug],
 			tags: db.post[params.slug].meta.tags.map((tag) => db.tag[tag]),
