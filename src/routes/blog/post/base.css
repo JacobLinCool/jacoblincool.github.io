@@ -1,59 +1,59 @@
-#blog {
+.blog {
     @apply w-full h-full py-24 px-4 max-w-3xl mx-auto;
 }
 
-#blog h1, #blog h2, #blog h3, #blog h4, #blog h5, #blog h6, #blog p {
+h1.markdown, h2.markdown, h3.markdown, h4.markdown, h5.markdown, h6.markdown, p.markdown{
     @apply mb-2 pb-2;
 }
 
-#blog h1 {
+h1.markdown {
     @apply text-4xl font-bold;
 }
 
-#blog h2 {
+h2.markdown {
     @apply text-3xl font-bold;
 }
 
-#blog h3 {
+h3.markdown {
     @apply text-2xl font-bold;
 }
 
-#blog h4 {
+h4.markdown {
     @apply text-xl font-bold;
 }
 
-#blog h5 {
+h5.markdown {
     @apply text-lg font-bold;
 }
 
-#blog h6 {
+h6.markdown {
     @apply text-base font-bold;
 }
 
-#blog p {
+p.markdown {
     @apply text-base;
 }
 
-#blog a:not(.tag) {
+a.markdown {
     @apply text-sky-400 underline;
 }
 
-#blog ul {
+ul.markdown {
     @apply list-disc;
 }
 
-#blog ol {
+ol.markdown {
     @apply list-decimal;
 }
 
-#blog blockquote {
+blockquote.markdown {
     @apply border-l-4 border-slate-200 pl-4;
 }
 
-#blog blockquote p {
+blockquote.markdown p {
     @apply text-slate-500;
 }
 
-#blog img {
+img.markdown {
     @apply max-w-full rounded my-4 shadow shadow-slate-400;
 }

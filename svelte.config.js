@@ -1,6 +1,7 @@
 import adapter from "@sveltejs/adapter-static";
 import { vitePreprocess } from "@sveltejs/kit/vite";
 import { mdsvex } from "mdsvex";
+import add_classes from "rehype-add-classes";
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -8,6 +9,14 @@ const config = {
 		vitePreprocess(),
 		mdsvex({
 			extensions: [".md"],
+			rehypePlugins: [
+				[
+					add_classes,
+					{
+						"*": "markdown",
+					},
+				],
+			],
 		}),
 	],
 

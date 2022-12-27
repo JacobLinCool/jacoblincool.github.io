@@ -28,8 +28,8 @@
 	<meta name="og:image" content={data.cover} />
 </svelte:head>
 
-<div id="blog">
-	<h1 class="text-4xl leading-snug md:leading-snug md:text-6xl font-bold">
+<div class="blog">
+	<h1 class="text-2xl leading-snug md:leading-snug md:text-4xl font-bold">
 		{data.title}
 	</h1>
 	{#if data.tags.length}
