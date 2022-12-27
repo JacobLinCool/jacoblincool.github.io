@@ -123,7 +123,8 @@ async function checkout_post() {
 
 			const raw_tags = metadata.tags || [];
 			const tag_length = raw_tags.length;
-			const tags = new Set<string>();
+			const tags = new Set<string>(),
+				inherits = new Set<string>();
 			for (let i = 0; i < tag_length; i++) {
 				const tag = raw_tags[i];
 				const slug = slugify(tag);
@@ -138,8 +139,8 @@ async function checkout_post() {
 
 				tags.add(slug);
 				for (const inherit of db.tag[slug].inherits) {
-					if (!tags.has(inherit)) {
-						tags.add(inherit);
+					if (!tags.has(inherit) && !inherits.has(inherit)) {
+						inherits.add(inherit);
 					}
 				}
 			}
@@ -150,7 +151,7 @@ async function checkout_post() {
 				cover: metadata.cover || "/blog-cover.png",
 				description: metadata.description || "",
 				readtime: readtime(content?.code || "").humanizedDuration,
-				tags: [...tags].map((tag) => db.tag[tag]),
+				tags: [...tags, ...inherits].map((tag) => db.tag[tag]),
 				author: db.author[metadata.author || "default"] || db.author.default,
 				slug,
 			};
