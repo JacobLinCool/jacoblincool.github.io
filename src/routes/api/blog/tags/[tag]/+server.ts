@@ -10,5 +10,8 @@ export async function GET({ params }: { params: { tag: string } }) {
 		return json({ error: "Not found" }, { status: 404 });
 	}
 
-	return json(Object.values(db.post).filter((post) => post.meta.tags.includes(tag.slug)));
+	return json({
+		tag,
+		posts: Object.values(db.post).filter((post) => post.tags.map((t) => t.slug).includes(tag.slug)),
+	});
 }

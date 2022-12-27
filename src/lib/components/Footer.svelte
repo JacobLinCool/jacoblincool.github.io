@@ -1,4 +1,3 @@
-<!-- A svelte top navigation -->
 <script lang="ts">
 	import LogosGithubIcon from "~icons/logos/github-icon";
 	import LogosLinkedinIcon from "~icons/logos/linkedin-icon";

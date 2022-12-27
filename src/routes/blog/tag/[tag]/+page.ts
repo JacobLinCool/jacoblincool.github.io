@@ -5,8 +5,8 @@ export const prerender = true;
 export const load: Load = async ({ fetch, params }) => {
 	if (params.tag) {
 		const response = await fetch(`/api/blog/tags/${params.tag}`);
-		const posts = await response.json();
+		const data = await response.json();
 
-		return { posts };
+		return data;
 	}
 };

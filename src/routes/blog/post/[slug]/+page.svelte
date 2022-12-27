@@ -1,7 +1,5 @@
 <script lang="ts">
-	import type { PostMetadata } from "$lib/server/blog";
-
-	export let data: { content: ConstructorOfATypedSvelteComponent; meta: PostMetadata };
+	export let data: { content: ConstructorOfATypedSvelteComponent };
 </script>
 
 <svelte:component this={data.content} />

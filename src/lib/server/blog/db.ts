@@ -1,31 +1,33 @@
 import fs from "node:fs";
+import { globby } from "globby";
 import { compile } from "mdsvex";
-import readtime from "../readtime";
+import { slugify } from "$lib/server/blog/utils";
+import { readtime } from "$lib/server/blog/readtime";
 import type { Tag } from "blog/tags";
 
 export const db: {
 	post: Record<string, PostMetadata>;
 	author: Record<string, AuthorMetadata>;
 	tag: Record<string, TagMetadata>;
+	initialized: Promise<void>;
 } = {
 	post: {},
 	author: {},
 	tag: {},
+	initialized: Promise.resolve(),
 };
 
 export const file: Record<string, string> = {};
 
 export const initialized = init();
+db.initialized = initialized;
 
 export async function init() {
 	console.time("blog db init");
 	await checkout_tags();
 	await checkout_author();
 	await checkout_post();
-	db.post = sort_object(
-		db.post,
-		(a, b) => new Date(b.meta.date).getTime() - new Date(a.meta.date).getTime(),
-	);
+	db.post = sort_object(db.post, (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 	console.timeEnd("blog db init");
 }
 
@@ -58,9 +60,19 @@ async function checkout_tags() {
 }
 
 async function checkout_author() {
-	const authors = Object.entries(
-		import.meta.glob<boolean, string, { metadata: AuthorMetadata }>("/blog/authors/**/*.md"),
-	);
+	const authors = (await globby("blog/authors/**/*.md")).map<
+		[string, () => Promise<{ metadata: AuthorMetadata }>]
+	>((filepath) => [
+		"/" + filepath,
+		async () => {
+			const file = fs.readFileSync(filepath, "utf8");
+			const compiled = await compile(file);
+			if (typeof compiled?.data?.fm !== "object") {
+				throw new Error("Invalid post metadata");
+			}
+			return { metadata: compiled.data.fm } as { metadata: AuthorMetadata };
+		},
+	]);
 
 	await Promise.all(
 		authors.map(async ([filepath, resolver]) => {
@@ -87,9 +99,19 @@ async function checkout_author() {
 }
 
 async function checkout_post() {
-	const posts = Object.entries(
-		import.meta.glob<boolean, string, { metadata: RawPostMetadata }>("blog/posts/**/*.md"),
-	);
+	const posts = (await globby("blog/posts/**/*.md")).map<
+		[string, () => Promise<{ metadata: RawPostMetadata }>]
+	>((filepath) => [
+		"/" + filepath,
+		async () => {
+			const file = fs.readFileSync(filepath, "utf8");
+			const compiled = await compile(file);
+			if (typeof compiled?.data?.fm !== "object") {
+				throw new Error("Invalid post metadata");
+			}
+			return { metadata: compiled.data.fm } as { metadata: RawPostMetadata };
+		},
+	]);
 
 	await Promise.all(
 		posts.map(async ([filepath, resolver]) => {
@@ -106,7 +128,7 @@ async function checkout_post() {
 				const tag = raw_tags[i];
 				const slug = slugify(tag);
 
-				if (!db.tag[tag]) {
+				if (!db.tag[slug]) {
 					db.tag[slug] = {
 						name: tag,
 						inherits: [],
@@ -123,26 +145,17 @@ async function checkout_post() {
 			}
 
 			db.post[slug] = {
-				meta: {
-					title: metadata.title || "Untitled",
-					date: metadata.date || new Date().toISOString(),
-					cover: metadata.cover || "/blog-cover.png",
-					description: metadata.description || "",
-					readtime: readtime(content?.code || "").humanizedDuration,
-					tags: [...tags],
-					author: metadata.author || db.author["default"].slug,
-				},
+				title: metadata.title || "Untitled",
+				date: metadata.date || new Date().toISOString(),
+				cover: metadata.cover || "/blog-cover.png",
+				description: metadata.description || "",
+				readtime: readtime(content?.code || "").humanizedDuration,
+				tags: [...tags].map((tag) => db.tag[tag]),
+				author: db.author[metadata.author || "default"] || db.author.default,
 				slug,
 			};
 		}),
 	);
-}
-
-function slugify(str: string) {
-	return str
-		.toLowerCase()
-		.replace(/[\\/\s]/g, "-")
-		.replace(/^-+|-+$/g, "");
 }
 
 function sort_object<T>(
@@ -157,6 +170,18 @@ function sort_object<T>(
 		}, {} as Record<string, T>);
 }
 
+export interface AuthorMetadata {
+	slug: string;
+	name: string;
+	owner?: boolean;
+}
+
+export interface TagMetadata {
+	slug: string;
+	name: string;
+	inherits: string[];
+}
+
 export interface RawPostMetadata {
 	title?: string;
 	date?: string;
@@ -169,17 +194,17 @@ export interface RawPostMetadata {
 
 export interface PostMetadata {
 	slug: string;
-	meta: Required<RawPostMetadata>;
-}
-
-export interface AuthorMetadata {
-	slug: string;
-	name: string;
-	owner?: boolean;
-}
-
-export interface TagMetadata {
-	slug: string;
-	name: string;
-	inherits: string[];
+	title: string;
+	date: string;
+	cover: string;
+	description: string;
+	readtime: string;
+	tags: {
+		name: string;
+		slug: string;
+	}[];
+	author: {
+		name: string;
+		slug: string;
+	};
 }

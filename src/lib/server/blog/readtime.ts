@@ -146,4 +146,4 @@ function readTime(
 }
 
 export default readTime;
-//# sourceMappingURL=read-time-estimate.esm.js.map
+export const readtime = readTime;
