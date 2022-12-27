@@ -1,6 +1,7 @@
 export interface Tag {
 	name: string;
 	slug?: string;
+	description?: string;
 	sub?: Record<string, Tag>;
 	inheritable?: boolean;
 }
@@ -27,6 +28,11 @@ const all: Tag = {
 			sub: {
 				university: {
 					name: "University",
+					sub: {
+						ntnu: {
+							name: "NTNU",
+						},
+					},
 				},
 			},
 		},
