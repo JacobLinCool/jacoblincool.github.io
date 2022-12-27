@@ -20,6 +20,9 @@ jobs:
           version: latest
           run_install: true
 
+      - name: Install Playwright Dependencies
+        run: npx playwright install --with-deps
+
       - name: Run Tests
         run: pnpm test
 
