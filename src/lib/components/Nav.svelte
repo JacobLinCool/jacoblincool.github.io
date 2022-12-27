@@ -1,11 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/stores";
 
-	const links = [
-		["Blog", "/blog"],
-		["About", "/about"],
-		["Contact", "/contact"],
-	] as const;
+	export let links: [string, string][];
 </script>
 
 <nav class="w-full p-2">
@@ -15,7 +11,12 @@
 				<a class="flex flex-row items-center" href="/">
 					<div class="flex flex-row items-center">
 						<div class="w-10 h-10 bg-slate-300 rounded-lg shadow shadow-slate-300">
-							<img src="/logo.png" alt="Jacob's Logo" class="w-full h-full rounded-lg" />
+							<img
+								src="/logo.png"
+								alt="Jacob's Logo"
+								loading="lazy"
+								class="w-full h-full rounded-lg"
+							/>
 						</div>
 						<div class="ml-2 text-slate-700 font-bold">Jacob Lin</div>
 					</div>

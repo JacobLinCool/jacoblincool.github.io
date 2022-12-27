@@ -7,12 +7,19 @@
 	import { page } from "$app/stores";
 	import { Mouse } from "$lib/mouse";
 	import { touchable } from "$lib/misc";
+	import { preload } from "$lib/preload";
 
 	let mouse: Mouse;
 	let show_nav = false;
 	let hover_nav = false;
 	let show_footer = false;
 	let hover_footer = false;
+
+	const links: [string, string][] = [
+		["Blog", "/blog"],
+		["About", "/about"],
+		["Contact", "/contact"],
+	];
 
 	onMount(() => {
 		show_nav = touchable();
@@ -33,6 +40,8 @@
 				show_footer = false;
 			}
 		});
+
+		preload(["/", ...links.map(([, href]) => href)]);
 	});
 
 	const duration = 300;
@@ -46,7 +55,7 @@
 	on:mouseenter={() => (hover_nav = true)}
 	on:mouseleave={() => (hover_nav = false)}
 >
-	<Nav />
+	<Nav {links} />
 </div>
 
 {#key $page.url.href}

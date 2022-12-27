@@ -1,8 +1,14 @@
 <script lang="ts">
+	import { onMount } from "svelte";
 	import ArticleCard from "$lib/components/ArticleCard.svelte";
 	import type { PostMetadata } from "$lib/server/blog/db";
+	import { preload } from "$lib/preload";
 
 	export let data: { posts: PostMetadata[] };
+
+	onMount(() => {
+		preload(data.posts.slice(0, 3).map((post) => `/blog/post/${post.slug}`));
+	});
 </script>
 
 <svelte:head>

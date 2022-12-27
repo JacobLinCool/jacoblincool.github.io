@@ -1,9 +1,18 @@
 <script lang="ts">
+	import { onMount } from "svelte";
 	import type { PostMetadata } from "$lib/server/blog/db";
+	import { preload } from "$lib/preload";
 	import "./base.css";
 	import "./code.css";
 
 	export let data: PostMetadata;
+
+	onMount(() => {
+		preload(
+			data.tags.map((tag) => `/blog/tag/${tag.slug}`),
+			500,
+		);
+	});
 </script>
 
 <svelte:head>
