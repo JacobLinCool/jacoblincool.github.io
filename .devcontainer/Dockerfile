@@ -20,7 +20,5 @@ RUN curl -fsSL https://get.pnpm.io/install.sh | sh - && \
     pnpm env use -g lts && \
     sudo rm -rf /tmp/*
 
-RUN pnpm i -g pnpm taze tsx playwright prettier vite serve cloudflared && \
-    cloudflared -v && \
-    playwright install && \
-    playwright install-deps
+RUN pnpm i -g pnpm taze tsx playwright prettier vite serve && \
+    playwright install chromium --with-deps
