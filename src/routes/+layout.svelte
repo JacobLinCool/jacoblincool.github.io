@@ -4,6 +4,7 @@
 	import { fly } from "svelte/transition";
 	import Nav from "$lib/components/Nav.svelte";
 	import Footer from "$lib/components/Footer.svelte";
+	import Cursor from "$lib/components/Cursor.svelte";
 	import { page } from "$app/stores";
 	import { Mouse } from "$lib/mouse";
 	import { touchable } from "$lib/misc";
@@ -74,3 +75,5 @@
 >
 	<Footer />
 </div>
+
+<Cursor />
