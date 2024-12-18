@@ -3,8 +3,8 @@ title: 2022 資工系期中專題展
 date: 2022-12-26
 cover: https://i.imgur.com/a13S49l.png
 tags:
-    - NTNU
-    - UniCourse
+  - NTNU
+  - UniCourse
 description: 參觀資工系期中專題展
 ---
 

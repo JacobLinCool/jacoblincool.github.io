@@ -3,8 +3,8 @@ title: Christmas Short Trip
 date: 2022-12-25 12:00:00
 cover: https://i.imgur.com/61taETM.jpg
 tags:
-    - Travel
-    - Christmas
+  - Travel
+  - Christmas
 description: I got a free HSR ticket!
 ---
 

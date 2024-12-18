@@ -1,22 +1,26 @@
-# Logs
-logs
-*.log
-.pnpm-debug.log*
+test-results
+node_modules
 
-# Coverage directory
-coverage
-
-# Dependency directories
-node_modules/
-
-.DS_Store
-/build
+# Output
+.output
+.vercel
+.netlify
+.wrangler
 /.svelte-kit
-/package
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
 .env
 .env.*
 !.env.example
+!.env.test
+
+# Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-/data
-/static/data
+
+*storybook.log

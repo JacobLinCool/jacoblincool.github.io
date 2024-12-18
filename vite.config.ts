@@ -1,21 +1,10 @@
-import { defineConfig } from "vite";
-import { sveltekit } from "@sveltejs/kit/vite";
-import Icons from "unplugin-icons/vite";
+import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-	plugins: [
-		sveltekit(),
-		Icons({
-			compiler: "svelte",
-		}),
-	],
+	plugins: [sveltekit()],
+
 	test: {
-		include: ["src/**/*.{test,spec}.{js,ts}"],
-	},
-	server: {
-		host: "0.0.0.0",
-		fs: {
-			allow: ["blog"],
-		},
-	},
+		include: ['src/**/*.{test,spec}.{js,ts}']
+	}
 });
