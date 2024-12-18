@@ -1,8 +1,9 @@
+import { env } from '$env/dynamic/private';
 import type { Activity } from '$lib/chat';
 import { Octokit } from '@octokit/rest';
 
 export const octokit = new Octokit({
-	auth: process.env.GITHUB_TOKEN
+	auth: env.GITHUB_TOKEN
 });
 
 export async function getGitHubActivities(user: string): Promise<Activity[]> {
