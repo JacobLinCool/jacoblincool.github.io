@@ -7,9 +7,9 @@
 		role: 'assistant' | 'user';
 		text: string;
 		image?: string;
-	}[] = [];
+	}[] = $state([]);
 
-	let askComponent: Ask;
+	let askComponent: Ask | null = $state(null);
 
 	async function ask(question: string) {
 		console.log(`Asking: ${question}`);
@@ -38,6 +38,7 @@
 		console.log(answer);
 		conversations = [...conversations, { role: 'assistant', ...answer }];
 	}
+	let started = $derived(conversations.length > 0);
 
 	const starters = [
 		'What projects are you currently working on?',
@@ -50,7 +51,7 @@
 		'am a Passionate Developer',
 		'am a Curious Lifelong Learner',
 		'am a Maintainer of packages on NPM, PyPI, and crates.io',
-		'am a Researcher of AI and HCI',
+		'am a Researcher of AI and Human-Computer Interaction',
 		'am a 4th Year CS Student at NTNU',
 		'am a GDG on Campus Lead',
 		'like milk tea',
@@ -66,8 +67,10 @@
 
 <main class="relative z-10 flex h-screen items-center justify-center bg-black p-8 text-white">
 	<section class="w-full max-w-prose">
-		<h1 class="mb-4 text-6xl font-bold">Jacob Lin</h1>
-		<p class="mb-8 text-xl">
+		<h1 class="mb-4 font-bold transition-all" class:text-6xl={!started} class:text-2xl={started}>
+			Jacob Lin
+		</h1>
+		<p class="mb-8 transition-all" class:text-xl={!started} class:text-base={started}>
 			I <TypingTexts texts={titles} speedIn={80} speedOut={40} />
 		</p>
 		<Ask bind:this={askComponent} {ask} {starters} {conversations} />

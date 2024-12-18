@@ -65,7 +65,7 @@
 <div class="contents">
 	{#if conversations.length > 0}
 		<div
-			class="my-4 flex max-h-[50vh] flex-col overflow-y-auto md:max-h-[75vh]"
+			class="chat-container my-4 flex max-h-[min(50vh,600px)] flex-col overflow-y-auto"
 			bind:this={chatContainer}
 		>
 			{#each conversations as conversation}
@@ -108,3 +108,13 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	.chat-container::-webkit-scrollbar {
+		display: none;
+	}
+	.chat-container {
+		-ms-overflow-style: none; /* IE and Edge */
+		scrollbar-width: none; /* Firefox */
+	}
+</style>
