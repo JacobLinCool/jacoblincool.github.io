@@ -34,9 +34,14 @@
 			return;
 		}
 
-		const { answer } = await res.json();
+		const { answer, audio } = await res.json();
 		console.log(answer);
 		conversations = [...conversations, { role: 'assistant', ...answer }];
+
+		if (audio) {
+			const audioElement = new Audio(audio);
+			audioElement.play();
+		}
 	}
 	let started = $derived(conversations.length > 0);
 
