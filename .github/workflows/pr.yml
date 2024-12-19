@@ -30,4 +30,4 @@ jobs:
         env:
           OPENAI_API_KEY: sk-1234567890abcdef
           HUGGINFACE_TOKEN: hf_1234567890abcdef
-          HUGGINFACE_VC_SPACE: 1234567890/abcdef
+          HUGGINFACE_VC_SPACE: JacobLinCool/test
