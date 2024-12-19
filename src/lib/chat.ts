@@ -191,7 +191,28 @@ export async function* chatStream(
 			} else if (functionName === 'drawPicture') {
 				const description = args.description;
 				const image = await draw(description);
+
+				const messages = [
+					"I've ",
+					'drawn ',
+					'a picture ',
+					'with ',
+					'[JacobLinCool/FLUXd-jacob-v0.1](https://huggingface.co/JacobLinCool/FLUXd-jacob-v0.1) ',
+					'based ',
+					'on ',
+					'the ',
+					'following ',
+					'description:',
+					'\n> '
+				];
+				for (const message of messages) {
+					yield { type: 'content', data: message };
+				}
+				yield { type: 'content', data: description };
+
 				yield { type: 'image', data: image };
+				yield { type: 'done', data: null };
+				return;
 			}
 
 			functionArguments = '';
