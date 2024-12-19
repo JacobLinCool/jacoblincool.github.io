@@ -7,6 +7,17 @@ export const openai = new OpenAI({
 	apiKey: env.OPENAI_API_KEY
 });
 
+// patch "The 'credentials' field on 'RequestInitializerDict' is not implemented."
+// on Cloudflare Workers.
+globalThis.fetch = ((f) => {
+	return (...args) => {
+		if (args.length > 1 && args[1]?.credentials) {
+			delete args[1].credentials;
+		}
+		return f(...args);
+	};
+})(globalThis.fetch);
+
 const client = await Client.connect(env.HUGGINFACE_VC_SPACE, {
 	hf_token: env.HUGGINFACE_TOKEN as `hf_${string}`
 });
