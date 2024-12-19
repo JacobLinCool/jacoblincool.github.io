@@ -37,6 +37,12 @@
 			}
 			this.processing = false;
 		}
+
+		async wait() {
+			while (this.processing) {
+				await new Promise((resolve) => setTimeout(resolve, 125));
+			}
+		}
 	}
 
 	async function ask(question: string) {
@@ -77,8 +83,9 @@
 					audio.play();
 				}
 			});
-			await updateQueue.process();
+			await updateQueue.wait();
 		} catch (err) {
+			console.error(err);
 			conversations = [
 				...conversations.slice(0, -1),
 				{
