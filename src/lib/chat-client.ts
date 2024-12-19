@@ -46,19 +46,30 @@ export async function askQuestion(
 
 	const decoder = new TextDecoder();
 	let result: ChatResponse = { text: '' };
+	let buffer = '';
 
 	try {
 		while (true) {
 			const { done, value } = await reader.read();
 			if (done) break;
 
-			const chunk = decoder.decode(value);
-			const events = chunk.split('\n\n').filter(Boolean);
+			buffer += decoder.decode(value);
+			const events = buffer.split('\n\n');
+
+			// Keep the last chunk if it doesn't end with double newline
+			buffer = events[events.length - 1].endsWith('\n\n') ? '' : events.pop() || '';
 
 			for (const event of events) {
+				if (!event.trim()) continue;
+
 				const lines = event.split('\n');
-				const type = lines[0].slice('event: '.length);
-				const data = JSON.parse(lines[1].slice('data: '.length));
+				const typeMatch = lines[0].match(/^event:\s*(.+)$/);
+				const dataMatch = lines[1]?.match(/^data:\s*(.+)$/);
+
+				if (!typeMatch || !dataMatch) continue;
+
+				const type = typeMatch[1];
+				const data = JSON.parse(dataMatch[1]);
 
 				switch (type) {
 					case 'content': {
