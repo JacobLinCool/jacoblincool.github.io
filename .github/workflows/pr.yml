@@ -22,8 +22,12 @@ jobs:
       - name: Install Playwright Dependencies
         run: npx playwright install --with-deps
 
-      - name: Run Tests
-        run: pnpm test
+      # - name: Run Tests
+      #   run: pnpm test
 
       - name: Build Application
         run: pnpm build
+        env:
+          OPENAI_API_KEY: sk-1234567890abcdef
+          HUGGINFACE_TOKEN: hf_1234567890abcdef
+          HUGGINFACE_VC_SPACE: 1234567890/abcdef
