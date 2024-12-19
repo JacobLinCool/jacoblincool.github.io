@@ -53,20 +53,14 @@ async function fetchExtraInformation(assistant: Assistant, key: string) {
 	}
 }
 
-export async function chat(
+export async function* chatStream(
 	conversations: (
-		| {
-				role: 'assistant' | 'user';
-				text: string;
-		  }
+		| { role: 'assistant' | 'user'; text: string }
 		| ChatCompletionMessage
 		| ChatCompletionToolMessageParam
 	)[],
 	depth = 0
-): Promise<{
-	text: string;
-	image?: string;
-}> {
+): AsyncGenerator<{ type: 'tool' | 'content' | 'image' | 'done'; data: any }> {
 	conversations = conversations.slice(-10);
 
 	const tools: ChatCompletionTool[] = [
@@ -142,52 +136,76 @@ export async function chat(
 	});
 	console.dir(moderation, { depth: null });
 	if (moderation.results.some((result) => result.flagged)) {
-		return {
-			text: 'I am sorry, I am not able to provide an answer to your question.'
+		yield {
+			type: 'done',
+			data: 'I am sorry, I am not able to provide an answer to your question.'
 		};
+		return;
 	}
 
-	const res = await openai.chat.completions.create(payload);
-	const choice = res.choices[0];
-	console.dir(choice, { depth: null });
+	const stream = await openai.chat.completions.create({
+		...payload,
+		stream: true
+	});
 
-	let content = choice.message.content ?? '';
-	let image: string | undefined = undefined;
-	if (choice.message.tool_calls) {
-		conversations.push(choice.message);
-		for (const tool_call of choice.message.tool_calls) {
-			if (tool_call.function.name === 'fetchExtraInformation') {
-				await fetchExtraInformation(assistant, JSON.parse(tool_call.function.arguments).key);
-				conversations.push({
-					role: 'tool',
-					content:
-						owner.extraInformations[JSON.parse(tool_call.function.arguments).key].error || 'done.',
-					tool_call_id: tool_call.id
-				});
-			} else if (tool_call.function.name === 'drawPicture') {
-				const description = JSON.parse(tool_call.function.arguments).description;
-				image = await draw(description);
-				if (!content) {
-					content = "I've drawn a picture based on the given description:\n> " + description;
-				}
+	let buffer = '';
+	let functionArguments = '';
+	let functionName = '';
+	let isCollectingFunctionArgs = false;
+	for await (const chunk of stream) {
+		const choice = chunk.choices[0];
+		const delta = choice.delta;
+		if (!choice || !delta) {
+			continue;
+		}
+
+		const content = delta.content || '';
+		buffer += content;
+		if (content) {
+			yield { type: 'content', data: content };
+		}
+
+		if (delta.tool_calls) {
+			isCollectingFunctionArgs = true;
+			const toolCall = delta.tool_calls[0];
+
+			if (toolCall.function?.name) {
+				functionName = toolCall.function.name;
+			}
+
+			if (toolCall.function?.arguments) {
+				functionArguments += toolCall.function.arguments;
 			}
 		}
-	}
 
-	if (!content && !image) {
-		if (depth < 3) {
-			return await chat(conversations, depth + 1);
-		} else {
-			return {
-				text: 'I am sorry, I am not able to provide an answer to your question.'
-			};
+		if (choice.finish_reason === 'tool_calls' && isCollectingFunctionArgs) {
+			console.log(`Function call '${functionName}' is complete.`);
+
+			const args = JSON.parse(functionArguments);
+			console.log('Complete function arguments:', args);
+
+			yield { type: 'tool', data: JSON.stringify({ name: functionName, args }) };
+
+			if (functionName === 'fetchExtraInformation') {
+				await fetchExtraInformation(assistant, args.key);
+			} else if (functionName === 'drawPicture') {
+				const description = args.description;
+				const image = await draw(description);
+				yield { type: 'image', data: image };
+			}
+
+			functionArguments = '';
+			functionName = '';
+			isCollectingFunctionArgs = false;
 		}
 	}
 
-	return {
-		text: content,
-		image
-	};
+	if (buffer.length === 0 && depth < 3) {
+		yield* chatStream(conversations, depth + 1);
+		return;
+	}
+
+	yield { type: 'done', data: null };
 }
 
 export interface Assistant {

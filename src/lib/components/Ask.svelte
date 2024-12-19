@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { marked } from 'marked';
+	import TypingTexts from './TypingTexts.svelte';
 
 	let {
 		ask,
@@ -27,6 +28,9 @@
 		}
 		if (q) {
 			question = q;
+		}
+		if (!question) {
+			return;
 		}
 		asking = true;
 		await ask(question);
@@ -60,6 +64,14 @@
 	function renderMarkdown(text: string) {
 		return marked(text);
 	}
+
+	function isStreaming(conversation: any) {
+		return (
+			conversation.role === 'assistant' &&
+			conversation === conversations[conversations.length - 1] &&
+			asking
+		);
+	}
 </script>
 
 <div class="contents">
@@ -76,7 +88,15 @@
 						: 'self-end text-right'}"
 				>
 					<!-- <p class="font-bold">{conversation.role === 'assistant' ? name : 'You'}</p> -->
-					<p class="prose prose-invert">{@html renderMarkdown(conversation.text)}</p>
+					<p class="prose prose-invert" class:animate-pulse={isStreaming(conversation)}>
+						{#if conversation.text.length === 0}
+							<span class="text-gray-400">
+								.<TypingTexts texts={['....']} speedIn={1000} speedOut={100} gap={1000} />
+							</span>
+						{:else}
+							{@html renderMarkdown(conversation.text)}
+						{/if}
+					</p>
 					<!-- Render markdown content -->
 					{#if conversation.image}
 						<img src={conversation.image} alt="Response" class="mt-2 rounded-lg" />
@@ -93,7 +113,7 @@
 		placeholder="Ask me questions ..."
 		onkeypress={handleKeyPress}
 		class="w-full rounded-full border-2 border-gray-700 bg-transparent p-4 transition-all focus:border-blue-600 focus:outline-none"
-		class:animate-pulse={asking}
+		class:opacity-50={asking}
 	/>
 	{#if conversations.length === 0}
 		<div class="mt-4" transition:fly={{ y: 20, duration: 300 }}>

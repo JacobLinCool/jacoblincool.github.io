@@ -2,6 +2,7 @@
 	import Ask from '$lib/components/Ask.svelte';
 	import TypingTexts from '$lib/components/TypingTexts.svelte';
 	import Navigation from '$lib/components/Navigation.svelte';
+	import { askQuestion } from '$lib/chat-client';
 
 	let conversations: {
 		role: 'assistant' | 'user';
@@ -11,38 +12,83 @@
 
 	let askComponent: Ask | null = $state(null);
 
+	class UpdateQueue {
+		private queue: string[] = [];
+		private processing = false;
+		private callback: (text: string) => void;
+
+		constructor(callback: (text: string) => void) {
+			this.callback = callback;
+		}
+
+		async add(text: string) {
+			this.queue.push(text);
+			if (!this.processing) {
+				this.processing = true;
+				await this.process();
+			}
+		}
+
+		async process() {
+			while (this.queue.length > 0) {
+				const text = this.queue.shift()!;
+				this.callback(text);
+				await new Promise((resolve) => setTimeout(resolve, 125));
+			}
+			this.processing = false;
+		}
+	}
+
 	async function ask(question: string) {
 		console.log(`Asking: ${question}`);
-		conversations = [...conversations, { role: 'user', text: question }];
+		conversations = [
+			...conversations,
+			{ role: 'user', text: question },
+			{ role: 'assistant', text: '' }
+		];
 
-		const res = await fetch('/api/ask', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ conversations })
-		});
+		try {
+			let usingTool = false;
+			const updateQueue = new UpdateQueue((text) => {
+				if (usingTool) {
+					usingTool = false;
+					conversations[conversations.length - 1].text = '';
+				}
+				conversations = conversations.map((conv, i) =>
+					i === conversations.length - 1 ? { ...conv, text: conv.text + text } : conv
+				);
+			});
 
-		if (!res.ok) {
+			const result = await askQuestion(conversations.slice(0, -1), {
+				tool(message) {
+					usingTool = true;
+					conversations = [...conversations.slice(0, -1), { role: 'assistant', text: message }];
+				},
+				content: (text) => {
+					updateQueue.add(text);
+				},
+				image: (imageUrl) => {
+					conversations = conversations.map((conv, i) =>
+						i === conversations.length - 1 ? { ...conv, image: imageUrl } : conv
+					);
+				},
+				audio(audioUrl) {
+					const audio = new Audio(audioUrl);
+					audio.play();
+				}
+			});
+			await updateQueue.process();
+		} catch (err) {
 			conversations = [
-				...conversations,
+				...conversations.slice(0, -1),
 				{
 					role: 'assistant',
 					text: 'Sorry, I cannot answer that question right now. Jacob may forget to pay the server bill.'
 				}
 			];
-			return;
-		}
-
-		const { answer, audio } = await res.json();
-		console.log(answer);
-		conversations = [...conversations, { role: 'assistant', ...answer }];
-
-		if (audio) {
-			const audioElement = new Audio(audio);
-			audioElement.play();
 		}
 	}
+
 	let started = $derived(conversations.length > 0);
 
 	const starters = [
