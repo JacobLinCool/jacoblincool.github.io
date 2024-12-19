@@ -20,7 +20,7 @@
 	"devDependencies": {
 		"@chromatic-com/storybook": "^3.2.2",
 		"@eslint/compat": "^1.2.3",
-		"@gradio/client": "^1.8.0",
+		"@gradio/client": "npm:@expkg/gradio-client-no-ws@1.8.0",
 		"@huggingface/inference": "^2.8.1",
 		"@octokit/rest": "^21.0.2",
 		"@playwright/test": "^1.45.3",
