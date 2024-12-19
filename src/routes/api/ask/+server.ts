@@ -26,6 +26,7 @@ export const POST: RequestHandler = async ({ request }) => {
 						try {
 							const audio = await createAudio(fullText);
 							send('audio', audio);
+							await new Promise<void>((resolve) => setTimeout(resolve, 500));
 						} catch (error) {
 							console.error('Failed to create audio:', error);
 						}
