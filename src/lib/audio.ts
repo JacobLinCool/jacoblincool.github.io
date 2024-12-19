@@ -10,13 +10,25 @@ export const openai = new OpenAI({
 // patch "The 'credentials' field on 'RequestInitializerDict' is not implemented."
 // on Cloudflare Workers.
 globalThis.fetch = ((f) => {
-	return (...args) => {
-		if (args.length > 1 && args[1]?.credentials) {
-			delete args[1].credentials;
+	type P = Parameters<typeof f>;
+	return (input: P[0], init?: P[1]) => {
+		if (init?.credentials) {
+			delete init.credentials;
 		}
-		return f(...args);
+		return f(input, init);
 	};
 })(globalThis.fetch);
+globalThis.Request = ((OriginalRequest) => {
+	type P = ConstructorParameters<typeof OriginalRequest>;
+	return class Request extends OriginalRequest {
+		constructor(input: P[0], init?: P[1]) {
+			if (init?.credentials) {
+				delete init.credentials;
+			}
+			super(input, init);
+		}
+	};
+})(globalThis.Request);
 
 const client = await Client.connect(env.HUGGINFACE_VC_SPACE, {
 	hf_token: env.HUGGINFACE_TOKEN as `hf_${string}`
