@@ -1,36 +1,21 @@
-import adapter from "@sveltejs/adapter-static";
-import { vitePreprocess } from "@sveltejs/kit/vite";
-import { mdsvex } from "mdsvex";
-import remark_gfm from "remark-gfm";
-import remark_github from "remark-github";
-import add_classes from "rehype-add-classes";
-import external_links from "rehype-external-links";
+import adapter from '@sveltejs/adapter-auto';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { mdsvex } from 'mdsvex';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-	preprocess: [
-		vitePreprocess(),
-		mdsvex({
-			extensions: [".md"],
-			remarkPlugins: [
-				remark_gfm,
-				[remark_github, { repository: "jacoblincool/jacoblincool.github.io" }],
-			],
-			rehypePlugins: [
-				[add_classes, { "*": "markdown" }],
-				[external_links, { target: "_blank", rel: ["noopener", "noreferrer"] }],
-			],
-		}),
-	],
+	// Consult https://svelte.dev/docs/kit/integrations
+	// for more information about preprocessors
+	preprocess: [vitePreprocess(), mdsvex()],
 
 	kit: {
-		adapter: adapter(),
-		alias: {
-			blog: "./blog",
-		},
+		// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
+		// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
+		// See https://svelte.dev/docs/kit/adapters for more information about adapters.
+		adapter: adapter()
 	},
 
-	extensions: [".svelte", ".md"],
+	extensions: ['.svelte', '.svx']
 };
 
 export default config;

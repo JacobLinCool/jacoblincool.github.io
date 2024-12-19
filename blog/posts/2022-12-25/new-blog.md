@@ -3,7 +3,7 @@ title: New Blog
 date: 2022-12-25 00:00:00
 cover: https://i.imgur.com/JMha02S.png
 tags:
-    - SvelteKit
+  - SvelteKit
 description: About my new svelte-based blog.
 ---
 

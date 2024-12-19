@@ -7,44 +7,44 @@ export interface Tag {
 }
 
 const all: Tag = {
-	name: "All",
+	name: 'All',
 	inheritable: false,
 	sub: {
 		web: {
-			name: "Web",
+			name: 'Web',
 			sub: {
 				svelte: {
-					name: "Svelte",
+					name: 'Svelte',
 					sub: {
 						sveltekit: {
-							name: "SvelteKit",
-						},
-					},
-				},
-			},
+							name: 'SvelteKit'
+						}
+					}
+				}
+			}
 		},
 		school: {
-			name: "School",
+			name: 'School',
 			sub: {
 				university: {
-					name: "University",
+					name: 'University',
 					sub: {
 						ntnu: {
-							name: "NTNU",
-						},
-					},
-				},
-			},
+							name: 'NTNU'
+						}
+					}
+				}
+			}
 		},
 		project: {
-			name: "Project",
+			name: 'Project',
 			sub: {
 				unicourse: {
-					name: "UniCourse",
-				},
-			},
-		},
-	},
+					name: 'UniCourse'
+				}
+			}
+		}
+	}
 };
 
 export default all;
