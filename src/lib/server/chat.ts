@@ -190,14 +190,15 @@ export async function* chatStream(
 				await fetchExtraInformation(assistant, args.key);
 			} else if (functionName === 'drawPicture') {
 				const description = args.description;
-				const image = await draw(description);
 
 				const messages = [
 					"I've ",
 					'drawn ',
-					'a picture ',
+					'a ',
+					'picture ',
 					'with ',
-					'[JacobLinCool/FLUXd-jacob-v0.1](https://huggingface.co/JacobLinCool/FLUXd-jacob-v0.1) ',
+					'[JacobLinCool/FLUXd-jacob-v0.1]',
+					'(https://huggingface.co/JacobLinCool/FLUXd-jacob-v0.1) ',
 					'based ',
 					'on ',
 					'the ',
@@ -210,7 +211,9 @@ export async function* chatStream(
 				}
 				yield { type: 'content', data: description };
 
+				const image = await draw(description);
 				yield { type: 'image', data: image };
+
 				yield { type: 'done', data: null };
 				return;
 			}
