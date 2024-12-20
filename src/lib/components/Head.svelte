@@ -1,10 +1,11 @@
 <script lang="ts">
+	import { config } from '$lib/config';
 	let {
-		title = 'Jacob Lin',
-		description = "Jacob Lin's personal website",
-		image = 'https://jacoblin.cool/banner.jpg',
-		type = 'website',
-		url = 'https://jacoblin.cool'
+		title = config.site.title,
+		description = config.site.description,
+		image = config.site.image,
+		type = config.site.type,
+		url = config.site.url
 	}: {
 		title?: string;
 		description?: string;

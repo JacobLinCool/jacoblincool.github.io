@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { config } from '$lib/config';
 	import Ask from '$lib/components/Ask.svelte';
 	import TypingTexts from '$lib/components/TypingTexts.svelte';
 	import Navigation from '$lib/components/Navigation.svelte';
@@ -64,6 +65,7 @@
 				conversations = conversations.map((conv, i) =>
 					i === conversations.length - 1 ? { ...conv, text: conv.text + text } : conv
 				);
+				console.log(conversations[conversations.length - 1].text);
 			});
 
 			const result = await askQuestion(conversations.slice(0, -1), {
@@ -91,7 +93,7 @@
 				...conversations.slice(0, -1),
 				{
 					role: 'assistant',
-					text: 'Sorry, I cannot answer that question right now. Jacob may forget to pay the server bill.'
+					text: config.ask.defaultErrorMessage
 				}
 			];
 		}
@@ -99,25 +101,9 @@
 
 	let started = $derived(conversations.length > 0);
 
-	const starters = [
-		'What projects are you currently working on?',
-		'Draw me a portrait of Jacob!',
-		'What is your favorite programming language?',
-		'Why you ignore me?'
-	];
+	const starters = config.personal.starters;
 
-	const titles = [
-		'am a Passionate Developer',
-		'am a Curious Lifelong Learner',
-		'am a Maintainer of packages on NPM, PyPI, and crates.io',
-		'am a Researcher of AI and Human-Computer Interaction',
-		'am a 4th Year CS Student at NTNU',
-		'am a GDG on Campus Lead',
-		'like milk tea',
-		"don't like coffee",
-		'like to play Taiko no Tatsujin, but not good at it :P'
-	];
-	titles.sort(() => Math.random() - 0.5);
+	const titles = [...config.personal.titles].sort(() => Math.random() - 0.5);
 </script>
 
 <Head />
@@ -129,7 +115,7 @@
 <main class="relative z-10 flex h-screen items-center justify-center bg-black p-8 text-white">
 	<section class="w-full max-w-prose">
 		<h1 class="mb-4 font-bold transition-all" class:text-6xl={!started} class:text-2xl={started}>
-			Jacob Lin
+			{config.personal.name}
 		</h1>
 		<p class="mb-8 transition-all" class:text-xl={!started} class:text-base={started}>
 			I <TypingTexts texts={titles} speedIn={80} speedOut={40} />

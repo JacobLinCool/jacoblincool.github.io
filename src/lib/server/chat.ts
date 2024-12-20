@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/private';
+import { config } from '$lib/config';
 import { openai } from '$lib/server/api';
 import type {
 	ChatCompletionCreateParamsNonStreaming,
@@ -6,41 +7,17 @@ import type {
 	ChatCompletionTool,
 	ChatCompletionToolMessageParam
 } from 'openai/resources/index.mjs';
-import { getGitHubActivities } from './data/github';
-import { getHuggingfaceActivities } from './data/huggingface';
+import { extendConfig, type ServerConfig } from './config';
 import { draw } from './draw';
 import { createChatSystemPrompt } from './prompts/chat';
 
-async function getActivities(owner: Owner): Promise<Activity[]> {
-	const github = await getGitHubActivities(owner.usernames.github);
-	const huggingface = await getHuggingfaceActivities(owner.usernames.huggingface);
-	return [...github, ...huggingface].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-}
+const serverConfig = extendConfig(config);
 
-const owner: Owner = {
-	name: 'Jacob Lin',
-	timezone: 'Asia/Taipei',
-	usernames: {
-		github: 'JacobLinCool',
-		huggingface: 'JacobLinCool'
-	},
-	extraInformations: {
-		recentActivities: {
-			fetcher: getActivities
-		}
-	}
-};
-
-const assistant: Assistant = {
-	name: "Jacob's Secretary",
-	owner
-};
-
-async function fetchExtraInformation(assistant: Assistant, key: string) {
-	const info = assistant.owner.extraInformations[key];
+async function fetchExtraInformation(config: ServerConfig, key: string) {
+	const info = config.owner.extraInformations[key];
 	if (info && !info.fetched) {
 		try {
-			info.data = await info.fetcher(assistant.owner);
+			info.data = await info.fetcher(config.owner);
 			info.fetched = true;
 		} catch (error) {
 			info.error = String(error);
@@ -76,7 +53,7 @@ export async function* chatStream(
 		}
 	];
 
-	const unfetchedExtraInformationKeys = Object.entries(assistant.owner.extraInformations)
+	const unfetchedExtraInformationKeys = Object.entries(serverConfig.owner.extraInformations)
 		.filter(([key, info]) => !info.fetched)
 		.map(([key]) => key);
 	if (unfetchedExtraInformationKeys.length > 0) {
@@ -104,7 +81,7 @@ export async function* chatStream(
 		messages: [
 			{
 				role: 'system',
-				content: createChatSystemPrompt(assistant)
+				content: createChatSystemPrompt(serverConfig)
 			},
 			...conversations.map((m) => {
 				if ('tool_calls' in m) {
@@ -182,7 +159,7 @@ export async function* chatStream(
 			yield { type: 'tool', data: JSON.stringify({ name: functionName, args }) };
 
 			if (functionName === 'fetchExtraInformation') {
-				await fetchExtraInformation(assistant, args.key);
+				await fetchExtraInformation(serverConfig, args.key);
 			} else if (functionName === 'drawPicture') {
 				const description = args.description;
 
@@ -230,23 +207,9 @@ export async function* chatStream(
 	yield { type: 'done', data: null };
 }
 
-export interface Assistant {
-	owner: Owner;
-	name: string;
-}
-
-export interface Owner {
-	name: string;
-	timezone: string;
-	usernames: {
-		github: string;
-		huggingface: string;
-	};
-	extraInformations: Record<string, ExtraInformation>;
-}
-
+// Move these interfaces to a shared types file if needed by other components
 export interface ExtraInformation<T = any> {
-	fetcher: (owner: Owner) => Promise<T>;
+	fetcher: (owner: ServerConfig['owner']) => Promise<T>;
 	data?: T;
 	error?: string;
 	fetched?: boolean;
