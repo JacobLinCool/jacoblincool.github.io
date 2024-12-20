@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/private';
-import type { Activity } from '$lib/chat';
 import { Octokit } from '@octokit/rest';
+import type { Activity } from '../chat';
 
 export const octokit = new Octokit({
 	auth: env.GITHUB_TOKEN

@@ -1,5 +1,5 @@
-import { createAudio } from '$lib/audio';
-import { chatStream } from '$lib/chat';
+import { createAudio } from '$lib/server/audio';
+import { chatStream } from '$lib/server/chat';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request }) => {

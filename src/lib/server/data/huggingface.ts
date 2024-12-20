@@ -1,4 +1,4 @@
-import type { Activity } from '$lib/chat';
+import type { Activity } from '../chat';
 
 export async function getHuggingfaceActivities(user: string): Promise<Activity[]> {
 	const url = `https://huggingface.co/api/recent-activity?limit=20&activityType=all-without-repo-discussions&feedType=user&skip=0&entity=${user}`;

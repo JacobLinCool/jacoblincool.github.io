@@ -1,4 +1,4 @@
-import type { Assistant } from '$lib/chat';
+import type { Assistant } from '../chat';
 
 export function datestring(date: Date, timezone: string): string {
 	return date.toLocaleTimeString('en-US', {
