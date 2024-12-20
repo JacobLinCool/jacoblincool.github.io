@@ -3,6 +3,7 @@
 	import TypingTexts from '$lib/components/TypingTexts.svelte';
 	import Navigation from '$lib/components/Navigation.svelte';
 	import { askQuestion } from '$lib/chat-client';
+	import Head from '$lib/components/Head.svelte';
 
 	let conversations: {
 		role: 'assistant' | 'user';
@@ -118,6 +119,8 @@
 	];
 	titles.sort(() => Math.random() - 0.5);
 </script>
+
+<Head />
 
 {#if askComponent}
 	<Navigation ask={askComponent._ask} />
