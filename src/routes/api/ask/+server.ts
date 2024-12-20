@@ -1,8 +1,9 @@
+import { space } from '$lib/server/api';
 import { createAudio } from '$lib/server/audio';
 import { chatStream } from '$lib/server/chat';
 import type { RequestHandler } from './$types';
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, url }) => {
 	const { conversations } = await request.json();
 
 	const stream = new ReadableStream({
@@ -24,7 +25,15 @@ export const POST: RequestHandler = async ({ request }) => {
 						send('image', data);
 					} else if (type === 'done') {
 						try {
-							const audio = await createAudio(fullText);
+							const remoteURL = await createAudio(fullText);
+							const host = space.config?.root;
+							if (!host) {
+								throw new Error('Space host not found');
+							}
+							const audio = remoteURL.replace(
+								`${host}${space.api_prefix || ''}/file=/`,
+								`${url.origin}/api/audio/`
+							);
 							send('audio', audio);
 							await new Promise<void>((resolve) => setTimeout(resolve, 500));
 						} catch (error) {

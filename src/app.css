@@ -6,3 +6,11 @@ html,
 body {
 	@apply m-0 bg-black p-0;
 }
+
+.no-scroll::-webkit-scrollbar {
+	display: none;
+}
+.no-scroll {
+	-ms-overflow-style: none; /* IE and Edge */
+	scrollbar-width: none; /* Firefox */
+}

@@ -1,10 +1,5 @@
-import { env } from '$env/dynamic/private';
-import { Octokit } from '@octokit/rest';
+import { octokit } from '$lib/server/api';
 import type { Activity } from '../chat';
-
-export const octokit = new Octokit({
-	auth: env.GITHUB_TOKEN
-});
 
 export async function getGitHubActivities(user: string): Promise<Activity[]> {
 	const response = await octokit.activity.listPublicEventsForUser({

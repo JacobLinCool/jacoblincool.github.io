@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import { OpenAI } from 'openai';
+import { openai } from '$lib/server/api';
 import type {
 	ChatCompletionCreateParamsNonStreaming,
 	ChatCompletionMessage,
@@ -10,11 +10,6 @@ import { getGitHubActivities } from './data/github';
 import { getHuggingfaceActivities } from './data/huggingface';
 import { draw } from './draw';
 import { createChatSystemPrompt } from './prompts/chat';
-
-export const openai = new OpenAI({
-	baseURL: env.OPENAI_API_URL,
-	apiKey: env.OPENAI_API_KEY
-});
 
 async function getActivities(owner: Owner): Promise<Activity[]> {
 	const github = await getGitHubActivities(owner.usernames.github);
@@ -192,12 +187,13 @@ export async function* chatStream(
 				const description = args.description;
 
 				const messages = [
-					"I've ",
-					'drawn ',
+					'I ',
+					'am ',
+					'drawing ',
 					'a ',
 					'picture ',
 					'with ',
-					'[JacobLinCool/FLUXd-jacob-v0.1]',
+					'[FLUXd-jacob-v0.1]',
 					'(https://huggingface.co/JacobLinCool/FLUXd-jacob-v0.1) ',
 					'based ',
 					'on ',
@@ -209,7 +205,9 @@ export async function* chatStream(
 				for (const message of messages) {
 					yield { type: 'content', data: message };
 				}
-				yield { type: 'content', data: description };
+				for (const part of description.split(' ')) {
+					yield { type: 'content', data: part + ' ' };
+				}
 
 				const image = await draw(description);
 				yield { type: 'image', data: image };
