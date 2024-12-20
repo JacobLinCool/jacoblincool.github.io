@@ -63,8 +63,11 @@
 
 	function renderMarkdown(text: string) {
 		const renderer = new marked.Renderer();
-		renderer.link = ({ href, title, tokens }) => {
-			return `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+		const linkRenderer = renderer.link;
+		renderer.link = (token) => {
+			return linkRenderer
+				.call(renderer, token)
+				.replace(/^<a /, '<a target="_blank" rel="noopener noreferrer" ');
 		};
 		return marked(text, { renderer });
 	}
