@@ -1,4 +1,4 @@
-import { space } from '$lib/server/api';
+import { getSpace } from '$lib/server/api';
 import { createAudio } from '$lib/server/audio';
 import { chatStream } from '$lib/server/chat';
 import type { RequestHandler } from './$types';
@@ -13,6 +13,8 @@ export const POST: RequestHandler = async ({ request, url }) => {
 				controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
 			};
 
+			const _space = getSpace();
+
 			let fullText = '';
 			try {
 				for await (const { type, data } of chatStream(conversations)) {
@@ -26,6 +28,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
 					} else if (type === 'done') {
 						try {
 							const remoteURL = await createAudio(fullText);
+							const space = await _space;
 							const host = space.config?.root;
 							if (!host) {
 								throw new Error('Space host not found');
