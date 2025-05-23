@@ -1,8 +1,9 @@
-import { space } from '$lib/server/api';
+import { getSpace } from '$lib/server/api';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ params }) => {
 	const { path } = params;
+	const space = await getSpace();
 	const host = space.config?.root;
 	if (!host) {
 		throw new Error('Space host not found');

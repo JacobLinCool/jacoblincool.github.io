@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/private';
-import { Client } from '@gradio/client';
 import { Octokit } from '@octokit/rest';
+import { Client } from 'custom-gradio-client';
 import { OpenAI } from 'openai';
 
 export const openai = new OpenAI({
@@ -35,6 +35,13 @@ globalThis.Request = ((OriginalRequest) => {
 	};
 })(globalThis.Request);
 
-export const space = await Client.connect(env.HUGGINFACE_VC_SPACE, {
-	hf_token: env.HUGGINFACE_TOKEN as `hf_${string}`
-});
+let _space: Promise<Client> | null = null;
+export async function getSpace() {
+	if (_space) {
+		return _space;
+	}
+	_space = Client.connect(env.HUGGINFACE_VC_SPACE, {
+		hf_token: env.HUGGINFACE_TOKEN as `hf_${string}`
+	});
+	return _space;
+}

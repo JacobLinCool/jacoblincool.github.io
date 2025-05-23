@@ -1,4 +1,4 @@
-import { openai, space } from '$lib/server/api';
+import { getSpace, openai } from '$lib/server/api';
 
 function cleanMarkdown(text: string) {
 	// Remove markdown links.
@@ -15,6 +15,8 @@ export async function createAudio(text: string): Promise<string> {
 		throw new Error(`Text is too long: ${text.length} characters`);
 	}
 
+	const _space = getSpace();
+
 	const res = await openai.audio.speech.create({
 		model: 'tts-1',
 		voice: 'echo',
@@ -28,6 +30,7 @@ export async function createAudio(text: string): Promise<string> {
 	const blob = await res.blob();
 	const audio = new Blob([await blob.arrayBuffer()], { type: 'audio/mpeg' });
 
+	const space = await _space;
 	const result = await space.predict('/rvc', {
 		audio
 	});
