@@ -10,6 +10,8 @@
 		role: 'assistant' | 'user';
 		text: string;
 		image?: string;
+		audio?: string;
+		audioLoading?: boolean;
 	}[] = $state([]);
 
 	let askComponent: Ask | null = $state(null);
@@ -52,7 +54,7 @@
 		conversations = [
 			...conversations,
 			{ role: 'user', text: question },
-			{ role: 'assistant', text: '' }
+			{ role: 'assistant', text: '', audioLoading: false }
 		];
 
 		try {
@@ -81,9 +83,17 @@
 						i === conversations.length - 1 ? { ...conv, image: imageUrl } : conv
 					);
 				},
+				done() {
+					conversations = conversations.map((conv, i) =>
+						i === conversations.length - 1 ? { ...conv, audioLoading: true } : conv
+					);
+				},
 				audio(audioUrl) {
-					const audio = new Audio(audioUrl);
-					audio.play();
+					conversations = conversations.map((conv, i) =>
+						i === conversations.length - 1
+							? { ...conv, audio: audioUrl, audioLoading: false }
+							: conv
+					);
 				}
 			});
 			await updateQueue.wait();
