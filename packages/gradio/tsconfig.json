@@ -1,0 +1,8 @@
+{
+	"compilerOptions": {
+		"lib": ["ESNext"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"customConditions": ["gradio"]
+	}
+}

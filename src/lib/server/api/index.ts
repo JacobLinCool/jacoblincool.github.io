@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/private';
-import { Client } from '@gradio/client';
 import { Octokit } from '@octokit/rest';
+import { Client } from 'custom-gradio-client';
 import { OpenAI } from 'openai';
 
 export const openai = new OpenAI({

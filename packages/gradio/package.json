@@ -1,0 +1,20 @@
+{
+	"private": true,
+	"name": "custom-gradio-client",
+	"version": "0.1.0",
+	"description": "",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"type": "module",
+	"scripts": {
+		"build": "tsup"
+	},
+	"keywords": [],
+	"author": "JacobLinCool <jacoblincool@gmail.com> (https://github.com/JacobLinCool)",
+	"license": "MIT",
+	"devDependencies": {
+		"@gradio/client": "^1.15.0",
+		"tsup": "^8.5.0",
+		"typescript": "^5.0.0"
+	}
+}
