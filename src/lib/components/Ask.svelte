@@ -14,6 +14,8 @@
 			role: 'assistant' | 'user';
 			text: string;
 			image?: string;
+			audio?: string;
+			audioLoading?: boolean;
 		}[];
 	} = $props();
 
@@ -61,6 +63,11 @@
 		}
 	}
 
+	function playAudio(url: string) {
+		const audio = new Audio(url);
+		audio.play();
+	}
+
 	function renderMarkdown(text: string) {
 		const renderer = new marked.Renderer();
 		const linkRenderer = renderer.link;
@@ -89,24 +96,65 @@
 		>
 			{#each conversations as conversation}
 				<div
-					class="mb-2 max-w-[90%] rounded-lg border border-gray-700 bg-gray-800 bg-opacity-50 p-2 {conversation.role ===
-					'assistant'
-						? 'self-start text-left'
-						: 'self-end text-right'}"
+					class="mb-2 flex max-w-[90%] flex-col {conversation.role === 'assistant'
+						? 'items-start self-start text-left'
+						: 'items-end self-end text-right'}"
 				>
-					<!-- <p class="font-bold">{conversation.role === 'assistant' ? name : 'You'}</p> -->
-					<p class="prose prose-invert" class:animate-pulse={isStreaming(conversation)}>
-						{#if conversation.text.length === 0}
-							<span class="text-gray-400">
-								.<TypingTexts texts={['....']} speedIn={1000} speedOut={100} gap={1000} />
-							</span>
-						{:else}
-							{@html renderMarkdown(conversation.text)}
+					<div class="w-full rounded-lg border border-gray-700 bg-gray-800 bg-opacity-50 p-2">
+						<!-- <p class="font-bold">{conversation.role === 'assistant' ? name : 'You'}</p> -->
+						<p class="prose prose-invert" class:animate-pulse={isStreaming(conversation)}>
+							{#if conversation.text.length === 0}
+								<span class="text-gray-400">
+									.<TypingTexts texts={['....']} speedIn={1000} speedOut={100} gap={1000} />
+								</span>
+							{:else}
+								{@html renderMarkdown(conversation.text)}
+							{/if}
+						</p>
+						<!-- Render markdown content -->
+						{#if conversation.image}
+							<img src={conversation.image} alt="Response" class="mt-2 rounded-lg" />
 						{/if}
-					</p>
-					<!-- Render markdown content -->
-					{#if conversation.image}
-						<img src={conversation.image} alt="Response" class="mt-2 rounded-lg" />
+					</div>
+					{#if conversation.audioLoading}
+						<button disabled class="mt-1 flex items-center text-gray-400">
+							<svg
+								class="mr-1 h-4 w-4 animate-spin"
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+							>
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								/>
+								<path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+								/>
+							</svg>
+							Generating audio...
+						</button>
+					{:else if conversation.audio}
+						<button
+							class="mt-1 text-gray-400 hover:text-white"
+							onclick={() => playAudio(conversation.audio!)}
+							aria-label="Play audio"
+						>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M9 19V6l-2 2H5v8h2l2 2zM13 5l7 7-7 7V5z"
+								/>
+							</svg>
+						</button>
 					{/if}
 				</div>
 			{/each}
