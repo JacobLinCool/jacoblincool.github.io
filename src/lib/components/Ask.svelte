@@ -14,6 +14,8 @@
 			role: 'assistant' | 'user';
 			text: string;
 			image?: string;
+			audio?: string;
+			audioLoading?: boolean;
 		}[];
 	} = $props();
 
@@ -59,6 +61,11 @@
 				behavior: 'smooth'
 			});
 		}
+	}
+
+	function playAudio(url: string) {
+		const audio = new Audio(url);
+		audio.play();
 	}
 
 	function renderMarkdown(text: string) {
@@ -107,6 +114,41 @@
 					<!-- Render markdown content -->
 					{#if conversation.image}
 						<img src={conversation.image} alt="Response" class="mt-2 rounded-lg" />
+					{/if}
+					{#if conversation.audioLoading}
+						<button disabled class="mt-2 flex items-center text-gray-400">
+							<svg class="mr-1 h-4 w-4 animate-spin" viewBox="0 0 24 24">
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+									fill="none"
+								/>
+								<path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8v4l3-3-3-3v4a12 12 0 00-12 12h4z"
+								/>
+							</svg>
+							Generating audio...
+						</button>
+					{:else if conversation.audio}
+						<button
+							class="mt-2 text-gray-400 hover:text-white"
+							onclick={() => playAudio(conversation.audio!)}
+						>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M9 19V6l-2 2H5v8h2l2 2zM13 5l7 7-7 7V5z"
+								/>
+							</svg>
+						</button>
 					{/if}
 				</div>
 			{/each}
