@@ -26,6 +26,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
 					} else if (type === 'image') {
 						send('image', data);
 					} else if (type === 'done') {
+						send('content-end', null);
 						try {
 							const remoteURL = await createAudio(fullText);
 							const space = await _space;

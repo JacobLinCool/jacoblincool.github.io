@@ -14,6 +14,7 @@ export type ChatEventHandlers = {
 	tool?: (tool: string) => void;
 	image?: (imageUrl: string) => void;
 	audio?: (audioUrl: string) => void;
+	contentEnd?: () => void;
 	done?: () => void;
 	error?: (error: string) => void;
 };
@@ -95,6 +96,10 @@ export async function askQuestion(
 					case 'audio': {
 						result.audio = data;
 						handlers.audio?.(data);
+						break;
+					}
+					case 'content-end': {
+						handlers.contentEnd?.();
 						break;
 					}
 					case 'done': {
