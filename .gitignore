@@ -25,5 +25,7 @@ vite.config.ts.timestamp-*
 
 *storybook.log
 
+.svelte-kit
+
 .playwright-cli
 output/playwright

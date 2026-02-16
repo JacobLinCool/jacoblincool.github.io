@@ -5,14 +5,9 @@
     import PromptChips from '$lib/components/chat/PromptChips.svelte';
     import TypingTagline from '$lib/components/chat/TypingTagline.svelte';
     import { chatStore } from '$lib/stores/chat.svelte';
+    import { siteConfig } from '$lib/config/site';
 
-    const idleTaglines = [
-        'I am a Passionate Developer',
-        'I am a Curious Learner',
-        'I am a Researcher of AI and Human-Computer Interaction',
-        'I am a 1st Year Graduate Student at NYCU',
-        'I am a ex-GDG on Campus Lead'
-    ];
+    const idleTaglines = siteConfig.chat.taglines;
 
     const handleChipSelect = async (prompt: string) => {
         await chatStore.submitChipPrompt(prompt);
@@ -69,7 +64,7 @@
         {#if isIdle}
             <div class="space-y-2 text-zinc-100">
                 <p
-                    class="flex min-h-8 items-center gap-2 text-lg font-medium tracking-tight text-zinc-200 sm:text-xl"
+                    class="flex min-h-8 items-center gap-2 text-base font-medium tracking-tight text-zinc-200 sm:text-xl"
                 >
                     <Sparkles size={16} strokeWidth={1.9} class="text-sky-300" />
                     <TypingTagline
@@ -77,12 +72,11 @@
                         typingMs={45}
                         deletingMs={30}
                         holdMs={1200}
-                        startDelayMs={280}
                         loop={true}
                     />
                 </p>
                 <h1
-                    class="text-3xl leading-tight font-medium tracking-tight text-zinc-50 sm:text-[3rem] sm:leading-[1.08]"
+                    class="text-xl leading-tight font-medium tracking-tight text-zinc-50 sm:text-5xl sm:leading-[1.08]"
                 >
                     What do you want to talk about?
                 </h1>

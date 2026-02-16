@@ -1,5 +1,6 @@
 <script lang="ts">
     import { SendHorizontal } from '@lucide/svelte';
+    import { siteConfig } from '$lib/config/site';
 
     let {
         value,
@@ -46,7 +47,7 @@
 <div
     class="rounded-[1.7rem] border border-white/9 bg-zinc-950/78 p-3.5 shadow-[0_14px_32px_rgb(0_0_0/28%)] backdrop-blur-xl sm:p-4"
 >
-    <label class="sr-only" for="chat-composer">Message Jacob</label>
+    <label class="sr-only" for="chat-composer">Message {siteConfig.identity.shortName}</label>
     <textarea
         id="chat-composer"
         rows={2}

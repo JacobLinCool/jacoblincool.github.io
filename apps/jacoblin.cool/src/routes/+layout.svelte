@@ -3,6 +3,7 @@
     import Sidebar from '$lib/components/app/Sidebar.svelte';
     import Notifications from '$lib/components/app/Notifications.svelte';
     import LoginModal from '$lib/components/auth/LoginModal.svelte';
+    import ProfileModal from '$lib/components/app/ProfileModal.svelte';
     import NeuralBackground from '$lib/components/visual/NeuralBackground.svelte';
     import { chatStore } from '$lib/stores/chat.svelte';
     import { uiStore } from '$lib/stores/ui.svelte';
@@ -84,5 +85,6 @@
     </div>
 
     <LoginModal />
+    <ProfileModal />
     <Notifications />
 </div>

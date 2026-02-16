@@ -1,6 +1,7 @@
 <script lang="ts">
     import { browser } from '$app/environment';
     import { onDestroy, onMount } from 'svelte';
+    import { siteConfig } from '$lib/config/site';
 
     type TypingPhase = 'typing' | 'holding' | 'deleting';
 
@@ -9,20 +10,18 @@
         typingMs = 45,
         deletingMs = 30,
         holdMs = 1200,
-        startDelayMs = 280,
         loop = true
     }: {
         phrases: string[];
         typingMs?: number;
         deletingMs?: number;
         holdMs?: number;
-        startDelayMs?: number;
         loop?: boolean;
     } = $props();
 
     let activeIndex = $state(0);
-    let displayText = $state('');
-    let phase = $state<TypingPhase>('typing');
+    let displayText = $derived(phrases[0] ?? '');
+    let phase = $state<TypingPhase>('holding');
     let isReducedMotion = $state(false);
 
     let timerId: ReturnType<typeof setTimeout> | null = null;
@@ -52,23 +51,20 @@
 
     const resetCycle = () => {
         activeIndex = 0;
-        displayText = '';
-        phase = 'typing';
+        displayText = phrases[0] ?? '';
+        phase = 'holding';
     };
 
-    const moveToNextPhrase = () => {
-        if (phrases.length === 0) {
-            return;
-        }
+    const commonPrefixLength = (a: string, b: string): number => {
+        let i = 0;
+        while (i < a.length && i < b.length && a[i] === b[i]) i++;
+        return i;
+    };
 
-        if (activeIndex < phrases.length - 1) {
-            activeIndex += 1;
-            return;
-        }
-
-        if (loop) {
-            activeIndex = 0;
-        }
+    const peekNextIndex = (): number => {
+        if (activeIndex < phrases.length - 1) return activeIndex + 1;
+        if (loop) return 0;
+        return activeIndex;
     };
 
     const tickTyping = () => {
@@ -98,25 +94,27 @@
         }
 
         if (phase === 'holding') {
+            const reachedLastPhrase = activeIndex >= phrases.length - 1;
+            if (reachedLastPhrase && !loop) {
+                return;
+            }
+
             phase = 'deleting';
             scheduleStep(deletingMs);
             return;
         }
 
-        if (displayText.length > 0) {
+        const nextIndex = peekNextIndex();
+        const nextPhrase = phrases[nextIndex] ?? '';
+        const prefixLen = commonPrefixLength(currentPhrase, nextPhrase);
+
+        if (displayText.length > prefixLen) {
             displayText = displayText.slice(0, -1);
             scheduleStep(deletingMs);
             return;
         }
 
-        const reachedLastPhrase = activeIndex >= phrases.length - 1;
-        if (reachedLastPhrase && !loop) {
-            phase = 'holding';
-            displayText = currentPhrase;
-            return;
-        }
-
-        moveToNextPhrase();
+        activeIndex = nextIndex;
         phase = 'typing';
         scheduleStep(typingMs);
     };
@@ -138,7 +136,7 @@
         }
 
         resetCycle();
-        scheduleStep(startDelayMs);
+        scheduleStep(holdMs);
     };
 
     onMount(() => {
@@ -178,7 +176,7 @@
         >|</span
     >
 </span>
-<span class="sr-only">{firstPhrase || 'Jacob introduction'}</span>
+<span class="sr-only">{firstPhrase || `${siteConfig.identity.shortName} introduction`}</span>
 
 <style>
     .typing-tagline {

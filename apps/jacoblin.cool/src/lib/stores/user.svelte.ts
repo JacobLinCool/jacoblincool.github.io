@@ -19,8 +19,7 @@ export type UserProfile = {
     email?: string | null;
     displayName?: string | null;
     photoURL?: string | null;
-    role?: string | null;
-    bio?: string | null;
+    badges?: string[];
     createdAt?: string | null;
 };
 

@@ -5,6 +5,7 @@ export type UiState = {
     isSidebarOpenMobile: boolean;
     isUserMenuOpen: boolean;
     isLoginModalOpen: boolean;
+    isProfileModalOpen: boolean;
     accountMenuPresentation: 'popover' | 'sheet';
 };
 
@@ -15,6 +16,7 @@ class UiStore {
         isSidebarOpenMobile: false,
         isUserMenuOpen: false,
         isLoginModalOpen: false,
+        isProfileModalOpen: false,
         accountMenuPresentation: 'popover'
     });
 
@@ -83,6 +85,14 @@ class UiStore {
 
     closeLoginModal() {
         this.state.isLoginModalOpen = false;
+    }
+
+    openProfileModal() {
+        this.state.isProfileModalOpen = true;
+    }
+
+    closeProfileModal() {
+        this.state.isProfileModalOpen = false;
     }
 
     closeTransientUi() {
