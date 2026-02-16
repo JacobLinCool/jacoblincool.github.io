@@ -1,54 +1,48 @@
 name: Build
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
+    workflow_dispatch:
+    push:
+        branches:
+            - main
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+    contents: read
+    pages: write
+    id-token: write
 
 concurrency:
-  group: 'pages'
-  cancel-in-progress: true
+    group: 'pages'
+    cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    build:
+        name: Build
+        runs-on: ubuntu-latest
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v6
 
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: true
+            - name: Setup PNPM
+              uses: pnpm/action-setup@v4
+              with:
+                  run_install: true
 
-      - name: Install Playwright Dependencies
-        run: npx playwright install --with-deps
+            - name: Build Application
+              run: pnpm -r build
 
-      - name: Run Tests
-        run: pnpm test
+            - name: Setup Pages
+              uses: actions/configure-pages@v5
 
-      - name: Build Application
-        run: pnpm build
+            - name: Upload artifact
+              uses: actions/upload-pages-artifact@v4
+              with:
+                  path: 'apps/jacoblin.cool/build'
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: 'build'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v4

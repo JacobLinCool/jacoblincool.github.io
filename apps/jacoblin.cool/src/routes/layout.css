@@ -1,0 +1,144 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@plugin 'daisyui' {
+    themes:
+        dim --default,
+        dim --prefersdark;
+}
+
+:root {
+    font-family:
+        'Space Grotesk',
+        'Noto Sans TC',
+        'SF Pro Display',
+        'Segoe UI',
+        -apple-system,
+        sans-serif;
+    color-scheme: dark;
+    --surface-1: rgb(11 13 20 / 84%);
+    --surface-2: rgb(16 20 31 / 76%);
+    --border-subtle: rgb(255 255 255 / 10%);
+    --text-primary: rgb(246 249 255 / 96%);
+    --text-secondary: rgb(174 186 204 / 88%);
+    --focus-ring: rgb(125 236 255 / 92%);
+    --composer-mobile-space: 12.5rem;
+    --ui-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --ui-speed-fast: 160ms;
+    --ui-speed-base: 220ms;
+}
+
+html,
+body {
+    min-height: 100%;
+    background: #010204;
+}
+
+body {
+    margin: 0;
+    color: var(--text-primary);
+    text-rendering: optimizelegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+}
+
+canvas {
+    display: block;
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(125 150 172 / 45%) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: rgb(125 150 172 / 40%);
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 8%);
+}
+
+.app-shell {
+    isolation: isolate;
+    position: relative;
+    min-height: 100dvh;
+}
+
+.skip-link {
+    position: absolute;
+    left: 1rem;
+    top: 0.5rem;
+    z-index: 80;
+    transform: translateY(-160%);
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-subtle);
+    background: rgb(8 12 20 / 95%);
+    color: var(--text-primary);
+    transition: transform var(--ui-speed-fast) var(--ui-ease);
+}
+
+.skip-link:focus-visible {
+    transform: translateY(0);
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+.app-main,
+.app-content {
+    transition:
+        padding var(--ui-speed-base) var(--ui-ease),
+        margin var(--ui-speed-base) var(--ui-ease);
+}
+
+.app-main-active {
+    padding-bottom: 0;
+    overflow-y: hidden;
+}
+
+button,
+a,
+textarea,
+[role='menuitem'] {
+    transition:
+        color var(--ui-speed-fast) var(--ui-ease),
+        background-color var(--ui-speed-fast) var(--ui-ease),
+        border-color var(--ui-speed-fast) var(--ui-ease),
+        opacity var(--ui-speed-fast) var(--ui-ease),
+        transform var(--ui-speed-fast) var(--ui-ease);
+}
+
+button:focus-visible,
+a:focus-visible,
+textarea:focus-visible,
+[role='menuitem']:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+@media (min-width: 640px) {
+    .app-main-active {
+        padding-bottom: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
