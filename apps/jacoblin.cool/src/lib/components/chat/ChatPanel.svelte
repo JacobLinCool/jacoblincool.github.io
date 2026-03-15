@@ -5,9 +5,6 @@
     import PromptChips from '$lib/components/chat/PromptChips.svelte';
     import TypingTagline from '$lib/components/chat/TypingTagline.svelte';
     import { chatStore } from '$lib/stores/chat.svelte';
-    import { siteConfig } from '$lib/config/site';
-
-    const idleTaglines = siteConfig.chat.taglines;
 
     const handleChipSelect = async (prompt: string) => {
         await chatStore.submitChipPrompt(prompt);
@@ -20,6 +17,9 @@
     const isIdle = $derived(chatStore.state.conversationStage === 'idle');
     const isInteractive = $derived(
         chatStore.state.isStreaming || chatStore.state.backgroundEventType !== 'idle'
+    );
+    const idleTaglines = $derived(
+        chatStore.state.taglines.length > 0 ? chatStore.state.taglines : ['I am Jacob']
     );
     let composerDockRef: HTMLDivElement | null = null;
     let composerDockHeight = $state(0);
@@ -47,7 +47,7 @@
 </script>
 
 <section
-    class={`chat-panel mx-auto w-full max-w-3xl px-1 sm:px-2 ${isIdle ? '' : 'h-full min-h-0'}`}
+    class={`chat-panel mx-auto w-full max-w-5xl px-1 sm:px-2 ${isIdle ? '' : 'h-full min-h-0'}`}
 >
     <div
         aria-hidden="true"
@@ -86,11 +86,12 @@
         {#if !isIdle}
             <MessageList
                 messages={chatStore.state.messages}
+                progressEvents={chatStore.state.progressEvents}
                 audioState={chatStore.state.audio}
                 onCopy={(messageId) => void chatStore.copyMessage(messageId)}
                 onToggleAudio={(messageId) => chatStore.toggleAudio(messageId)}
                 layoutMode="conversation"
-                bottomInset={composerDockHeight + 16}
+                bottomInset={composerDockHeight + 16 + 12}
             />
         {/if}
 

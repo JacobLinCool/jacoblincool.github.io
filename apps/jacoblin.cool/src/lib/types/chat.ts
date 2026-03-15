@@ -20,3 +20,54 @@ export type AudioUiState = {
 };
 
 export type ConversationStage = 'idle' | 'active';
+
+export type ChatProgressEvent = {
+    id: string;
+    type: 'status' | 'tool_call' | 'tool_result' | 'error';
+    text: string;
+    createdAt: number;
+};
+
+export type ChatSseStatusEvent = {
+    type: 'status';
+    status: 'collecting_context' | 'generating_answer' | 'completed';
+    conversationId: string;
+};
+
+export type ChatSseToolCallEvent = {
+    type: 'tool_call';
+    tool: 'github' | 'huggingface';
+    entityKey: string;
+};
+
+export type ChatSseToolResultEvent = {
+    type: 'tool_result';
+    tool: 'github' | 'huggingface';
+    entityKey: string;
+    result: 'success' | 'failed';
+    revision?: string;
+    error?: string;
+};
+
+export type ChatSseAnswerDeltaEvent = {
+    type: 'answer_delta';
+    delta: string;
+};
+
+export type ChatSseDoneEvent = {
+    type: 'done';
+    conversationId: string;
+};
+
+export type ChatSseErrorEvent = {
+    type: 'error';
+    message: string;
+};
+
+export type ChatSseEvent =
+    | ChatSseStatusEvent
+    | ChatSseToolCallEvent
+    | ChatSseToolResultEvent
+    | ChatSseAnswerDeltaEvent
+    | ChatSseDoneEvent
+    | ChatSseErrorEvent;

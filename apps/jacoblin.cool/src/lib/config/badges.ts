@@ -5,8 +5,8 @@ export type BadgeDefinition = {
 };
 
 export const BADGE_REGISTRY: Record<string, BadgeDefinition> = {
-    friend: { label: '認識的人', description: 'Someone I know personally', icon: '👋' },
-    college: { label: '大學同學', description: 'College classmate', icon: '🎓' },
-    coworker: { label: '同事', description: 'Worked together', icon: '💼' },
-    community: { label: '社群夥伴', description: 'Met through developer community', icon: '🌐' }
+    friend: { label: 'Friend', description: 'Someone I know personally', icon: '👋' },
+    college: { label: 'College Classmate', description: 'College classmate', icon: '🎓' },
+    coworker: { label: 'Coworker', description: 'Worked together', icon: '💼' },
+    community: { label: 'Community Partner', description: 'Met through developer community', icon: '🌐' }
 };

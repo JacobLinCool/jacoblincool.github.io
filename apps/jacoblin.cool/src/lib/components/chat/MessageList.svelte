@@ -1,9 +1,10 @@
 <script lang="ts">
     import MessageItem from '$lib/components/chat/MessageItem.svelte';
-    import type { AudioUiState, ChatMessage } from '$lib/types/chat';
+    import type { AudioUiState, ChatMessage, ChatProgressEvent } from '$lib/types/chat';
 
     let {
         messages,
+        progressEvents = [],
         audioState,
         onCopy,
         onToggleAudio,
@@ -11,6 +12,7 @@
         bottomInset = 0
     }: {
         messages: ChatMessage[];
+        progressEvents?: ChatProgressEvent[];
         audioState: AudioUiState;
         onCopy: (messageId: string) => void;
         onToggleAudio: (messageId: string) => void;
@@ -53,6 +55,19 @@
     }`}
 >
     <ul class="space-y-3">
+        {#if progressEvents.length > 0}
+            <li>
+                <div class="rounded-2xl border border-white/10 bg-zinc-900/60 p-3 text-xs text-zinc-300">
+                    <p class="mb-2 tracking-[0.15em] text-zinc-400 uppercase">Context status</p>
+                    <ul class="space-y-1.5">
+                        {#each progressEvents as event (event.id)}
+                            <li class="leading-relaxed">{event.text}</li>
+                        {/each}
+                    </ul>
+                </div>
+            </li>
+        {/if}
+
         {#each messages as message (message.id)}
             <MessageItem {message} {audioState} {onCopy} {onToggleAudio} />
         {/each}

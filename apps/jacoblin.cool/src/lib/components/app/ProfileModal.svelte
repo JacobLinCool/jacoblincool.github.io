@@ -140,7 +140,7 @@
                 <div class="mt-5 border-t border-white/10 pt-4">
                     <p class="mb-2 text-xs tracking-wide text-zinc-500 uppercase">Badges</p>
                     <div class="flex flex-wrap gap-2">
-                        {#each resolvedBadges as badge}
+                        {#each resolvedBadges as badge (badge.slug)}
                             <span
                                 class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-zinc-300"
                                 title={badge.description}

@@ -7,6 +7,7 @@
         "dev": "firebase emulators:exec 'vite dev'",
         "build": "vite build",
         "preview": "vite preview",
+        "seed:content": "node ./scripts/seed-content.mjs",
         "prepare": "svelte-kit sync || echo ''",
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
         "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -17,7 +18,6 @@
         "@eslint/js": "^10.0.1",
         "@inlang/paraglide-js": "^2.12.0",
         "@lucide/svelte": "^0.564.0",
-        "@sveltejs/adapter-auto": "^7.0.1",
         "@sveltejs/kit": "^2.52.0",
         "@sveltejs/vite-plugin-svelte": "^6.2.4",
         "@tailwindcss/typography": "^0.5.19",
@@ -43,5 +43,10 @@
         "vite": "^7.3.1",
         "vite-plugin-devtools-json": "^1.0.0",
         "zod": "^4.3.6"
+    },
+    "dependencies": {
+        "@sveltejs/adapter-cloudflare": "^7.2.8",
+        "fires2rest": "^0.3.0",
+        "jose": "^6.1.3"
     }
 }

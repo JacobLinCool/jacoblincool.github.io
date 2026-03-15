@@ -67,7 +67,7 @@
                 id="main-content"
                 class={`app-main min-h-0 flex-1 ${
                     chatStore.state.conversationStage === 'active'
-                        ? 'app-main-active overflow-y-hidden'
+                        ? 'app-main-active overflow-y-auto'
                         : 'overflow-y-auto'
                 }`}
             >

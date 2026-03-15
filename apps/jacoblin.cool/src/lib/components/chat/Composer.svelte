@@ -63,7 +63,8 @@
 
     <div class="mt-2 flex items-center justify-between gap-3 border-t border-white/8 pt-2.5">
         <div class="inline-flex items-center gap-2 text-xs text-zinc-500">
-            <p>Enter to send, Shift+Enter for newline</p>
+            <p class="sm:hidden">Enter to send</p>
+            <p class="max-sm:hidden">Enter to send, Shift+Enter for newline</p>
         </div>
 
         <button

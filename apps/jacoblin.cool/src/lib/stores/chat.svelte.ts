@@ -1,12 +1,15 @@
 import { browser } from '$app/environment';
 import { createAudioStub } from '$lib/services/audio-stub';
-import { DEFAULT_PROMPT_CHIPS, streamAssistantReply } from '$lib/services/chat-stub';
+import { streamChat } from '$lib/services/chat-api';
 import { notificationStore } from '$lib/stores/notification.svelte';
 import type { BackgroundEventType } from '$lib/types/background';
+import type { ChatContentConfig } from '$lib/types/home';
 import type {
     AudioUiState,
     ChatMessage,
+    ChatProgressEvent,
     ChatRole,
+    ChatSseEvent,
     ConversationStage,
     PromptChip
 } from '$lib/types/chat';
@@ -15,10 +18,12 @@ const BASE_BACKGROUND_NODE_COUNT = 200;
 const TYPING_ACTIVATION_RATIO = 1 / BASE_BACKGROUND_NODE_COUNT;
 const SUBMIT_ACTIVATION_RATIO = 0.05;
 const STREAM_ACTIVATION_RATIO = 0.02;
+const ACTIVE_CONVERSATION_STORAGE_KEY = 'chat.activeConversationId';
 
 type ChatState = {
     messages: ChatMessage[];
     promptChips: PromptChip[];
+    taglines: string[];
     composer: string;
     isStreaming: boolean;
     conversationStage: ConversationStage;
@@ -29,13 +34,16 @@ type ChatState = {
     backgroundEventType: BackgroundEventType;
     backgroundEventStrength: number;
     audio: AudioUiState;
+    progressEvents: ChatProgressEvent[];
+    activeConversationId: string | null;
 };
 
 class ChatStore {
     static instance: ChatStore | null = null;
     state = $state<ChatState>({
         messages: [],
-        promptChips: DEFAULT_PROMPT_CHIPS,
+        promptChips: [],
+        taglines: [],
         composer: '',
         isStreaming: false,
         conversationStage: 'idle',
@@ -45,7 +53,9 @@ class ChatStore {
         backgroundEventId: 0,
         backgroundEventType: 'idle',
         backgroundEventStrength: 0,
-        audio: { state: 'idle', messageId: null }
+        audio: { state: 'idle', messageId: null },
+        progressEvents: [],
+        activeConversationId: null
     });
 
     private readonly audioController = createAudioStub((nextState) => {
@@ -54,9 +64,21 @@ class ChatStore {
 
     private submitPulseTimeout: ReturnType<typeof setTimeout> | null = null;
 
+    private constructor() {
+        if (browser) {
+            this.state.activeConversationId =
+                window.localStorage.getItem(ACTIVE_CONVERSATION_STORAGE_KEY) ?? null;
+        }
+    }
+
     static getInstance() {
         ChatStore.instance ??= new ChatStore();
         return ChatStore.instance;
+    }
+
+    hydrateChatConfig(config: ChatContentConfig) {
+        this.state.promptChips = config.promptChips;
+        this.state.taglines = config.taglines;
     }
 
     setComposer(value: string) {
@@ -91,6 +113,7 @@ class ChatStore {
         }
 
         this.pushMessage('user', prompt, 'done');
+        this.state.progressEvents = [];
         this.state.composer = '';
         this.state.typingStrength = 0;
         this.audioController.stop();
@@ -101,21 +124,26 @@ class ChatStore {
         this.state.isStreaming = true;
 
         try {
-            for await (const chunk of streamAssistantReply(prompt)) {
-                this.patchMessage(assistantId, (message) => {
-                    message.content += chunk;
-                });
-                this.state.interactionTick += 1;
-                this.emitBackgroundEvent('stream', STREAM_ACTIVATION_RATIO);
-            }
+            await streamChat({
+                message: prompt,
+                conversationId: this.state.activeConversationId,
+                locale: this.resolveLocale(),
+                onEvent: (event) => {
+                    this.handleSseEvent(event, assistantId);
+                }
+            });
+
             this.patchMessage(assistantId, (message) => {
                 message.status = 'done';
             });
         } catch (error) {
             this.patchMessage(assistantId, (message) => {
-                message.content = 'I hit a temporary issue while thinking. Please try again.';
+                message.content =
+                    message.content.trim() ||
+                    'I hit a temporary issue while collecting verified context. Please try again.';
                 message.status = 'done';
             });
+            this.pushProgress('error', error instanceof Error ? error.message : 'Unable to stream response.');
             notificationStore.error(
                 error instanceof Error ? error.message : 'Unable to stream response.'
             );
@@ -150,6 +178,92 @@ class ChatStore {
         }
 
         this.audioController.toggle(messageId);
+    }
+
+    private handleSseEvent(event: ChatSseEvent, assistantId: string) {
+        switch (event.type) {
+            case 'status': {
+                if (event.conversationId) {
+                    this.setActiveConversationId(event.conversationId);
+                }
+
+                if (event.status === 'collecting_context') {
+                    this.pushProgress('status', 'Collecting context...');
+                }
+
+                if (event.status === 'generating_answer') {
+                    this.pushProgress('status', 'Generating response...');
+                }
+
+                break;
+            }
+            case 'tool_call': {
+                const source = event.tool === 'github' ? 'GitHub' : 'Hugging Face';
+                this.pushProgress('tool_call', `Querying ${source}: ${event.entityKey}`);
+                break;
+            }
+            case 'tool_result': {
+                const source = event.tool === 'github' ? 'GitHub' : 'Hugging Face';
+                const label =
+                    event.result === 'success'
+                        ? `Synced ${source}: ${event.entityKey}`
+                        : `Failed ${source}: ${event.entityKey}`;
+                this.pushProgress('tool_result', label);
+                break;
+            }
+            case 'answer_delta': {
+                this.patchMessage(assistantId, (message) => {
+                    message.content += event.delta;
+                });
+                this.state.interactionTick += 1;
+                this.emitBackgroundEvent('stream', STREAM_ACTIVATION_RATIO);
+                break;
+            }
+            case 'done': {
+                if (event.conversationId) {
+                    this.setActiveConversationId(event.conversationId);
+                }
+                this.patchMessage(assistantId, (message) => {
+                    message.status = 'done';
+                });
+                break;
+            }
+            case 'error': {
+                this.pushProgress('error', event.message);
+                this.patchMessage(assistantId, (message) => {
+                    if (!message.content.trim()) {
+                        message.content = event.message;
+                    }
+                    message.status = 'done';
+                });
+                throw new Error(event.message);
+            }
+        }
+    }
+
+    private setActiveConversationId(value: string | null) {
+        this.state.activeConversationId = value;
+        if (!browser) {
+            return;
+        }
+
+        if (!value) {
+            window.localStorage.removeItem(ACTIVE_CONVERSATION_STORAGE_KEY);
+            return;
+        }
+
+        window.localStorage.setItem(ACTIVE_CONVERSATION_STORAGE_KEY, value);
+    }
+
+    private pushProgress(type: ChatProgressEvent['type'], text: string) {
+        const event: ChatProgressEvent = {
+            id: `progress-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            type,
+            text,
+            createdAt: Date.now()
+        };
+
+        this.state.progressEvents = [...this.state.progressEvents, event].slice(-12);
     }
 
     private emitBackgroundEvent(type: BackgroundEventType, strength: number) {
@@ -204,6 +318,20 @@ class ChatStore {
                 : Math.random().toString(36).slice(2, 12);
 
         return `msg-${randomPart}`;
+    }
+
+    private resolveLocale() {
+        if (!browser) {
+            return 'en';
+        }
+
+        const pathParts = window.location.pathname.split('/').filter(Boolean);
+        const localeCandidate = pathParts[0]?.toLowerCase();
+        if (localeCandidate === 'en' || localeCandidate === 'zh-tw') {
+            return localeCandidate;
+        }
+
+        return document.documentElement.lang?.toLowerCase().startsWith('zh') ? 'zh-tw' : 'en';
     }
 }
 

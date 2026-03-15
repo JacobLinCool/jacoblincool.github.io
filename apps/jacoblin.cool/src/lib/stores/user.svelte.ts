@@ -7,6 +7,7 @@ import {
     isSignInWithEmailLink,
     onAuthStateChanged,
     sendSignInLinkToEmail,
+    signInAnonymously,
     signInWithEmailLink,
     signInWithPopup,
     signOut,
@@ -45,6 +46,7 @@ class UserStore {
 
     private authUnsubscribe: (() => void) | null = null;
     private profileUnsubscribe: (() => void) | null = null;
+    private anonymousBootstrapAttempted = false;
 
     static getInstance() {
         UserStore.instance ??= new UserStore();
@@ -85,12 +87,30 @@ class UserStore {
             this.state.loading = false;
 
             if (user) {
-                this.setProfileListener(user.uid);
+                this.anonymousBootstrapAttempted = true;
+                if (user.isAnonymous) {
+                    this.profileUnsubscribe?.();
+                    this.profileUnsubscribe = null;
+                    this.state.profile = null;
+                    this.state.profileLoading = false;
+                } else {
+                    this.setProfileListener(user.uid);
+                }
             } else {
                 this.profileUnsubscribe?.();
                 this.profileUnsubscribe = null;
                 this.state.profile = null;
                 this.state.profileLoading = false;
+
+                if (!this.anonymousBootstrapAttempted) {
+                    this.anonymousBootstrapAttempted = true;
+                    void signInAnonymously(auth).catch((error) => {
+                        this.state.authError =
+                            error instanceof Error
+                                ? error.message
+                                : 'Unable to initialize anonymous auth.';
+                    });
+                }
             }
         });
 

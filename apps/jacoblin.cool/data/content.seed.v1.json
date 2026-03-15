@@ -1,0 +1,281 @@
+{
+  "versionId": "v1",
+  "publishLocales": ["en", "zh-tw"],
+  "locales": [
+    { "locale": "en" },
+    { "locale": "zh-tw" }
+  ],
+  "template": {
+    "home": {
+      "scholar": {
+        "profileUrl": "https://scholar.google.com/citations?user=BdzYgY0AAAAJ",
+        "citations": 8,
+        "hIndex": 2,
+        "i10Index": 0,
+        "topics": ["Human-Computer Interaction", "Speech Science", "Multimodality"]
+      },
+      "researchQuestions": [
+        {
+          "id": "rq-hci-trust",
+          "title": "Building Trust in AI Conversations",
+          "question": "How can I make AI responses transparent without making the conversation feel heavy?",
+          "whyItMatters": "People can trust AI too much or not enough. I want interfaces that show confidence clearly so users can make better decisions.",
+          "currentDirection": "I am testing lightweight interaction cues that reveal uncertainty and reasoning depth while keeping replies natural.",
+          "promptId": "research-hci"
+        },
+        {
+          "id": "rq-speech-assessment",
+          "title": "Better Speaking Evaluation for Real Learners",
+          "question": "How can I score speaking quality while preserving the acoustic detail learners need for useful feedback?",
+          "whyItMatters": "Many assessment systems miss pauses, hesitation, and pronunciation detail that teachers and learners care about.",
+          "currentDirection": "I am combining ASR, multimodal LLMs, and grammar/relevance signals to produce feedback that is both accurate and teachable.",
+          "promptId": "research-speech"
+        },
+        {
+          "id": "rq-multimodal-grounding",
+          "title": "Multimodal Scoring Beyond Transcript-Only Pipelines",
+          "question": "What is the best way to combine text, audio, and context in speaking evaluation systems?",
+          "whyItMatters": "Transcript-only pipelines miss timing and prosody, while audio-only pipelines lose semantic clarity.",
+          "currentDirection": "I am comparing score-fusion and representation-fusion methods to keep acoustic precision and semantic reasoning together.",
+          "promptId": "research-multimodality"
+        }
+      ],
+      "publications": [
+        {
+          "id": "pub-si-2025-open-track",
+          "title": "The NTNU System at the S&I Challenge 2025 SLA Open Track",
+          "authors": "HY Lin, TH Lo, YH Fang, JK Lin, CC Wang, HC Lu, B Chen",
+          "venue": "arXiv:2506.05121",
+          "year": 2025,
+          "citations": 2,
+          "impact": "I reached near-top challenge performance by fusing wav2vec acoustic features with Phi-4 multimodal reasoning.",
+          "summary": "This work shows that combining complementary modalities can outperform single-path SLA systems.",
+          "url": "https://arxiv.org/abs/2506.05121",
+          "tags": ["SLA", "ASR", "Multimodal"],
+          "promptId": "paper-si-2025"
+        },
+        {
+          "id": "pub-asa-multifaceted-2025",
+          "title": "Advancing Automated Speaking Assessment Leveraging Multifaceted Relevance and Grammar Information",
+          "authors": "HC Lu, JK Lin, HY Lin, CC Wang, B Chen",
+          "venue": "arXiv:2506.16285",
+          "year": 2025,
+          "citations": 1,
+          "impact": "I improved multi-aspect speaking assessment by adding richer relevance signals and fine-grained grammar features.",
+          "summary": "Ablation results show clear gains when question, image, and exemplar grounding are paired with detailed grammar signals.",
+          "url": "https://arxiv.org/abs/2506.16285",
+          "tags": ["Automated Speaking Assessment", "Grammar", "Relevance"],
+          "promptId": "paper-asa-relevance"
+        },
+        {
+          "id": "pub-hesitation-tagging-2025",
+          "title": "Acoustically Precise Hesitation Tagging Is Essential for End-to-End Verbatim Transcription Systems",
+          "authors": "JK Lin, HC Lu, CC Wang, HY Lin, B Chen",
+          "venue": "arXiv:2506.04076",
+          "year": 2025,
+          "citations": 1,
+          "impact": "I measured strong relative WER gains by preserving realistic hesitation tags during fine-tuning.",
+          "summary": "The result shows hesitation fidelity is core model behavior, not just a formatting detail.",
+          "url": "https://arxiv.org/abs/2506.04076",
+          "tags": ["Verbatim ASR", "Whisper", "Disfluency"],
+          "promptId": "paper-hesitation-tagging"
+        }
+      ],
+      "projects": [
+        {
+          "id": "project-d1-manager",
+          "name": "d1-manager",
+          "description": "I built a web app and API for Cloudflare D1, including natural-language query support for faster debugging.",
+          "url": "https://github.com/JacobLinCool/d1-manager",
+          "language": "Svelte",
+          "stars": 609,
+          "updatedAt": "2026-02-16T15:19:50Z",
+          "promptId": "project-d1-manager"
+        },
+        {
+          "id": "project-smart-whisper",
+          "name": "smart-whisper",
+          "description": "I built a Node.js addon for whisper.cpp with model offloading and management so teams can ship speech features faster.",
+          "url": "https://github.com/JacobLinCool/smart-whisper",
+          "language": "TypeScript",
+          "stars": 72,
+          "updatedAt": "2026-02-16T08:28:14Z",
+          "promptId": "project-smart-whisper"
+        },
+        {
+          "id": "project-leetcode-stats-card",
+          "name": "LeetCode-Stats-Card",
+          "description": "I created embeddable coding-profile cards that made developer telemetry easy to reuse across GitHub and personal sites.",
+          "url": "https://github.com/JacobLinCool/LeetCode-Stats-Card",
+          "language": "TypeScript",
+          "stars": 893,
+          "updatedAt": "2026-02-15T22:06:53Z",
+          "promptId": "project-leetcode-card"
+        }
+      ],
+      "demos": [
+        {
+          "id": "demo-vocal-separation",
+          "name": "vocal-separation",
+          "description": "I built this speech/music separation demo to show real inference behavior under noisy mixtures.",
+          "url": "https://huggingface.co/spaces/JacobLinCool/vocal-separation",
+          "likes": 77,
+          "downloads": 0,
+          "promptId": "demo-vocal-separation"
+        },
+        {
+          "id": "demo-audio-super-resolution",
+          "name": "audio-super-resolution",
+          "description": "I built this restoration demo to show how perceptual quality recovers from degraded audio inputs.",
+          "url": "https://huggingface.co/spaces/JacobLinCool/audio-super-resolution",
+          "likes": 52,
+          "downloads": 0,
+          "promptId": "demo-audio-super-resolution"
+        },
+        {
+          "id": "demo-mpsenet",
+          "name": "MP-SENet",
+          "description": "I packaged my speech enhancement line into a public demo so people can test denoising behavior directly.",
+          "url": "https://huggingface.co/spaces/JacobLinCool/MP-SENet",
+          "likes": 18,
+          "downloads": 54442,
+          "promptId": "demo-mpsenet"
+        }
+      ],
+      "nextSteps": [
+        {
+          "id": "next-step-trust-loop",
+          "title": "Co-build Trust-Aware Conversation Loops",
+          "description": "Work with me on interaction loops that show confidence and uncertainty without breaking natural conversation.",
+          "ctaLabel": "Discuss collaboration approach",
+          "promptId": "next-research-collab"
+        },
+        {
+          "id": "next-step-productization",
+          "title": "Ship Multimodal Speaking Products",
+          "description": "Partner with me to turn multimodal scoring research into reliable product features for learning and coaching.",
+          "ctaLabel": "Explore product roadmap",
+          "promptId": "next-product-collab"
+        },
+        {
+          "id": "next-step-open-stack",
+          "title": "Grow Open Speech Infrastructure",
+          "description": "Collaborate with me on open-source tools that move speech and agent systems from prototypes to production.",
+          "ctaLabel": "Contribute to open source",
+          "promptId": "next-oss-collab"
+        }
+      ]
+    },
+    "chat": {
+      "taglines": [
+        "I am Jacob",
+        "I am a Passionate Developer",
+        "I am a Curious Learner",
+        "I am a Researcher of Artificial Intelligence",
+        "I am a Researcher of Human-Computer Interaction",
+        "I am a 1st Year Graduate Student at NYCU",
+        "I am a ex-GDG on Campus Lead",
+        "Nice to meet you!"
+      ],
+      "promptChips": [
+        {
+          "id": "intro-work",
+          "label": "What are you building now?",
+          "prompt": "What are you currently building, and what problem are you solving?"
+        },
+        {
+          "id": "research-focus",
+          "label": "Tell me about your research",
+          "prompt": "What is your research focus in AI and HCI, and what are you working on?"
+        },
+        {
+          "id": "dev-journey",
+          "label": "Your journey into tech",
+          "prompt": "How did you get into programming and technology? What shaped your path?"
+        },
+        {
+          "id": "site-behind",
+          "label": "How was this site built?",
+          "prompt": "What technologies and ideas went into building this personal site?"
+        }
+      ],
+      "deepDivePrompts": {
+        "research-hci": {
+          "id": "research-hci",
+          "label": "Deep dive: HCI trust calibration",
+          "prompt": "Deep dive into your HCI direction: how are you designing conversational systems that improve trust calibration and transparency without overwhelming users?"
+        },
+        "research-speech": {
+          "id": "research-speech",
+          "label": "Deep dive: Speech science",
+          "prompt": "Explain your speech science focus: what specific problems in spoken language assessment and verbatim transcription are you currently solving?"
+        },
+        "research-multimodality": {
+          "id": "research-multimodality",
+          "label": "Deep dive: Multimodality",
+          "prompt": "Walk me through your multimodal approach: how do text, audio, and visual cues get fused in your current research systems?"
+        },
+        "paper-si-2025": {
+          "id": "paper-si-2025",
+          "label": "Ask about S&I Challenge 2025",
+          "prompt": "Tell me the full story behind your S&I Challenge 2025 system: model stack, score fusion strategy, and what made it rank near the top."
+        },
+        "paper-asa-relevance": {
+          "id": "paper-asa-relevance",
+          "label": "Ask about multifaceted ASA",
+          "prompt": "Explain your multifaceted relevance and grammar approach for automated speaking assessment, including the key ablation findings."
+        },
+        "paper-hesitation-tagging": {
+          "id": "paper-hesitation-tagging",
+          "label": "Ask about hesitation tagging",
+          "prompt": "Why is acoustically precise hesitation tagging essential in your verbatim transcription work, and how much gain did it deliver over plain schemes?"
+        },
+        "project-d1-manager": {
+          "id": "project-d1-manager",
+          "label": "Ask about d1-manager architecture",
+          "prompt": "Give me an architecture walkthrough of d1-manager and explain how you designed the AI-assisted query workflow."
+        },
+        "project-smart-whisper": {
+          "id": "project-smart-whisper",
+          "label": "Ask about smart-whisper tradeoffs",
+          "prompt": "Explain the engineering tradeoffs behind smart-whisper, especially model offloading, runtime performance, and developer ergonomics."
+        },
+        "project-leetcode-card": {
+          "id": "project-leetcode-card",
+          "label": "Ask about LeetCode-Stats-Card",
+          "prompt": "What made LeetCode-Stats-Card scale and stay useful over time, and what product decisions mattered most?"
+        },
+        "demo-vocal-separation": {
+          "id": "demo-vocal-separation",
+          "label": "Ask about vocal separation demo",
+          "prompt": "Walk me through your vocal separation demo pipeline and how it connects to your broader speech and audio research agenda."
+        },
+        "demo-audio-super-resolution": {
+          "id": "demo-audio-super-resolution",
+          "label": "Ask about audio super-resolution",
+          "prompt": "Explain your audio super-resolution demo: what model choices, data assumptions, and failure cases should people understand?"
+        },
+        "demo-mpsenet": {
+          "id": "demo-mpsenet",
+          "label": "Ask about MP-SENet demos",
+          "prompt": "How did you package MP-SENet into usable public demos, and what did deployment teach you about real-world speech enhancement usage?"
+        },
+        "next-research-collab": {
+          "id": "next-research-collab",
+          "label": "Collaborate on research",
+          "prompt": "I want to discuss research collaboration with you. Can you share your current open problems, preferred collaboration format, and what partners should prepare?"
+        },
+        "next-product-collab": {
+          "id": "next-product-collab",
+          "label": "Collaborate on productization",
+          "prompt": "I want to explore productizing your conversational and speech research. What near-term product directions are you most interested in building?"
+        },
+        "next-oss-collab": {
+          "id": "next-oss-collab",
+          "label": "Collaborate on OSS",
+          "prompt": "I am interested in contributing to your open-source stack. Which repos are best entry points and what contribution areas need help most?"
+        }
+      }
+    }
+  }
+}
