@@ -6,6 +6,7 @@
     import SiteFooter from '$lib/components/app/SiteFooter.svelte';
     import Notifications from '$lib/components/app/Notifications.svelte';
     import LoginModal from '$lib/components/auth/LoginModal.svelte';
+    import SpecialOccasionEffects from '$lib/components/visual/SpecialOccasionEffects.svelte';
     import { trackPageView } from '$lib/services/analytics/ga';
     import NeuralBackground from '$lib/components/visual/NeuralBackground.svelte';
     import { chatStore } from '$lib/stores/chat.svelte';
@@ -64,6 +65,7 @@
         backgroundEventStrength={chatStore.state.backgroundEventStrength}
         isStreaming={chatStore.state.isStreaming}
     />
+    <SpecialOccasionEffects />
 
     <div class="relative z-10 flex h-dvh min-h-dvh flex-col">
         <TopBar {sidebarId} {showSidebar} />
