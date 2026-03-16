@@ -38,6 +38,7 @@
         "prettier-plugin-tailwindcss": "^0.7.2",
         "svelte": "^5.51.2",
         "svelte-check": "^4.4.0",
+        "svelte-confetti": "^2.3.2",
         "tailwindcss": "^4.1.18",
         "three": "^0.182.0",
         "typescript": "^5.9.3",
