@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest';
 import {
     normalizePageLocation,
     resolveResponseLengthBand,
     resolveTurnLatencyBand
 } from '$lib/services/analytics/ga';
+import { describe, expect, it } from 'vitest';
 
 describe('ga analytics helpers', () => {
     it('maps latency into stable reporting bands', () => {

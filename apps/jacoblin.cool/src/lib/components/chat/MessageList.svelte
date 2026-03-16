@@ -73,7 +73,9 @@
 
     const scrollKey = $derived(
         [
-            messages.map((message) => `${message.id}:${message.content.length}:${message.status}`).join('|'),
+            messages
+                .map((message) => `${message.id}:${message.content.length}:${message.status}`)
+                .join('|'),
             progressEvents.map((event) => `${event.id}:${event.text}`).join('|'),
             contextStatusCollapsed ? 'collapsed' : 'expanded',
             activeTurnView.showContextStatus ? 'status-visible' : 'response-visible'

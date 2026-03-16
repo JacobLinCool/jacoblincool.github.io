@@ -1,6 +1,5 @@
 import { browser } from '$app/environment';
 import { publicFeatureFlags } from '$lib/config/public-flags';
-import { createAudioStub } from '$lib/services/audio-stub';
 import {
     trackChatTurnCompleted,
     trackChatTurnFailed,
@@ -8,6 +7,7 @@ import {
     trackContextStatusToggled,
     trackResponseCopied
 } from '$lib/services/analytics/ga';
+import { createAudioStub } from '$lib/services/audio-stub';
 import { streamChat } from '$lib/services/chat-api';
 import { notificationStore } from '$lib/stores/notification.svelte';
 import type { BackgroundEventType } from '$lib/types/background';
@@ -103,13 +103,19 @@ class ChatStore {
         await this.submitPrompt(this.state.composer, { source: 'composer' });
     }
 
-    async submitChipPrompt(prompt: string, metadata: ChatPromptSubmissionMeta = { source: 'chip' }) {
+    async submitChipPrompt(
+        prompt: string,
+        metadata: ChatPromptSubmissionMeta = { source: 'chip' }
+    ) {
         this.state.composer = prompt;
         this.state.typingStrength = Math.min(1, prompt.trim().length / 72);
         await this.submitPrompt(prompt, metadata);
     }
 
-    async submitPrompt(rawPrompt: string, metadata: ChatPromptSubmissionMeta = { source: 'composer' }) {
+    async submitPrompt(
+        rawPrompt: string,
+        metadata: ChatPromptSubmissionMeta = { source: 'composer' }
+    ) {
         const prompt = rawPrompt.trim();
         if (!prompt || this.state.isStreaming) {
             return;
@@ -148,7 +154,9 @@ class ChatStore {
                 message.status = 'done';
             });
 
-            const assistantMessage = this.state.messages.find((message) => message.id === assistantId);
+            const assistantMessage = this.state.messages.find(
+                (message) => message.id === assistantId
+            );
             trackChatTurnCompleted({
                 promptSource: this.currentTurnPromptSource,
                 latencyMs: this.currentTurnLatencyMs(),

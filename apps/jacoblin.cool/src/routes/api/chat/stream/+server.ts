@@ -14,9 +14,7 @@ type RequestBody = {
 };
 
 const createRequestId = (request: Request) =>
-    request.headers.get('cf-ray') ||
-    request.headers.get('x-request-id') ||
-    crypto.randomUUID();
+    request.headers.get('cf-ray') || request.headers.get('x-request-id') || crypto.randomUUID();
 
 export const POST: RequestHandler = async ({ request, fetch, platform, url }) => {
     const config = readRuntimeConfig(

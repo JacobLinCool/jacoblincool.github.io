@@ -107,10 +107,7 @@ const createGithubClient = (fetchFn: FetchLike, config: RuntimeConfig) =>
         }
     });
 
-const compareByStarsThenName = (
-    left: GitHubCatalogRepository,
-    right: GitHubCatalogRepository
-) =>
+const compareByStarsThenName = (left: GitHubCatalogRepository, right: GitHubCatalogRepository) =>
     right.stars - left.stars || left.fullName.localeCompare(right.fullName);
 
 const toGithubCatalogRepository = (repo: GitHubRepo): GitHubCatalogRepository => ({
@@ -192,17 +189,18 @@ export const fetchGithubRepoCatalog = async (
         .map(toGithubCatalogRepository)
         .sort(compareByStarsThenName);
 
-    const languages = [...repositories.reduce<Map<string, { repositories: number; stars: number }>>(
-        (summary, repo) => {
-            const current = summary.get(repo.language) ?? { repositories: 0, stars: 0 };
-            summary.set(repo.language, {
-                repositories: current.repositories + 1,
-                stars: current.stars + repo.stars
-            });
-            return summary;
-        },
-        new Map()
-    ).entries()]
+    const languages = [
+        ...repositories
+            .reduce<Map<string, { repositories: number; stars: number }>>((summary, repo) => {
+                const current = summary.get(repo.language) ?? { repositories: 0, stars: 0 };
+                summary.set(repo.language, {
+                    repositories: current.repositories + 1,
+                    stars: current.stars + repo.stars
+                });
+                return summary;
+            }, new Map())
+            .entries()
+    ]
         .map(([language, stats]) => ({
             language,
             repositories: stats.repositories,

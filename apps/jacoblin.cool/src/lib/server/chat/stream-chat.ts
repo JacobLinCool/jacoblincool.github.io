@@ -165,17 +165,18 @@ export const streamChatTurn = async ({
         estimatedUserTokens: userContextTokens
     });
 
-    let rolloverPlan:
-        | {
-              archivedReason: 'context_limit';
-              carryoverSummary: string | null;
-              carryoverContextTokenCount: number;
-              archivedConversationId: string;
-              archivedConversationContextTokens: number;
-          }
-        | null = null;
+    let rolloverPlan: {
+        archivedReason: 'context_limit';
+        carryoverSummary: string | null;
+        carryoverContextTokenCount: number;
+        archivedConversationId: string;
+        archivedConversationContextTokens: number;
+    } | null = null;
 
-    if (conversation.exists && shouldRollOverConversation(conversation, DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS)) {
+    if (
+        conversation.exists &&
+        shouldRollOverConversation(conversation, DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS)
+    ) {
         logChatWarn('conversation_rollover_started', {
             requestId,
             traceId,
@@ -289,7 +290,7 @@ export const streamChatTurn = async ({
                     ? 'github'
                     : call.name?.startsWith('get_huggingface_')
                       ? 'huggingface'
-                    : 'site';
+                      : 'site';
                 const toolStartedAt = Date.now();
 
                 send(
@@ -361,28 +362,25 @@ export const streamChatTurn = async ({
                 });
 
                 const toolSucceeded = toolResult.payload.ok !== false;
-                logChatInfo(
-                    toolSucceeded ? 'chat_tool_call_succeeded' : 'chat_tool_call_failed',
-                    {
-                        requestId,
-                        traceId,
-                        turnId,
-                        conversationId: baseConversationId,
-                        toolRound: toolRounds,
-                        toolIndex: toolCallsCount,
-                        tool: toolResult.tool,
-                        toolName: call.name ?? 'unknown_tool',
-                        target: toolResult.target,
-                        latencyMs: toolLatencyMs,
-                        ok: toolSucceeded,
-                        revision: toolResult.revision ?? null,
-                        refsCount: toolResult.refs.length,
-                        error:
-                            toolResult.payload.ok === false
-                                ? String(toolResult.payload.error ?? 'Tool failed.')
-                                : null
-                    }
-                );
+                logChatInfo(toolSucceeded ? 'chat_tool_call_succeeded' : 'chat_tool_call_failed', {
+                    requestId,
+                    traceId,
+                    turnId,
+                    conversationId: baseConversationId,
+                    toolRound: toolRounds,
+                    toolIndex: toolCallsCount,
+                    tool: toolResult.tool,
+                    toolName: call.name ?? 'unknown_tool',
+                    target: toolResult.target,
+                    latencyMs: toolLatencyMs,
+                    ok: toolSucceeded,
+                    revision: toolResult.revision ?? null,
+                    refsCount: toolResult.refs.length,
+                    error:
+                        toolResult.payload.ok === false
+                            ? String(toolResult.payload.error ?? 'Tool failed.')
+                            : null
+                });
 
                 functionResponseParts.push(
                     toGeminiFunctionResponsePart(call.name ?? 'unknown_tool', toolResult.payload)
@@ -444,20 +442,17 @@ export const streamChatTurn = async ({
         const assistantContextTokens = estimateTextTokens(assistantText);
         const turnContextTokenCount = userContextTokens + assistantContextTokens;
 
-        const committedConversation: ConversationHandle = await commitConversationTurn(
-            db,
-            {
-                ownerUid: user.uid,
-                ownerType: user.isAnonymous ? 'anonymous' : 'google',
-                locale,
-                baseConversation: conversation,
-                turnId,
-                userText: trimmed,
-                assistantText,
-                turnContextTokenCount,
-                rollover: rolloverPlan
-            }
-        );
+        const committedConversation: ConversationHandle = await commitConversationTurn(db, {
+            ownerUid: user.uid,
+            ownerType: user.isAnonymous ? 'anonymous' : 'google',
+            locale,
+            baseConversation: conversation,
+            turnId,
+            userText: trimmed,
+            assistantText,
+            turnContextTokenCount,
+            rollover: rolloverPlan
+        });
         contextTokenCount = committedConversation.contextTokenCount;
 
         pushStatus('completed');

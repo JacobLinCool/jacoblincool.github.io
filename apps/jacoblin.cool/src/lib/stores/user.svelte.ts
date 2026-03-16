@@ -38,9 +38,7 @@ class UserStore {
         this.authUnsubscribe = onAuthStateChanged(auth, (user) => {
             this.state.user = user;
             this.state.loading = false;
-            setAnalyticsAuthState(
-                !user ? 'signed_out' : user.isAnonymous ? 'anonymous' : 'google'
-            );
+            setAnalyticsAuthState(!user ? 'signed_out' : user.isAnonymous ? 'anonymous' : 'google');
 
             if (user) {
                 this.anonymousBootstrapAttempted = true;

@@ -21,7 +21,10 @@ let analyticsConfigured = false;
 let currentAuthState: AnalyticsAuthState = 'signed_out';
 
 const isGaRuntimeEnabled = () =>
-    browser && !dev && publicAnalyticsConfig.gaEnabled && Boolean(publicAnalyticsConfig.gaMeasurementId);
+    browser &&
+    !dev &&
+    publicAnalyticsConfig.gaEnabled &&
+    Boolean(publicAnalyticsConfig.gaMeasurementId);
 
 const ensureGtagStub = () => {
     window.dataLayer ??= [];

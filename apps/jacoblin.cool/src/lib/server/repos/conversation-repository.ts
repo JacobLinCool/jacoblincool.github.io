@@ -109,10 +109,8 @@ const normalizeTurns = (value: unknown): ConversationTurn[] =>
 
 const hasReadableTurns = (raw: ConversationDoc | undefined) => Array.isArray(raw?.turns);
 
-const isReadableCurrentConversation = (
-    raw: ConversationDoc | undefined,
-    ownerUid: string
-) => raw?.ownerUid === ownerUid && raw?.lifecycle !== 'archived' && hasReadableTurns(raw);
+const isReadableCurrentConversation = (raw: ConversationDoc | undefined, ownerUid: string) =>
+    raw?.ownerUid === ownerUid && raw?.lifecycle !== 'archived' && hasReadableTurns(raw);
 
 const createConversationHandle = (
     conversationId: string,
@@ -283,7 +281,9 @@ export const commitConversationTurn = async (
                 );
                 if (activeSnapshot.exists) {
                     const active = activeSnapshot.data() as ConversationDoc | undefined;
-                    assertCommitCondition(!hasReadableTurns(active) || active?.lifecycle === 'archived');
+                    assertCommitCondition(
+                        !hasReadableTurns(active) || active?.lifecycle === 'archived'
+                    );
                 }
             }
 
@@ -312,7 +312,9 @@ export const commitConversationTurn = async (
             return createConversationHandle(nextConversationId, createdDoc, true);
         }
 
-        const currentConversationRef = db.doc(conversationPath(input.baseConversation.conversationId));
+        const currentConversationRef = db.doc(
+            conversationPath(input.baseConversation.conversationId)
+        );
         const currentSnapshot = await transaction.get(currentConversationRef);
         assertCommitCondition(currentSnapshot.exists);
 

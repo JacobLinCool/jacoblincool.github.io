@@ -1,8 +1,8 @@
 import { createChatToolRegistry } from '$lib/server/chat/tool-registry';
 import type { RuntimeConfig } from '$lib/server/runtime-env';
 import { FakeFirestore } from '$lib/server/test-helpers/fake-firestore';
-import type { ExternalToolConfig } from '$lib/server/tools/external-tool-config';
 import { fetchGithubRepoCatalog } from '$lib/server/tools/clients';
+import type { ExternalToolConfig } from '$lib/server/tools/external-tool-config';
 import { describe, expect, it, vi } from 'vitest';
 
 const config: RuntimeConfig = {

@@ -47,7 +47,8 @@ export type ChatToolRegistry = {
 
 const asString = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 const asBoolean = (value: unknown) => value === true;
-const asNumber = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : null);
+const asNumber = (value: unknown) =>
+    typeof value === 'number' && Number.isFinite(value) ? value : null;
 
 const asRecord = (value: unknown): Record<string, unknown> =>
     value && typeof value === 'object' && !Array.isArray(value)
@@ -127,10 +128,14 @@ const readGithubRepoCatalog = (payload: Record<string, unknown>) => ({
     login: asString(payload.login),
     totalRepositories: asNumber(payload.totalRepositories) ?? 0,
     repositories: Array.isArray(payload.repositories)
-        ? payload.repositories.map(toGithubCatalogRepository).filter((repo): repo is GithubCatalogRepository => Boolean(repo))
+        ? payload.repositories
+              .map(toGithubCatalogRepository)
+              .filter((repo): repo is GithubCatalogRepository => Boolean(repo))
         : [],
     languages: Array.isArray(payload.languages)
-        ? payload.languages.map(toGithubLanguageSummary).filter((language): language is GithubLanguageSummary => Boolean(language))
+        ? payload.languages
+              .map(toGithubLanguageSummary)
+              .filter((language): language is GithubLanguageSummary => Boolean(language))
         : []
 });
 
@@ -238,12 +243,12 @@ export const createChatToolRegistry = ({
                         },
                         limit: {
                             type: 'NUMBER',
-                            description: 'Optional maximum repositories to return. Default 8, max 25.'
+                            description:
+                                'Optional maximum repositories to return. Default 8, max 25.'
                         },
                         includeArchived: {
                             type: 'BOOLEAN',
-                            description:
-                                'Set true to include archived repositories. Default false.'
+                            description: 'Set true to include archived repositories. Default false.'
                         }
                     }
                 }

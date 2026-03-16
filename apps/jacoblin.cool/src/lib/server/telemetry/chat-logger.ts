@@ -27,7 +27,9 @@ const toErrorPayload = (error: unknown) => {
     };
 };
 
-export const summarizeGeminiUsage = (usage: Record<string, unknown> | null | undefined): GeminiUsageSummary | null => {
+export const summarizeGeminiUsage = (
+    usage: Record<string, unknown> | null | undefined
+): GeminiUsageSummary | null => {
     if (!usage) {
         return null;
     }
@@ -42,8 +44,7 @@ export const summarizeGeminiUsage = (usage: Record<string, unknown> | null | und
 };
 
 const writeStructuredLog = (level: ChatLogLevel, event: string, payload: ChatLogPayload) => {
-    const sink =
-        level === 'error' ? console.error : level === 'warn' ? console.warn : console.info;
+    const sink = level === 'error' ? console.error : level === 'warn' ? console.warn : console.info;
 
     sink({
         ts: new Date().toISOString(),

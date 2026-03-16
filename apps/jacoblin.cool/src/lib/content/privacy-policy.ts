@@ -136,8 +136,7 @@ export const privacyPolicyContent = {
         {
             id: 'google-sign-in',
             name: 'Google Sign-In',
-            purpose:
-                'Lets you sign in with a Google account through the site login flow.',
+            purpose: 'Lets you sign in with a Google account through the site login flow.',
             possibleData:
                 'Email address, display name, profile photo, and Google account identity data you choose to expose during sign-in.',
             processingScope:
@@ -206,8 +205,7 @@ export const privacyPolicyContent = {
         {
             id: 'google-fonts',
             name: 'Google Fonts',
-            purpose:
-                'Serves the Space Grotesk font loaded by the global site stylesheet.',
+            purpose: 'Serves the Space Grotesk font loaded by the global site stylesheet.',
             possibleData:
                 'Browser requests for font CSS and font files, which may include IP address, user agent, and referrer information visible to Google as the font host.',
             processingScope:

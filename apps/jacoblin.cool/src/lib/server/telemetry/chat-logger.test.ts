@@ -1,9 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
 import {
     createChatErrorLogPayload,
     logChatInfo,
     summarizeGeminiUsage
 } from '$lib/server/telemetry/chat-logger';
+import { describe, expect, it, vi } from 'vitest';
 
 describe('chat logger helpers', () => {
     it('summarizes known Gemini usage counters', () => {

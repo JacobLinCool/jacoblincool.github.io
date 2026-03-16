@@ -98,19 +98,25 @@
                         </h3>
                         <dl class="mt-4 grid gap-4 text-sm leading-7 text-zinc-300 lg:grid-cols-3">
                             <div>
-                                <dt class="text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase">
+                                <dt
+                                    class="text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase"
+                                >
                                     Purpose
                                 </dt>
                                 <dd class="mt-2">{service.purpose}</dd>
                             </div>
                             <div>
-                                <dt class="text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase">
+                                <dt
+                                    class="text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase"
+                                >
                                     Possible data involved
                                 </dt>
                                 <dd class="mt-2">{service.possibleData}</dd>
                             </div>
                             <div>
-                                <dt class="text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase">
+                                <dt
+                                    class="text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase"
+                                >
                                     Processing scope
                                 </dt>
                                 <dd class="mt-2">{service.processingScope}</dd>
@@ -131,7 +137,8 @@
             <ul class="mt-4 space-y-3 text-sm leading-7 text-zinc-300 sm:text-base">
                 {#each content.cookiesAndBrowserState as item (item)}
                     <li class="flex gap-3">
-                        <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-300/80"></span>
+                        <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-300/80"
+                        ></span>
                         <span>{item}</span>
                     </li>
                 {/each}

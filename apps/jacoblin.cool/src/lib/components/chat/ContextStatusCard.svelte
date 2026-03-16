@@ -16,7 +16,9 @@
 </script>
 
 <li class="flex justify-start">
-    <article class="w-full max-w-[78%] rounded-[1.35rem] border border-white/8 bg-zinc-900/54 sm:max-w-[34rem]">
+    <article
+        class="w-full max-w-[78%] rounded-[1.35rem] border border-white/8 bg-zinc-900/54 sm:max-w-[34rem]"
+    >
         <button
             type="button"
             class="flex w-full items-start justify-between gap-2.5 rounded-[1.35rem] px-3 py-2.5 text-left transition hover:bg-white/[0.03]"
@@ -26,7 +28,9 @@
         >
             <div class="min-w-0 space-y-1">
                 <p class="text-[11px] tracking-[0.15em] text-zinc-400 uppercase">Context status</p>
-                <p class={`leading-relaxed text-zinc-200 ${collapsed ? 'line-clamp-1 text-[13px]' : 'line-clamp-1 text-[13px]'}`}>
+                <p
+                    class={`leading-relaxed text-zinc-200 ${collapsed ? 'line-clamp-1 text-[13px]' : 'line-clamp-1 text-[13px]'}`}
+                >
                     {latestEventText}
                 </p>
             </div>

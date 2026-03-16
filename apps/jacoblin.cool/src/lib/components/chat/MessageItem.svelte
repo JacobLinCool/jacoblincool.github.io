@@ -39,7 +39,7 @@
             aria-atomic="false"
         >
             <div
-                class={`chat-message-markdown prose max-w-none break-words text-inherit prose-p:my-0 prose-headings:mb-3 prose-headings:font-medium prose-headings:text-inherit prose-p:text-inherit prose-strong:text-inherit prose-code:text-inherit prose-pre:my-3 prose-pre:overflow-x-auto prose-pre:rounded-2xl prose-pre:border prose-pre:border-white/10 prose-pre:bg-black/35 prose-pre:px-3 prose-pre:py-2 prose-ol:my-3 prose-ul:my-3 prose-li:my-1 prose-blockquote:border-l-white/15 prose-blockquote:text-inherit prose-a:font-medium prose-a:text-sky-300 prose-a:no-underline hover:prose-a:text-sky-200 hover:prose-a:underline ${
+                class={`chat-message-markdown prose max-w-none break-words text-inherit prose-headings:mb-3 prose-headings:font-medium prose-headings:text-inherit prose-p:my-0 prose-p:text-inherit prose-a:font-medium prose-a:text-sky-300 prose-a:no-underline hover:prose-a:text-sky-200 hover:prose-a:underline prose-blockquote:border-l-white/15 prose-blockquote:text-inherit prose-strong:text-inherit prose-code:text-inherit prose-pre:my-3 prose-pre:overflow-x-auto prose-pre:rounded-2xl prose-pre:border prose-pre:border-white/10 prose-pre:bg-black/35 prose-pre:px-3 prose-pre:py-2 prose-ol:my-3 prose-ul:my-3 prose-li:my-1 ${
                     isAssistant
                         ? 'prose-invert prose-code:bg-white/6 prose-code:px-1 prose-code:py-0.5 prose-code:before:hidden prose-code:after:hidden'
                         : 'prose-invert prose-a:text-sky-100 hover:prose-a:text-white prose-code:bg-white/10 prose-code:px-1 prose-code:py-0.5 prose-code:before:hidden prose-code:after:hidden'
