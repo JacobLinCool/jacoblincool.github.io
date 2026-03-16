@@ -1,4 +1,3 @@
-test-results
 node_modules
 
 # Output
@@ -23,9 +22,8 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-*storybook.log
+# Paraglide
+src/lib/paraglide
+project.inlang/cache/
 
-.svelte-kit
-
-.playwright-cli
-output/playwright
+*.log

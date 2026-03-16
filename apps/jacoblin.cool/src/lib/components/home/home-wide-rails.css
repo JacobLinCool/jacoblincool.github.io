@@ -1,0 +1,155 @@
+.home-rail {
+    position: relative;
+}
+
+.home-rail-track {
+    scrollbar-gutter: stable both-edges;
+}
+
+.home-surface-soft {
+    border-radius: 1rem;
+    border: 1px solid rgb(255 255 255 / 0.07);
+    background: linear-gradient(170deg, rgb(15 20 33 / 0.55), rgb(9 12 22 / 0.4));
+    backdrop-filter: blur(3px);
+}
+
+.home-surface-metric {
+    border-radius: 0.95rem;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: linear-gradient(180deg, rgb(12 16 28 / 0.52), rgb(8 11 20 / 0.36));
+}
+
+.home-divider-inline {
+    position: relative;
+}
+
+.home-rail-controls {
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.home-rail-control-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.14);
+    background: rgb(9 12 20 / 0.72);
+    color: rgb(228 233 243 / 0.9);
+    cursor: pointer;
+    width: 2.1rem;
+    height: 2.1rem;
+    transition:
+        border-color 200ms ease,
+        background-color 200ms ease,
+        color 200ms ease,
+        opacity 200ms ease;
+}
+
+.home-rail-control-btn:hover {
+    border-color: rgb(255 255 255 / 0.34);
+    background: rgb(15 20 31 / 0.85);
+    color: rgb(245 248 255 / 0.95);
+}
+
+.home-rail-control-btn:focus-visible {
+    outline: 2px solid rgb(125 236 255 / 0.92);
+    outline-offset: 2px;
+}
+
+.home-rail-control-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+@media (min-width: 1280px) {
+    .home-surface-soft {
+        border-color: rgb(255 255 255 / 0.05);
+        background: linear-gradient(170deg, rgb(15 20 33 / 0.38), rgb(9 12 22 / 0.2));
+    }
+
+    .home-surface-metric {
+        border-color: rgb(255 255 255 / 0.05);
+        background: linear-gradient(180deg, rgb(12 16 28 / 0.34), rgb(8 11 20 / 0.16));
+    }
+
+    .home-divider-inline + .home-divider-inline::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 14%;
+        bottom: 14%;
+        width: 1px;
+        background: linear-gradient(
+            to bottom,
+            rgb(255 255 255 / 0) 0%,
+            rgb(255 255 255 / 0.12) 22%,
+            rgb(255 255 255 / 0.12) 78%,
+            rgb(255 255 255 / 0) 100%
+        );
+        pointer-events: none;
+    }
+
+    .home-rail {
+        --rail-peek: clamp(18px, 2.8vw, 56px);
+    }
+
+    .home-rail::before,
+    .home-rail::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: var(--rail-peek);
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    .home-rail::before {
+        left: 0;
+        background: linear-gradient(
+            to right,
+            rgb(1 2 4 / 0.94) 0%,
+            rgb(1 2 4 / 0.68) 36%,
+            rgb(1 2 4 / 0) 100%
+        );
+    }
+
+    .home-rail::after {
+        right: 0;
+        background: linear-gradient(
+            to left,
+            rgb(1 2 4 / 0.94) 0%,
+            rgb(1 2 4 / 0.68) 36%,
+            rgb(1 2 4 / 0) 100%
+        );
+    }
+
+    .home-rail-track {
+        overflow-x: auto;
+        overflow-y: visible;
+        align-items: stretch;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x proximity;
+        scroll-padding-inline: var(--rail-peek);
+        padding-inline: var(--rail-peek);
+        padding-bottom: 0.35rem;
+    }
+
+    .home-rail-item {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-rail-track {
+        scroll-behavior: auto;
+    }
+
+    .home-rail-control-btn,
+    .home-surface-soft,
+    .home-surface-metric {
+        transition: none;
+    }
+}
