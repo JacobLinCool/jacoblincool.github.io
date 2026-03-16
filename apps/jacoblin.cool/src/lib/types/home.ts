@@ -42,24 +42,6 @@ export type FeaturedProject = {
     promptId: DeepDivePromptId;
 };
 
-export type FeaturedDemo = {
-    id: string;
-    name: string;
-    description: string;
-    url: string;
-    likes: number;
-    downloads: number;
-    promptId: DeepDivePromptId;
-};
-
-export type NextStepCta = {
-    id: string;
-    title: string;
-    description: string;
-    ctaLabel: string;
-    promptId: DeepDivePromptId;
-};
-
 export type ProfileMetricsSnapshot = {
     github: {
         followers: number;
@@ -100,8 +82,6 @@ export type HomeSectionPayload = {
     researchQuestions: ResearchQuestionCard[];
     publications: PublicationHighlight[];
     projects: FeaturedProject[];
-    demos: FeaturedDemo[];
-    nextSteps: NextStepCta[];
 };
 
 export type HomeCurationPayload = Omit<HomeSectionPayload, 'metrics'> & {

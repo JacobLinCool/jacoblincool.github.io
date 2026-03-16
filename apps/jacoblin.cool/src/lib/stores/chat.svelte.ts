@@ -1,9 +1,9 @@
 import { browser } from '$app/environment';
+import { publicFeatureFlags } from '$lib/config/public-flags';
 import { createAudioStub } from '$lib/services/audio-stub';
 import { streamChat } from '$lib/services/chat-api';
 import { notificationStore } from '$lib/stores/notification.svelte';
 import type { BackgroundEventType } from '$lib/types/background';
-import type { ChatContentConfig } from '$lib/types/home';
 import type {
     AudioUiState,
     ChatMessage,
@@ -13,6 +13,7 @@ import type {
     ConversationStage,
     PromptChip
 } from '$lib/types/chat';
+import type { ChatContentConfig } from '$lib/types/home';
 
 const BASE_BACKGROUND_NODE_COUNT = 200;
 const TYPING_ACTIVATION_RATIO = 1 / BASE_BACKGROUND_NODE_COUNT;
@@ -35,6 +36,7 @@ type ChatState = {
     backgroundEventStrength: number;
     audio: AudioUiState;
     progressEvents: ChatProgressEvent[];
+    contextStatusCollapsed: boolean;
     activeConversationId: string | null;
 };
 
@@ -55,6 +57,7 @@ class ChatStore {
         backgroundEventStrength: 0,
         audio: { state: 'idle', messageId: null },
         progressEvents: [],
+        contextStatusCollapsed: true,
         activeConversationId: null
     });
 
@@ -113,7 +116,8 @@ class ChatStore {
         }
 
         this.pushMessage('user', prompt, 'done');
-        this.state.progressEvents = [];
+        this.state.progressEvents = [this.createProgressEvent('status', 'Collecting context...')];
+        this.state.contextStatusCollapsed = true;
         this.state.composer = '';
         this.state.typingStrength = 0;
         this.audioController.stop();
@@ -143,7 +147,10 @@ class ChatStore {
                     'I hit a temporary issue while collecting verified context. Please try again.';
                 message.status = 'done';
             });
-            this.pushProgress('error', error instanceof Error ? error.message : 'Unable to stream response.');
+            this.pushProgress(
+                'error',
+                error instanceof Error ? error.message : 'Unable to stream response.'
+            );
             notificationStore.error(
                 error instanceof Error ? error.message : 'Unable to stream response.'
             );
@@ -172,6 +179,11 @@ class ChatStore {
     }
 
     toggleAudio(messageId: string) {
+        if (!publicFeatureFlags.chatAudioEnabled) {
+            this.audioController.stop();
+            return;
+        }
+
         const target = this.state.messages.find((message) => message.id === messageId);
         if (!target || target.role !== 'assistant' || target.status !== 'done') {
             return;
@@ -195,19 +207,21 @@ class ChatStore {
                     this.pushProgress('status', 'Generating response...');
                 }
 
+                if (event.status === 'completed') {
+                    this.pushProgress('status', 'Response ready.');
+                }
+
                 break;
             }
             case 'tool_call': {
-                const source = event.tool === 'github' ? 'GitHub' : 'Hugging Face';
-                this.pushProgress('tool_call', `Querying ${source}: ${event.entityKey}`);
+                this.pushProgress('tool_call', event.label);
                 break;
             }
             case 'tool_result': {
-                const source = event.tool === 'github' ? 'GitHub' : 'Hugging Face';
                 const label =
                     event.result === 'success'
-                        ? `Synced ${source}: ${event.entityKey}`
-                        : `Failed ${source}: ${event.entityKey}`;
+                        ? `Loaded ${event.target}`
+                        : `Failed ${event.target}`;
                 this.pushProgress('tool_result', label);
                 break;
             }
@@ -256,14 +270,27 @@ class ChatStore {
     }
 
     private pushProgress(type: ChatProgressEvent['type'], text: string) {
-        const event: ChatProgressEvent = {
+        const latest = this.state.progressEvents.at(-1);
+        if (latest?.type === type && latest.text === text) {
+            return;
+        }
+
+        const event = this.createProgressEvent(type, text);
+
+        this.state.progressEvents = [...this.state.progressEvents, event].slice(-12);
+    }
+
+    private createProgressEvent(type: ChatProgressEvent['type'], text: string): ChatProgressEvent {
+        return {
             id: `progress-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             type,
             text,
             createdAt: Date.now()
         };
+    }
 
-        this.state.progressEvents = [...this.state.progressEvents, event].slice(-12);
+    toggleContextStatusCollapsed() {
+        this.state.contextStatusCollapsed = !this.state.contextStatusCollapsed;
     }
 
     private emitBackgroundEvent(type: BackgroundEventType, strength: number) {

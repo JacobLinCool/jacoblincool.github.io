@@ -1,4 +1,11 @@
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
+import { dev } from '$app/environment';
+import {
+    createRemoteJWKSet,
+    decodeJwt,
+    decodeProtectedHeader,
+    jwtVerify,
+    type JWTPayload
+} from 'jose';
 
 const FIREBASE_JWKS_URL =
     'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
@@ -29,10 +36,31 @@ export const verifyFirebaseIdToken = async (
     token: string,
     projectId: string
 ): Promise<VerifiedFirebaseUser> => {
-    const { payload } = await jwtVerify(token, jwks, {
-        issuer: `https://securetoken.google.com/${projectId}`,
-        audience: projectId
-    });
+    let payload: JWTPayload;
+
+    try {
+        const verified = await jwtVerify(token, jwks, {
+            issuer: `https://securetoken.google.com/${projectId}`,
+            audience: projectId
+        });
+        payload = verified.payload;
+    } catch (error) {
+        if (!dev) {
+            throw error;
+        }
+
+        const header = decodeProtectedHeader(token);
+        if (header.alg !== 'none') {
+            throw error;
+        }
+
+        const decoded = decodeJwt(token);
+        if (typeof decoded.exp === 'number' && decoded.exp * 1000 <= Date.now()) {
+            throw new Error('Firebase emulator token has expired.');
+        }
+
+        payload = decoded;
+    }
 
     const uid =
         (typeof payload.user_id === 'string' && payload.user_id) ||

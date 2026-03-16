@@ -87,9 +87,11 @@
             <MessageList
                 messages={chatStore.state.messages}
                 progressEvents={chatStore.state.progressEvents}
+                contextStatusCollapsed={chatStore.state.contextStatusCollapsed}
                 audioState={chatStore.state.audio}
                 onCopy={(messageId) => void chatStore.copyMessage(messageId)}
                 onToggleAudio={(messageId) => chatStore.toggleAudio(messageId)}
+                onToggleContextStatus={() => chatStore.toggleContextStatusCollapsed()}
                 layoutMode="conversation"
                 bottomInset={composerDockHeight + 16 + 12}
             />

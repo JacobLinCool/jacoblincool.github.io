@@ -6,11 +6,28 @@ type ConversationDoc = {
     locale?: string;
     status?: 'pending' | 'streaming' | 'done' | 'error';
     lastTurnSeq?: number;
+    memorySummary?: string | null;
+    summarySeq?: number | null;
 };
 
 export type ConversationHandle = {
     conversationId: string;
     seq: number;
+    memorySummary: string | null;
+    summarySeq: number;
+};
+
+export type StoredConversationMessage = {
+    id: string;
+    seq: number;
+    turnId: string;
+    role: 'user' | 'assistant';
+    content: string;
+    final: boolean;
+    model: string | null;
+    usage: Record<string, unknown> | null;
+    parts: unknown[] | null;
+    createdAt: string;
 };
 
 export type EnsureConversationInput = {
@@ -26,8 +43,7 @@ export const ensureConversation = async (
     db: Firestore,
     input: EnsureConversationInput
 ): Promise<ConversationHandle> => {
-    const conversationId =
-        input.requestedConversationId ?? db.collection('conversations').doc().id;
+    const conversationId = input.requestedConversationId ?? db.collection('conversations').doc().id;
     const ref = db.doc(`conversations/${conversationId}`);
     const snapshot = await ref.get();
 
@@ -39,12 +55,16 @@ export const ensureConversation = async (
             status: 'pending',
             createdAt: nowIso(),
             updatedAt: nowIso(),
-            lastTurnSeq: 0
+            lastTurnSeq: 0,
+            memorySummary: null,
+            summarySeq: 0
         });
 
         return {
             conversationId,
-            seq: 0
+            seq: 0,
+            memorySummary: null,
+            summarySeq: 0
         };
     }
 
@@ -55,7 +75,9 @@ export const ensureConversation = async (
 
     return {
         conversationId,
-        seq: typeof existing.lastTurnSeq === 'number' ? existing.lastTurnSeq : 0
+        seq: typeof existing.lastTurnSeq === 'number' ? existing.lastTurnSeq : 0,
+        memorySummary: typeof existing.memorySummary === 'string' ? existing.memorySummary : null,
+        summarySeq: typeof existing.summarySeq === 'number' ? existing.summarySeq : 0
     };
 };
 
@@ -70,10 +92,13 @@ export const persistConversationMessage = async (
     meta?: {
         model?: string;
         usage?: Record<string, unknown>;
+        parts?: unknown[];
     }
 ) => {
     await db
-        .doc(`conversations/${conversationId}/messages/${role}-${turnId}-${String(seq).padStart(6, '0')}`)
+        .doc(
+            `conversations/${conversationId}/messages/${role}-${turnId}-${String(seq).padStart(6, '0')}`
+        )
         .set({
             seq,
             turnId,
@@ -82,6 +107,7 @@ export const persistConversationMessage = async (
             final,
             model: meta?.model ?? null,
             usage: meta?.usage ?? null,
+            parts: Array.isArray(meta?.parts) ? meta?.parts : null,
             createdAt: nowIso()
         });
 };
@@ -117,6 +143,48 @@ export const updateConversationStatus = async (
             updatedAt: nowIso(),
             lastTurnSeq,
             lastEventAt: FieldValue.serverTimestamp()
+        },
+        { merge: true }
+    );
+};
+
+export const listConversationMessages = async (
+    db: Firestore,
+    conversationId: string
+): Promise<StoredConversationMessage[]> => {
+    const snapshot = await db
+        .collection(`conversations/${conversationId}/messages`)
+        .orderBy('seq', 'asc')
+        .get();
+
+    return snapshot.docs.map((doc) => {
+        const raw = doc.data() as Partial<StoredConversationMessage>;
+        return {
+            id: doc.id,
+            seq: typeof raw.seq === 'number' ? raw.seq : 0,
+            turnId: typeof raw.turnId === 'string' ? raw.turnId : '',
+            role: raw.role === 'assistant' ? 'assistant' : 'user',
+            content: typeof raw.content === 'string' ? raw.content : '',
+            final: raw.final !== false,
+            model: typeof raw.model === 'string' ? raw.model : null,
+            usage: raw.usage && typeof raw.usage === 'object' ? raw.usage : null,
+            parts: Array.isArray(raw.parts) ? raw.parts : null,
+            createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : ''
+        };
+    });
+};
+
+export const updateConversationMemorySummary = async (
+    db: Firestore,
+    conversationId: string,
+    memorySummary: string | null,
+    summarySeq: number
+) => {
+    await db.doc(`conversations/${conversationId}`).set(
+        {
+            memorySummary,
+            summarySeq,
+            updatedAt: nowIso()
         },
         { merge: true }
     );

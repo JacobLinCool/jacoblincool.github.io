@@ -32,18 +32,21 @@ export type ChatSseStatusEvent = {
     type: 'status';
     status: 'collecting_context' | 'generating_answer' | 'completed';
     conversationId: string;
+    detail?: string | null;
 };
 
 export type ChatSseToolCallEvent = {
     type: 'tool_call';
-    tool: 'github' | 'huggingface';
-    entityKey: string;
+    tool: 'site' | 'github' | 'huggingface';
+    target: string;
+    label: string;
 };
 
 export type ChatSseToolResultEvent = {
     type: 'tool_result';
-    tool: 'github' | 'huggingface';
-    entityKey: string;
+    tool: 'site' | 'github' | 'huggingface';
+    target: string;
+    label: string;
     result: 'success' | 'failed';
     revision?: string;
     error?: string;

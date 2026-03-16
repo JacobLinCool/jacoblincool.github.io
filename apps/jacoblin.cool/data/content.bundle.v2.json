@@ -1,0 +1,198 @@
+{
+    "versionId": "v2",
+    "updatedAt": "2026-03-16T00:00:00.000Z",
+    "publishLocales": ["en", "zh-tw"],
+    "locales": [{ "locale": "en" }, { "locale": "zh-tw" }],
+    "template": {
+        "home": {
+            "scholar": {
+                "profileUrl": "https://scholar.google.com/citations?user=BdzYgY0AAAAJ",
+                "citations": 8,
+                "hIndex": 2,
+                "i10Index": 0,
+                "topics": ["Human-Computer Interaction", "AI Agents", "Software Engineering"]
+            },
+            "researchQuestions": [
+                {
+                    "id": "rq-agent-collaboration",
+                    "title": "Multi-Human Steering for Agent Systems",
+                    "question": "How should teams coordinate around a shared agent system when planning, analysis, and execution all happen faster than any single person can fully review?",
+                    "whyItMatters": "One person should not carry the full cost of understanding, auditing, and steering a high-speed agent. I want collaboration models where people guide the system from different areas of expertise instead of chasing it alone.",
+                    "currentDirection": "I am studying interaction models where multiple people provide feedback, constraints, and reinforcement through a unified agent interface so teams can stay aligned without forcing everyone to inspect everything.",
+                    "promptId": "research-agent-collaboration"
+                },
+                {
+                    "id": "rq-agent-software-engineering",
+                    "title": "Interfaces for Agent-Driven Software Engineering",
+                    "question": "What new development environments, representations, and visualizations do we need when agents can read, modify, and generate code faster than humans can track?",
+                    "whyItMatters": "Traditional code editors assume humans inspect changes directly, while pure CLI workflows compress away too much context. Neither is enough when agent activity becomes dense, parallel, and continuous.",
+                    "currentDirection": "I am exploring workflow designs that make agent behavior observable, reviewable, and steerable so humans can keep judgment and control inside highly automated engineering loops.",
+                    "promptId": "research-agent-software-engineering"
+                },
+                {
+                    "id": "rq-software-evolution",
+                    "title": "Shortening the Path from User Need to Software Change",
+                    "question": "How can software evolve much faster in agent-mediated product teams without losing safety, controllability, or human understanding?",
+                    "whyItMatters": "As agents get better at turning intent into concrete changes, the distance between end users and software updates can shrink dramatically. We need new processes that preserve oversight while letting products adapt faster.",
+                    "currentDirection": "I am thinking about frameworks, governance mechanisms, and transition paths that help teams move into agent-driven work while redirecting human effort toward deeper reasoning, creativity, and cross-domain problem solving.",
+                    "promptId": "research-software-evolution"
+                }
+            ],
+            "publications": [
+                {
+                    "id": "pub-si-2025-open-track",
+                    "title": "The NTNU System at the S&I Challenge 2025 SLA Open Track",
+                    "authors": "HY Lin, TH Lo, YH Fang, JK Lin, CC Wang, HC Lu, B Chen",
+                    "venue": "arXiv:2506.05121",
+                    "year": 2025,
+                    "citations": 2,
+                    "impact": "A shared-task system paper on spoken language assessment that combines complementary speech and multimodal signals in a single evaluation pipeline.",
+                    "summary": "It documents the NTNU approach, task setup, and practical tradeoffs involved in building a competitive challenge submission.",
+                    "url": "https://arxiv.org/abs/2506.05121",
+                    "tags": ["SLA", "ASR", "Multimodal"],
+                    "promptId": "paper-si-2025"
+                },
+                {
+                    "id": "pub-asa-multifaceted-2025",
+                    "title": "Advancing Automated Speaking Assessment Leveraging Multifaceted Relevance and Grammar Information",
+                    "authors": "HC Lu, JK Lin, HY Lin, CC Wang, B Chen",
+                    "venue": "arXiv:2506.16285",
+                    "year": 2025,
+                    "citations": 1,
+                    "impact": "A study of automated speaking assessment that brings together relevance and grammar signals instead of relying on a single coarse judgment.",
+                    "summary": "The experiments examine how richer linguistic structure can improve scoring reliability and make the model's reasoning easier to analyze.",
+                    "url": "https://arxiv.org/abs/2506.16285",
+                    "tags": ["Automated Speaking Assessment", "Grammar", "Relevance"],
+                    "promptId": "paper-asa-relevance"
+                },
+                {
+                    "id": "pub-hesitation-tagging-2025",
+                    "title": "Acoustically Precise Hesitation Tagging Is Essential for End-to-End Verbatim Transcription Systems",
+                    "authors": "JK Lin, HC Lu, CC Wang, HY Lin, B Chen",
+                    "venue": "arXiv:2506.04076",
+                    "year": 2025,
+                    "citations": 1,
+                    "impact": "A transcription study showing that hesitation should be modeled explicitly rather than collapsed away in end-to-end verbatim ASR systems.",
+                    "summary": "The results show that preserving disfluency as first-class information improves fidelity for realistic speech transcription tasks.",
+                    "url": "https://arxiv.org/abs/2506.04076",
+                    "tags": ["Verbatim ASR", "Whisper", "Disfluency"],
+                    "promptId": "paper-hesitation-tagging"
+                }
+            ],
+            "projects": [
+                {
+                    "id": "project-d1-manager",
+                    "name": "d1-manager",
+                    "description": "A database workbench for Cloudflare D1 with schema browsing, query tools, and natural-language assistance for inspecting and debugging data.",
+                    "url": "https://github.com/JacobLinCool/d1-manager",
+                    "language": "Svelte",
+                    "stars": 609,
+                    "updatedAt": "2026-02-16T15:19:50Z",
+                    "promptId": "project-d1-manager"
+                },
+                {
+                    "id": "project-smart-whisper",
+                    "name": "smart-whisper",
+                    "description": "A Node.js addon around whisper.cpp focused on practical model loading, offloading, and runtime integration for speech applications.",
+                    "url": "https://github.com/JacobLinCool/smart-whisper",
+                    "language": "TypeScript",
+                    "stars": 72,
+                    "updatedAt": "2026-02-16T08:28:14Z",
+                    "promptId": "project-smart-whisper"
+                },
+                {
+                    "id": "project-leetcode-stats-card",
+                    "name": "LeetCode-Stats-Card",
+                    "description": "A card generator that turns LeetCode activity into embeddable visuals for GitHub profiles and personal sites.",
+                    "url": "https://github.com/JacobLinCool/LeetCode-Stats-Card",
+                    "language": "TypeScript",
+                    "stars": 893,
+                    "updatedAt": "2026-02-15T22:06:53Z",
+                    "promptId": "project-leetcode-card"
+                }
+            ]
+        },
+        "chat": {
+            "taglines": [
+                "I am Jacob",
+                "I study Human-Computer Interaction",
+                "I work on AI agents, software systems, and collaboration",
+                "I build tools, systems, and research prototypes",
+                "I study how people work together with AI",
+                "I also build open-source tools and ML projects",
+                "I am a 1st Year Graduate Student at NYCU",
+                "I like turning ideas into usable systems",
+                "Nice to meet you!"
+            ],
+            "promptChips": [
+                {
+                    "id": "intro-work",
+                    "label": "What are you studying now?",
+                    "prompt": "What are your current research interests, and what problems are you trying to solve in the Agent era?"
+                },
+                {
+                    "id": "research-focus",
+                    "label": "Research interests",
+                    "prompt": "What is your research focus around agent collaboration, HCI, and agent-driven software engineering?"
+                },
+                {
+                    "id": "dev-journey",
+                    "label": "Your journey into tech",
+                    "prompt": "How did you get into programming and technology? What shaped your path?"
+                },
+                {
+                    "id": "site-behind",
+                    "label": "How was this site built?",
+                    "prompt": "What technologies and ideas went into building this personal site?"
+                }
+            ],
+            "deepDivePrompts": {
+                "research-agent-collaboration": {
+                    "id": "research-agent-collaboration",
+                    "label": "Deep dive: Multi-human agent collaboration",
+                    "prompt": "Deep dive into your work on multi-human steering for agent systems. How do you think teams should coordinate, align, and review shared agents without forcing one person to understand everything?"
+                },
+                "research-agent-software-engineering": {
+                    "id": "research-agent-software-engineering",
+                    "label": "Deep dive: Agent-driven software engineering",
+                    "prompt": "Explain your research on agent-driven software engineering. What new development environments, interfaces, and visualizations do you think we need once agents can change code faster than humans can track?"
+                },
+                "research-software-evolution": {
+                    "id": "research-software-evolution",
+                    "label": "Deep dive: Faster software evolution",
+                    "prompt": "Walk me through your thinking on faster software evolution in the Agent era. How can end-user needs move closer to real product changes without losing safety, controllability, or human understanding?"
+                },
+                "paper-si-2025": {
+                    "id": "paper-si-2025",
+                    "label": "Ask about the challenge system",
+                    "prompt": "Can you walk me through your S&I Challenge 2025 system, what signals it combined, and what you learned from building it for the shared task?"
+                },
+                "paper-asa-relevance": {
+                    "id": "paper-asa-relevance",
+                    "label": "Ask about speaking assessment design",
+                    "prompt": "Can you explain the motivation behind combining relevance and grammar information in automated speaking assessment, and what the experiments showed?"
+                },
+                "paper-hesitation-tagging": {
+                    "id": "paper-hesitation-tagging",
+                    "label": "Ask about hesitation tagging",
+                    "prompt": "Why is acoustically precise hesitation tagging important for end-to-end verbatim transcription, and what changed when you modeled it explicitly?"
+                },
+                "project-d1-manager": {
+                    "id": "project-d1-manager",
+                    "label": "Ask about d1-manager",
+                    "prompt": "What problems were you trying to solve with d1-manager, and how did you design the interface for inspecting and querying Cloudflare D1 databases?"
+                },
+                "project-smart-whisper": {
+                    "id": "project-smart-whisper",
+                    "label": "Ask about smart-whisper",
+                    "prompt": "How does smart-whisper wrap whisper.cpp for Node.js, and what engineering decisions mattered for making it practical?"
+                },
+                "project-leetcode-card": {
+                    "id": "project-leetcode-card",
+                    "label": "Ask about LeetCode-Stats-Card",
+                    "prompt": "How does LeetCode-Stats-Card turn practice data into reusable visuals, and what tradeoffs mattered in the design?"
+                }
+            }
+        }
+    }
+}

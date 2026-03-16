@@ -1,299 +1,390 @@
-import { type Firestore } from 'fires2rest';
-import type { HomeCurationPayload } from '$lib/types/home';
-import type { RuntimeConfig } from '$lib/server/runtime-env';
-import { getPublishedContent } from '$lib/server/repos/content-repository';
-import { resolveDynamicTarget, type DynamicTarget } from '$lib/server/content/dynamic-sync';
-import type { DynamicSnapshotRecord } from '$lib/server/repos/dynamic-snapshot-repository';
-import type { ToolPolicy } from '$lib/server/repos/tool-policy-repository';
-import {
-    getEntityKeyFromGithubUrl,
-    getEntityKeyFromHuggingFaceUrl
-} from '$lib/server/content/dynamic-sync';
+import { getStaticPublishedContent } from '$lib/server/content/static-content';
+import type { GeminiFunctionDeclaration } from '$lib/server/llm/gemini';
+import type {
+    FeaturedProject,
+    HomeCurationPayload,
+    ProfileMetricsSnapshot,
+    PublicationHighlight,
+    ResearchQuestionCard
+} from '$lib/types/home';
 
-type ToolEventHandler = (event: {
-    type: 'tool_call_started' | 'tool_call_succeeded' | 'tool_call_failed';
-    tool: 'github' | 'huggingface';
-    entityKey: string;
-    revision?: string;
-    error?: string;
-}) => Promise<void>;
+export type SiteToolName =
+    | 'get_site_overview'
+    | 'get_scholar_profile'
+    | 'get_research_interests'
+    | 'get_previous_publications'
+    | 'get_publication_detail'
+    | 'get_side_projects'
+    | 'get_project_detail';
 
-type ContextBuilderInput = {
-    db: Firestore;
-    fetchFn: typeof fetch;
-    config: RuntimeConfig;
-    policy: ToolPolicy;
-    locale: string;
-    query: string;
-    onToolEvent?: ToolEventHandler;
-};
-
-export type ContextBundle = {
-    id: string;
-    contentVersion: string;
-    locale: string;
+export type SiteToolExecutionResult = {
+    label: string;
+    target: string;
     refs: string[];
-    dynamicRevisions: Record<string, string>;
-    contextText: string;
-    dynamicSnapshots: DynamicSnapshotRecord[];
+    payload: Record<string, unknown>;
 };
 
-type KnowledgeEntry = {
-    ref: string;
-    tags: string[];
-    text: string;
+type SiteToolDefinition = {
+    name: SiteToolName;
+    declaration: GeminiFunctionDeclaration;
+    execute: (args: Record<string, unknown>) => SiteToolExecutionResult;
 };
 
-const normalize = (value: string) => value.toLowerCase().trim();
-
-const tokenize = (value: string) =>
-    normalize(value)
-        .split(/[^a-z0-9_\-/]+/)
-        .filter((token) => token.length >= 2);
-
-const buildKnowledgeEntries = (home: HomeCurationPayload): KnowledgeEntry[] => {
-    const entries: KnowledgeEntry[] = [];
-
-    for (const item of home.researchQuestions) {
-        entries.push({
-            ref: `research:${item.id}`,
-            tags: [item.id, item.title, item.promptId],
-            text: `${item.title}\n${item.question}\n${item.whyItMatters}\n${item.currentDirection}`
-        });
-    }
-
-    for (const item of home.publications) {
-        entries.push({
-            ref: `publication:${item.id}`,
-            tags: [item.id, item.title, item.venue, ...item.tags, item.promptId],
-            text: `${item.title}\n${item.authors}\n${item.venue}\n${item.impact}\n${item.summary}`
-        });
-    }
-
-    for (const item of home.projects) {
-        entries.push({
-            ref: `project:${item.id}`,
-            tags: [item.id, item.name, item.language, item.promptId],
-            text: `${item.name}\n${item.description}\n${item.url}\nstars=${item.stars}`
-        });
-    }
-
-    for (const item of home.demos) {
-        entries.push({
-            ref: `demo:${item.id}`,
-            tags: [item.id, item.name, item.promptId],
-            text: `${item.name}\n${item.description}\n${item.url}\nlikes=${item.likes}\ndownloads=${item.downloads}`
-        });
-    }
-
-    for (const item of home.nextSteps) {
-        entries.push({
-            ref: `next_step:${item.id}`,
-            tags: [item.id, item.title, item.promptId],
-            text: `${item.title}\n${item.description}`
-        });
-    }
-
-    entries.push({
-        ref: 'scholar:profile',
-        tags: ['scholar', ...home.scholar.topics],
-        text: `Citations=${home.scholar.citations}\nH-index=${home.scholar.hIndex}\ni10-index=${home.scholar.i10Index}\nTopics=${home.scholar.topics.join(', ')}`
-    });
-
-    return entries;
+export type SiteToolRegistry = {
+    locale: string;
+    contentVersion: string;
+    refs: string[];
+    siteIndexText: string;
+    toolDeclarations: GeminiFunctionDeclaration[];
+    executeTool: (name: string, args: Record<string, unknown>) => SiteToolExecutionResult | null;
 };
 
-const selectRelevantEntries = (home: HomeCurationPayload, query: string): KnowledgeEntry[] => {
-    const entries = buildKnowledgeEntries(home);
-    const queryTokens = new Set(tokenize(query));
+const asRecord = (value: unknown): Record<string, unknown> =>
+    value && typeof value === 'object' && !Array.isArray(value)
+        ? (value as Record<string, unknown>)
+        : {};
 
-    if (queryTokens.size === 0) {
-        return entries.slice(0, 8);
+const asString = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+
+const researchRef = (id: string) => `research:${id}`;
+const publicationRef = (id: string) => `publication:${id}`;
+const projectRef = (id: string) => `project:${id}`;
+
+const buildSiteRefs = (home: HomeCurationPayload) => [
+    'site:overview',
+    'scholar:profile',
+    ...home.researchQuestions.map((item) => researchRef(item.id)),
+    ...home.publications.map((item) => publicationRef(item.id)),
+    ...home.projects.map((item) => projectRef(item.id))
+];
+
+const toResearchListItem = (item: ResearchQuestionCard) => ({
+    id: item.id,
+    title: item.title,
+    question: item.question
+});
+
+const toPublicationListItem = (item: PublicationHighlight) => ({
+    id: item.id,
+    title: item.title,
+    year: item.year,
+    venue: item.venue,
+    citations: item.citations,
+    tags: item.tags
+});
+
+const toProjectListItem = (item: FeaturedProject) => ({
+    id: item.id,
+    name: item.name,
+    language: item.language,
+    stars: item.stars,
+    updatedAt: item.updatedAt
+});
+
+const buildSiteOverview = (home: HomeCurationPayload, locale: string, contentVersion: string) => ({
+    locale,
+    contentVersion,
+    sections: {
+        scholarProfile: {
+            topics: home.scholar.topics,
+            citations: home.scholar.citations,
+            hIndex: home.scholar.hIndex,
+            i10Index: home.scholar.i10Index
+        },
+        researchInterests: home.researchQuestions.map(toResearchListItem),
+        previousPublications: home.publications.map(toPublicationListItem),
+        sideProjects: home.projects.map(toProjectListItem)
+    },
+    counts: {
+        researchInterests: home.researchQuestions.length,
+        previousPublications: home.publications.length,
+        sideProjects: home.projects.length
     }
+});
 
-    const scored = entries
-        .map((entry) => {
-            const tokenPool = tokenize(`${entry.tags.join(' ')} ${entry.text}`);
-            let score = 0;
-            for (const token of tokenPool) {
-                if (queryTokens.has(token)) {
-                    score += 1;
-                }
-            }
-            return { entry, score };
-        })
-        .sort((left, right) => right.score - left.score);
-
-    const selected = scored.filter((item) => item.score > 0).slice(0, 10).map((item) => item.entry);
-    return selected.length > 0 ? selected : entries.slice(0, 8);
-};
-
-const createDynamicTargets = (
-    home: HomeCurationPayload,
-    query: string,
-    config: RuntimeConfig
-): DynamicTarget[] => {
-    const text = normalize(query);
-    const targets: DynamicTarget[] = [];
-
-    const asksGithubSummary =
-        text.includes('github') ||
-        text.includes('star') ||
-        text.includes('follower') ||
-        text.includes('repo') ||
-        text.includes('repository');
-
-    const asksHuggingFaceSummary =
-        text.includes('huggingface') ||
-        text.includes('space') ||
-        text.includes('model') ||
-        text.includes('download');
-
-    if (asksGithubSummary) {
-        targets.push({
-            kind: 'github_user_summary',
-            source: 'github',
-            entityKey: `user:${config.githubUser.toLowerCase()}`
-        });
-    }
-
-    if (asksHuggingFaceSummary) {
-        targets.push({
-            kind: 'huggingface_user_summary',
-            source: 'huggingface',
-            entityKey: `user:${config.huggingfaceUser.toLowerCase()}`
-        });
-    }
-
-    for (const project of home.projects) {
-        const repoEntityKey = getEntityKeyFromGithubUrl(project.url);
-        if (!repoEntityKey) {
-            continue;
-        }
-
-        const projectTokens = tokenize(`${project.name} ${repoEntityKey}`);
-        if (!projectTokens.some((token) => text.includes(token))) {
-            continue;
-        }
-
-        targets.push({
-            kind: 'github_repo_detail',
-            source: 'github',
-            entityKey: repoEntityKey
-        });
-    }
-
-    for (const demo of home.demos) {
-        const parsed = getEntityKeyFromHuggingFaceUrl(demo.url);
-        if (!parsed) {
-            continue;
-        }
-
-        const demoTokens = tokenize(`${demo.name} ${parsed.id}`);
-        if (!demoTokens.some((token) => text.includes(token))) {
-            continue;
-        }
-
-        if (parsed.type === 'space') {
-            targets.push({
-                kind: 'huggingface_space_detail',
-                source: 'huggingface',
-                entityKey: parsed.id
-            });
-        } else {
-            targets.push({
-                kind: 'huggingface_model_detail',
-                source: 'huggingface',
-                entityKey: parsed.id
-            });
-        }
-    }
-
-    const deduped = new Map<string, DynamicTarget>();
-    for (const target of targets) {
-        deduped.set(`${target.kind}:${target.entityKey}`, target);
-    }
-
-    return [...deduped.values()];
-};
-
-const buildContextText = (
-    query: string,
-    entries: KnowledgeEntry[],
-    dynamicSnapshots: DynamicSnapshotRecord[]
-) => {
-    const staticSection = entries
-        .map((entry) => `### ${entry.ref}\n${entry.text}`)
-        .join('\n\n');
-
-    const dynamicSection = dynamicSnapshots
-        .map(
-            (snapshot) =>
-                `### dynamic:${snapshot.source}:${snapshot.entityKey} (revision=${snapshot.revision})\n${JSON.stringify(snapshot.payload, null, 2)}`
-        )
-        .join('\n\n');
+const buildSiteIndexText = (home: HomeCurationPayload, locale: string, contentVersion: string) => {
+    const research = home.researchQuestions
+        .map((item) => `  - [${item.id}] ${item.title}`)
+        .join('\n');
+    const publications = home.publications
+        .map((item) => `  - [${item.id}] ${item.year} ${item.title} (${item.tags.join(', ')})`)
+        .join('\n');
+    const projects = home.projects
+        .map((item) => `  - [${item.id}] ${item.name} (${item.language}, ${item.stars} stars)`)
+        .join('\n');
 
     return [
-        'You are Jacob Lin website assistant.',
-        'Use grounded content first. If extra knowledge is used, explicitly mark it as supplemental in prose.',
-        'Do not invent unverifiable metrics or project details.',
-        `User query:\n${query}`,
-        `\n[GROUNDING_STATIC]\n${staticSection}`,
-        dynamicSection ? `\n[GROUNDING_DYNAMIC]\n${dynamicSection}` : ''
-    ]
-        .filter(Boolean)
-        .join('\n\n');
+        `Published site knowledge index (locale=${locale}, version=${contentVersion}):`,
+        `- Scholar topics: ${home.scholar.topics.join(', ')}`,
+        `- Research interests (${home.researchQuestions.length}):`,
+        research,
+        `- Previous publications (${home.publications.length}):`,
+        publications,
+        `- Side projects (${home.projects.length}):`,
+        projects,
+        'Use site tools for detailed content instead of guessing from the index alone.'
+    ].join('\n');
 };
 
-const createContextBundleId = () => `ctx-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+const buildErrorPayload = (message: string) => ({
+    ok: false,
+    error: message
+});
 
-export const buildContextBundle = async (input: ContextBuilderInput): Promise<ContextBundle> => {
-    const published = await getPublishedContent(input.db, input.locale);
-    const relevantEntries = selectRelevantEntries(published.bundle.home, input.query);
+const buildScholarPayload = (scholar: ProfileMetricsSnapshot['scholar']) => ({
+    ok: true,
+    scholar
+});
 
-    const candidateTargets = createDynamicTargets(published.bundle.home, input.query, input.config).slice(
-        0,
-        input.policy.maxCallsPerTurn
-    );
+const buildResearchPayload = (items: ResearchQuestionCard[]) => ({
+    ok: true,
+    researchInterests: items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        question: item.question,
+        whyItMatters: item.whyItMatters,
+        currentDirection: item.currentDirection
+    }))
+});
 
-    const dynamicSnapshots: DynamicSnapshotRecord[] = [];
-    for (const target of candidateTargets) {
-        const snapshot = await resolveDynamicTarget({
-            db: input.db,
-            fetchFn: input.fetchFn,
-            config: input.config,
-            policy: input.policy,
-            target,
-            onToolEvent: input.onToolEvent
-        });
-        dynamicSnapshots.push(snapshot);
-    }
+const buildPublicationListPayload = (items: PublicationHighlight[]) => ({
+    ok: true,
+    previousPublications: items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        year: item.year,
+        venue: item.venue,
+        citations: item.citations,
+        tags: item.tags,
+        summary: item.summary
+    }))
+});
 
-    const dynamicRevisions: Record<string, string> = {};
-    for (const snapshot of dynamicSnapshots) {
-        dynamicRevisions[`${snapshot.source}:${snapshot.entityKey}`] = snapshot.revision;
-    }
+const buildProjectListPayload = (items: FeaturedProject[]) => ({
+    ok: true,
+    sideProjects: items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        language: item.language,
+        stars: item.stars,
+        updatedAt: item.updatedAt,
+        description: item.description
+    }))
+});
 
-    const contextText = buildContextText(input.query, relevantEntries, dynamicSnapshots);
-    const bundleId = createContextBundleId();
+const buildPublicationDetailPayload = (item: PublicationHighlight | undefined) =>
+    item
+        ? {
+              ok: true,
+              publication: {
+                  id: item.id,
+                  title: item.title,
+                  authors: item.authors,
+                  venue: item.venue,
+                  year: item.year,
+                  citations: item.citations,
+                  tags: item.tags,
+                  impact: item.impact,
+                  summary: item.summary,
+                  url: item.url
+              }
+          }
+        : buildErrorPayload('Unknown publication id.');
 
-    await input.db.doc(`context_bundles/${bundleId}`).set({
-        id: bundleId,
-        contentVersion: published.versionId,
-        locale: published.locale,
-        refs: relevantEntries.map((entry) => entry.ref),
-        dynamicRevisions,
-        contextText,
-        createdAt: new Date().toISOString()
-    });
+const buildProjectDetailPayload = (item: FeaturedProject | undefined) =>
+    item
+        ? {
+              ok: true,
+              project: {
+                  id: item.id,
+                  name: item.name,
+                  description: item.description,
+                  url: item.url,
+                  language: item.language,
+                  stars: item.stars,
+                  updatedAt: item.updatedAt
+              }
+          }
+        : buildErrorPayload('Unknown project id.');
+
+export const createSiteToolRegistry = (locale: string): SiteToolRegistry => {
+    const published = getStaticPublishedContent(locale);
+    const home = published.bundle.home;
+    const refs = buildSiteRefs(home);
+    const siteOverview = buildSiteOverview(home, published.locale, published.versionId);
+
+    const publicationById = new Map(home.publications.map((item) => [item.id, item]));
+    const projectById = new Map(home.projects.map((item) => [item.id, item]));
+
+    const tools: SiteToolDefinition[] = [
+        {
+            name: 'get_site_overview',
+            declaration: {
+                name: 'get_site_overview',
+                description:
+                    'Read the published site structure, section counts, and item ids before choosing more specific site tools.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {}
+                }
+            },
+            execute: () => ({
+                label: 'Reading site overview',
+                target: 'site overview',
+                refs: ['site:overview'],
+                payload: {
+                    ok: true,
+                    overview: siteOverview
+                }
+            })
+        },
+        {
+            name: 'get_scholar_profile',
+            declaration: {
+                name: 'get_scholar_profile',
+                description:
+                    'Read the published scholar profile, including topics and citation metrics.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {}
+                }
+            },
+            execute: () => ({
+                label: 'Reading scholar profile',
+                target: 'scholar profile',
+                refs: ['scholar:profile'],
+                payload: buildScholarPayload(home.scholar)
+            })
+        },
+        {
+            name: 'get_research_interests',
+            declaration: {
+                name: 'get_research_interests',
+                description:
+                    'Read the full published research interests section, including questions, why they matter, and current directions.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {}
+                }
+            },
+            execute: () => ({
+                label: 'Reading research interests',
+                target: 'research interests',
+                refs: home.researchQuestions.map((item) => researchRef(item.id)),
+                payload: buildResearchPayload(home.researchQuestions)
+            })
+        },
+        {
+            name: 'get_previous_publications',
+            declaration: {
+                name: 'get_previous_publications',
+                description:
+                    'Read the list of previous publications with ids, venues, years, tags, and summaries.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {}
+                }
+            },
+            execute: () => ({
+                label: 'Reading previous publications',
+                target: 'previous publications',
+                refs: home.publications.map((item) => publicationRef(item.id)),
+                payload: buildPublicationListPayload(home.publications)
+            })
+        },
+        {
+            name: 'get_publication_detail',
+            declaration: {
+                name: 'get_publication_detail',
+                description: 'Read the full published details for one publication by id.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        id: {
+                            type: 'STRING',
+                            description: 'Publication id from get_previous_publications.',
+                            enum: home.publications.map((item) => item.id)
+                        }
+                    },
+                    required: ['id']
+                }
+            },
+            execute: (args) => {
+                const id = asString(args.id);
+                const publication = publicationById.get(id);
+
+                return {
+                    label: publication
+                        ? `Reading publication: ${publication.title}`
+                        : 'Reading publication details',
+                    target: publication?.id ?? (id || 'publication detail'),
+                    refs: publication ? [publicationRef(publication.id)] : [],
+                    payload: buildPublicationDetailPayload(publication)
+                };
+            }
+        },
+        {
+            name: 'get_side_projects',
+            declaration: {
+                name: 'get_side_projects',
+                description:
+                    'Read the list of side projects with ids, languages, stars, and short descriptions.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {}
+                }
+            },
+            execute: () => ({
+                label: 'Reading side projects',
+                target: 'side projects',
+                refs: home.projects.map((item) => projectRef(item.id)),
+                payload: buildProjectListPayload(home.projects)
+            })
+        },
+        {
+            name: 'get_project_detail',
+            declaration: {
+                name: 'get_project_detail',
+                description: 'Read the full published details for one side project by id.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        id: {
+                            type: 'STRING',
+                            description: 'Project id from get_side_projects.',
+                            enum: home.projects.map((item) => item.id)
+                        }
+                    },
+                    required: ['id']
+                }
+            },
+            execute: (args) => {
+                const id = asString(args.id);
+                const project = projectById.get(id);
+
+                return {
+                    label: project ? `Reading project: ${project.name}` : 'Reading project details',
+                    target: project?.id ?? (id || 'project detail'),
+                    refs: project ? [projectRef(project.id)] : [],
+                    payload: buildProjectDetailPayload(project)
+                };
+            }
+        }
+    ];
 
     return {
-        id: bundleId,
-        contentVersion: published.versionId,
         locale: published.locale,
-        refs: relevantEntries.map((entry) => entry.ref),
-        dynamicRevisions,
-        contextText,
-        dynamicSnapshots
+        contentVersion: published.versionId,
+        refs,
+        siteIndexText: buildSiteIndexText(home, published.locale, published.versionId),
+        toolDeclarations: tools.map((tool) => tool.declaration),
+        executeTool: (name, args) => {
+            const tool = tools.find((candidate) => candidate.name === name);
+            if (!tool) {
+                return null;
+            }
+
+            return tool.execute(asRecord(args));
+        }
     };
 };

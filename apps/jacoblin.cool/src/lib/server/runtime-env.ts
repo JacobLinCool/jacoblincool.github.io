@@ -8,10 +8,10 @@ export type RuntimeConfig = {
     firestorePrivateKey: string | null;
     firestoreEmulatorHost: string | null;
     ownerUid: string | null;
-    openaiApiUrl: string;
-    openaiApiKey: string | null;
-    openaiChatModel: string;
-    openaiMaxCompletionTokens: number;
+    geminiApiBaseUrl: string;
+    geminiApiKey: string | null;
+    geminiModel: string;
+    geminiMaxOutputTokens: number;
     githubUser: string;
     huggingfaceUser: string;
 };
@@ -55,8 +55,7 @@ const readNumber = (key: string, fallback: number, platformEnv?: EnvLike) => {
     return parsed;
 };
 
-const normalizePrivateKey = (value: string | null) =>
-    value ? value.replace(/\\n/g, '\n') : null;
+const normalizePrivateKey = (value: string | null) => (value ? value.replace(/\\n/g, '\n') : null);
 
 export const readRuntimeConfig = (platformEnv?: EnvLike): RuntimeConfig => {
     const firestoreProjectId =
@@ -82,15 +81,13 @@ export const readRuntimeConfig = (platformEnv?: EnvLike): RuntimeConfig => {
         ),
         firestoreEmulatorHost: readString('FIRESTORE_EMULATOR_HOST', platformEnv),
         ownerUid: readString('OWNER_UID', platformEnv),
-        openaiApiUrl:
-            readString('OPENAI_API_URL', platformEnv) ?? 'https://api.openai.com/v1/chat/completions',
-        openaiApiKey: readString('OPENAI_API_KEY', platformEnv),
-        openaiChatModel: readString('OPENAI_CHAT_MODEL', platformEnv) ?? 'gpt-4o-mini',
-        openaiMaxCompletionTokens: readNumber(
-            'OPENAI_CHAT_MAX_COMPLETION_TOKENS',
-            512,
-            platformEnv
-        ),
+        geminiApiBaseUrl:
+            readString('GEMINI_API_BASE_URL', platformEnv) ??
+            'https://generativelanguage.googleapis.com/v1beta',
+        geminiApiKey: readString('GEMINI_API_KEY', platformEnv),
+        geminiModel:
+            readString('GEMINI_CHAT_MODEL', platformEnv) ?? 'gemini-3.1-flash-lite-preview',
+        geminiMaxOutputTokens: readNumber('GEMINI_MAX_OUTPUT_TOKENS', 1024, platformEnv),
         githubUser: readString('GITHUB_USER', platformEnv) ?? 'JacobLinCool',
         huggingfaceUser: readString('HUGGINGFACE_USER', platformEnv) ?? 'JacobLinCool'
     };

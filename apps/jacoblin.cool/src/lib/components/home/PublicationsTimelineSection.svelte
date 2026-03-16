@@ -125,15 +125,24 @@
     });
 </script>
 
-<section aria-labelledby="publications-heading" class="section-shell rounded-3xl border border-white/10 bg-black/30 p-6 sm:p-9 lg:p-10">
+<section
+    aria-labelledby="publications-heading"
+    class="section-shell rounded-3xl border border-white/10 bg-black/30 p-6 sm:p-9 lg:p-10"
+>
     <div class="mb-10 flex items-start justify-between gap-5 sm:mb-12">
         <div class="flex max-w-[72ch] flex-col gap-3">
-            <p class="text-xs font-semibold tracking-[0.22em] text-emerald-300/85 uppercase">Research Evidence</p>
-            <h2 id="publications-heading" class="text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl">
-                Papers and Milestones
+            <p class="text-xs font-semibold tracking-[0.22em] text-emerald-300/85 uppercase">
+                Previous Publications
+            </p>
+            <h2
+                id="publications-heading"
+                class="text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl"
+            >
+                Selected Papers from Earlier Work
             </h2>
             <p class="text-sm text-zinc-300 sm:text-base">
-                Selected work from {publicationYearRangeLabel} and what each project changed.
+                Selected papers from {publicationYearRangeLabel} on speech assessment, transcription fidelity,
+                and multimodal systems.
             </p>
         </div>
 
@@ -166,9 +175,13 @@
             onwheel={handleRailWheel}
         >
             {#each publications as publication, index (publication.id)}
-                <li class="home-rail-item publication-rail-item home-surface-soft relative flex h-full flex-col p-5 sm:p-6">
+                <li
+                    class="home-rail-item publication-rail-item home-surface-soft relative flex h-full flex-col p-5 sm:p-6"
+                >
                     <div class="mb-3 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
-                        <span class="rounded-full border border-white/12 px-2 py-1">{publication.year}</span>
+                        <span class="rounded-full border border-white/12 px-2 py-1"
+                            >{publication.year}</span
+                        >
                         <span class="rounded-full border border-white/12 px-2 py-1">
                             {getCitationLabel(publication.citations)}
                         </span>
@@ -178,23 +191,41 @@
                     </div>
 
                     <div class="publication-header">
-                        <h3 class="publication-title text-lg font-semibold tracking-tight text-zinc-100">
+                        <h3
+                            class="publication-title text-lg font-semibold tracking-tight text-zinc-100"
+                        >
                             {publication.title}
                         </h3>
-                        <p class="publication-authors mt-1 text-sm text-zinc-400">{publication.authors}</p>
-                        <p class="publication-venue mt-1 text-sm text-zinc-500">{publication.venue}</p>
+                        <p class="publication-authors mt-1 text-sm text-zinc-400">
+                            {publication.authors}
+                        </p>
+                        <p class="publication-venue mt-1 text-sm text-zinc-500">
+                            {publication.venue}
+                        </p>
                     </div>
 
                     <div class="mt-4 grid flex-1 content-start gap-4 md:grid-cols-2">
                         <div>
-                            <p class="text-xs font-semibold tracking-[0.18em] text-zinc-400 uppercase">Impact</p>
-                            <p class="publication-impact mt-1 text-sm leading-relaxed text-zinc-200">
+                            <p
+                                class="text-xs font-semibold tracking-[0.18em] text-zinc-400 uppercase"
+                            >
+                                Contribution
+                            </p>
+                            <p
+                                class="publication-impact mt-1 text-sm leading-relaxed text-zinc-200"
+                            >
                                 {publication.impact}
                             </p>
                         </div>
                         <div>
-                            <p class="text-xs font-semibold tracking-[0.18em] text-zinc-400 uppercase">Key Takeaway</p>
-                            <p class="publication-summary mt-1 text-sm leading-relaxed text-zinc-200">
+                            <p
+                                class="text-xs font-semibold tracking-[0.18em] text-zinc-400 uppercase"
+                            >
+                                Summary
+                            </p>
+                            <p
+                                class="publication-summary mt-1 text-sm leading-relaxed text-zinc-200"
+                            >
                                 {publication.summary}
                             </p>
                         </div>
@@ -211,7 +242,7 @@
                         <button
                             type="button"
                             class="inline-flex cursor-pointer items-center rounded-xl border border-emerald-300/35 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-100 transition-colors duration-200 hover:border-emerald-200/55 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
-                            disabled={disabled}
+                            {disabled}
                             onclick={() => void onAskPaper(publication.promptId)}
                         >
                             Discuss this paper in chat
@@ -219,7 +250,9 @@
                     </div>
 
                     {#if index < publications.length - 1}
-                        <div class="pointer-events-none absolute -bottom-3 left-8 h-6 w-px bg-white/14 xl:hidden"></div>
+                        <div
+                            class="pointer-events-none absolute -bottom-3 left-8 h-6 w-px bg-white/14 xl:hidden"
+                        ></div>
                     {/if}
                 </li>
             {/each}

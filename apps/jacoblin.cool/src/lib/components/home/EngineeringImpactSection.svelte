@@ -105,19 +105,32 @@
     });
 </script>
 
-<section aria-labelledby="engineering-heading" class="section-shell rounded-3xl border border-white/10 bg-black/25 p-6 sm:p-9 lg:p-10">
+<section
+    aria-labelledby="engineering-heading"
+    class="section-shell rounded-3xl border border-white/10 bg-black/25 p-6 sm:p-9 lg:p-10"
+>
     <div class="mb-10 flex items-start justify-between gap-5 sm:mb-12">
         <div class="flex max-w-[72ch] flex-col gap-3">
-            <p class="text-xs font-semibold tracking-[0.22em] text-sky-300/85 uppercase">Engineering Impact</p>
-            <h2 id="engineering-heading" class="text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl">
-                From Ideas to Working Systems
+            <p class="text-xs font-semibold tracking-[0.22em] text-sky-300/85 uppercase">
+                Side Projects
+            </p>
+            <h2
+                id="engineering-heading"
+                class="text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl"
+            >
+                Open Source and Side Projects
             </h2>
             <p class="text-sm text-zinc-300 sm:text-base">
-                Selected GitHub projects with live metrics that show how I turn research ideas into practical tools.
+                A mix of developer tools, ML experiments, and open-source utilities I have built
+                over time. Some overlap with my research interests; many simply solve practical
+                problems I care about.
             </p>
         </div>
 
-        <div class="home-rail-controls hidden xl:flex" aria-label="Engineering project rail controls">
+        <div
+            class="home-rail-controls hidden xl:flex"
+            aria-label="Engineering project rail controls"
+        >
             <button
                 type="button"
                 class="home-rail-control-btn"
@@ -142,15 +155,21 @@
     <div class="metric-strip mb-8 grid gap-4 sm:grid-cols-2 lg:mb-10 lg:grid-cols-4">
         <article class="home-surface-metric home-divider-inline p-4">
             <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">Followers</p>
-            <p class="mt-2 text-2xl font-semibold text-zinc-100">{formatCount(metrics.followers)}</p>
+            <p class="mt-2 text-2xl font-semibold text-zinc-100">
+                {formatCount(metrics.followers)}
+            </p>
         </article>
         <article class="home-surface-metric home-divider-inline p-4">
             <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">Public repositories</p>
-            <p class="mt-2 text-2xl font-semibold text-zinc-100">{formatCount(metrics.publicRepos)}</p>
+            <p class="mt-2 text-2xl font-semibold text-zinc-100">
+                {formatCount(metrics.publicRepos)}
+            </p>
         </article>
         <article class="home-surface-metric home-divider-inline p-4">
             <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">Total Stars</p>
-            <p class="mt-2 text-2xl font-semibold text-zinc-100">{formatCount(metrics.totalStars)}</p>
+            <p class="mt-2 text-2xl font-semibold text-zinc-100">
+                {formatCount(metrics.totalStars)}
+            </p>
         </article>
         <article class="home-surface-metric home-divider-inline p-4">
             <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">Most starred repository</p>
@@ -166,14 +185,26 @@
             onwheel={handleRailWheel}
         >
             {#each projects as project (project.id)}
-                <article class="home-rail-item engineering-rail-item home-surface-soft flex h-full flex-col p-5 sm:p-6">
+                <article
+                    class="home-rail-item engineering-rail-item home-surface-soft flex h-full flex-col p-5 sm:p-6"
+                >
                     <div class="mb-2 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
-                        <span class="rounded-full border border-white/12 px-2 py-1">{project.language}</span>
-                        <span class="rounded-full border border-white/12 px-2 py-1">{formatCount(project.stars)} stars</span>
+                        <span class="rounded-full border border-white/12 px-2 py-1"
+                            >{project.language}</span
+                        >
+                        <span class="rounded-full border border-white/12 px-2 py-1"
+                            >{formatCount(project.stars)} stars</span
+                        >
                     </div>
 
-                    <h3 class="engineering-title text-lg font-semibold tracking-tight text-zinc-100">{project.name}</h3>
-                    <p class="mt-3 flex-1 text-sm leading-relaxed text-zinc-200">{project.description}</p>
+                    <h3
+                        class="engineering-title text-lg font-semibold tracking-tight text-zinc-100"
+                    >
+                        {project.name}
+                    </h3>
+                    <p class="mt-3 flex-1 text-sm leading-relaxed text-zinc-200">
+                        {project.description}
+                    </p>
 
                     <div class="mt-7 flex flex-wrap items-center gap-3">
                         <button
@@ -186,10 +217,10 @@
                         <button
                             type="button"
                             class="inline-flex cursor-pointer items-center rounded-xl border border-sky-300/35 bg-sky-500/10 px-3 py-2 text-sm font-medium text-sky-100 transition-colors duration-200 hover:border-sky-200/55 hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-60"
-                            disabled={disabled}
+                            {disabled}
                             onclick={() => void onDeepDive(project.promptId)}
                         >
-                            Discuss architecture choices
+                            Discuss this project in chat
                         </button>
                     </div>
                 </article>
@@ -197,7 +228,9 @@
         </div>
     </div>
 
-    <p class="mt-6 text-xs text-zinc-500">Metrics updated: {formatUtcDateTime(metrics.refreshedAt)}</p>
+    <p class="mt-6 text-xs text-zinc-500">
+        Metrics updated: {formatUtcDateTime(metrics.refreshedAt)}
+    </p>
 </section>
 
 <style>

@@ -83,7 +83,8 @@
             };
             dynamicState.data = payload.snapshots ?? [];
         } catch (error) {
-            dynamicState.error = error instanceof Error ? error.message : 'Failed to load snapshots';
+            dynamicState.error =
+                error instanceof Error ? error.message : 'Failed to load snapshots';
         } finally {
             dynamicState.loading = false;
         }
@@ -181,7 +182,7 @@
 
     <article class="rounded-2xl border border-white/10 bg-black/25 p-4">
         <div class="flex items-center justify-between">
-            <h2 class="text-lg font-medium text-zinc-100">Published Content Snapshot</h2>
+            <h2 class="text-lg font-medium text-zinc-100">Static Content Snapshot</h2>
             <button
                 type="button"
                 class="rounded-lg border border-white/20 px-3 py-2 text-sm text-zinc-200"
@@ -195,7 +196,12 @@
         {:else if contentState.error}
             <p class="mt-3 text-sm text-rose-300">{contentState.error}</p>
         {:else}
-            <pre class="mt-3 max-h-72 overflow-auto rounded-lg bg-zinc-950 p-3 text-xs text-zinc-200">{JSON.stringify(contentState.data, null, 2)}</pre>
+            <pre
+                class="mt-3 max-h-72 overflow-auto rounded-lg bg-zinc-950 p-3 text-xs text-zinc-200">{JSON.stringify(
+                    contentState.data,
+                    null,
+                    2
+                )}</pre>
         {/if}
     </article>
 
@@ -215,7 +221,12 @@
         {:else if dynamicState.error}
             <p class="mt-3 text-sm text-rose-300">{dynamicState.error}</p>
         {:else}
-            <pre class="mt-3 max-h-72 overflow-auto rounded-lg bg-zinc-950 p-3 text-xs text-zinc-200">{JSON.stringify(dynamicState.data, null, 2)}</pre>
+            <pre
+                class="mt-3 max-h-72 overflow-auto rounded-lg bg-zinc-950 p-3 text-xs text-zinc-200">{JSON.stringify(
+                    dynamicState.data,
+                    null,
+                    2
+                )}</pre>
         {/if}
     </article>
 
@@ -235,7 +246,12 @@
         {:else if conversationState.error}
             <p class="mt-3 text-sm text-rose-300">{conversationState.error}</p>
         {:else}
-            <pre class="mt-3 max-h-72 overflow-auto rounded-lg bg-zinc-950 p-3 text-xs text-zinc-200">{JSON.stringify(conversationState.data, null, 2)}</pre>
+            <pre
+                class="mt-3 max-h-72 overflow-auto rounded-lg bg-zinc-950 p-3 text-xs text-zinc-200">{JSON.stringify(
+                    conversationState.data,
+                    null,
+                    2
+                )}</pre>
         {/if}
     </article>
 </section>

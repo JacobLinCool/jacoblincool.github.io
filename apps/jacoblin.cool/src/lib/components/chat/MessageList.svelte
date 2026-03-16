@@ -1,32 +1,91 @@
 <script lang="ts">
+    import ContextStatusCard from '$lib/components/chat/ContextStatusCard.svelte';
     import MessageItem from '$lib/components/chat/MessageItem.svelte';
     import type { AudioUiState, ChatMessage, ChatProgressEvent } from '$lib/types/chat';
 
     let {
         messages,
         progressEvents = [],
+        contextStatusCollapsed = true,
         audioState,
         onCopy,
         onToggleAudio,
+        onToggleContextStatus,
         layoutMode = 'compact',
         bottomInset = 0
     }: {
         messages: ChatMessage[];
         progressEvents?: ChatProgressEvent[];
+        contextStatusCollapsed?: boolean;
         audioState: AudioUiState;
         onCopy: (messageId: string) => void;
         onToggleAudio: (messageId: string) => void;
+        onToggleContextStatus: () => void;
         layoutMode?: 'compact' | 'conversation';
         bottomInset?: number;
     } = $props();
 
     let scrollRef: HTMLDivElement | null = null;
 
+    const activeTurnView = $derived.by(() => {
+        if (messages.length === 0) {
+            return {
+                contextAnchorMessageId: null as string | null,
+                assistantMessageId: null as string | null,
+                showContextStatus: false
+            };
+        }
+
+        let lastUserIndex = -1;
+        for (let index = messages.length - 1; index >= 0; index -= 1) {
+            if (messages[index]?.role === 'user') {
+                lastUserIndex = index;
+                break;
+            }
+        }
+
+        if (lastUserIndex === -1) {
+            return {
+                contextAnchorMessageId: null as string | null,
+                assistantMessageId: null as string | null,
+                showContextStatus: false
+            };
+        }
+
+        const anchorMessageId = messages[lastUserIndex]?.id ?? null;
+        const assistantMessage = messages
+            .slice(lastUserIndex + 1)
+            .find((message) => message.role === 'assistant');
+
+        const assistantHasVisibleContent = Boolean(assistantMessage?.content.trim());
+        const showContextStatus =
+            progressEvents.length > 0 &&
+            Boolean(anchorMessageId) &&
+            Boolean(assistantMessage) &&
+            !assistantHasVisibleContent;
+
+        return {
+            contextAnchorMessageId: anchorMessageId,
+            assistantMessageId: assistantMessage?.id ?? null,
+            showContextStatus
+        };
+    });
+
     const scrollKey = $derived(
-        messages
-            .map((message) => `${message.id}:${message.content.length}:${message.status}`)
-            .join('|')
+        [
+            messages.map((message) => `${message.id}:${message.content.length}:${message.status}`).join('|'),
+            progressEvents.map((event) => `${event.id}:${event.text}`).join('|'),
+            contextStatusCollapsed ? 'collapsed' : 'expanded',
+            activeTurnView.showContextStatus ? 'status-visible' : 'response-visible'
+        ].join('||')
     );
+
+    const hiddenAssistantMessageId = $derived(
+        activeTurnView.showContextStatus ? activeTurnView.assistantMessageId : null
+    );
+
+    const contextAnchorMessageId = $derived(activeTurnView.contextAnchorMessageId);
+    const showContextStatus = $derived(activeTurnView.showContextStatus);
 
     $effect(() => {
         const signature = scrollKey;
@@ -55,21 +114,18 @@
     }`}
 >
     <ul class="space-y-3">
-        {#if progressEvents.length > 0}
-            <li>
-                <div class="rounded-2xl border border-white/10 bg-zinc-900/60 p-3 text-xs text-zinc-300">
-                    <p class="mb-2 tracking-[0.15em] text-zinc-400 uppercase">Context status</p>
-                    <ul class="space-y-1.5">
-                        {#each progressEvents as event (event.id)}
-                            <li class="leading-relaxed">{event.text}</li>
-                        {/each}
-                    </ul>
-                </div>
-            </li>
-        {/if}
-
         {#each messages as message (message.id)}
-            <MessageItem {message} {audioState} {onCopy} {onToggleAudio} />
+            {#if message.id !== hiddenAssistantMessageId}
+                <MessageItem {message} {audioState} {onCopy} {onToggleAudio} />
+            {/if}
+
+            {#if showContextStatus && message.id === contextAnchorMessageId}
+                <ContextStatusCard
+                    events={progressEvents}
+                    collapsed={contextStatusCollapsed}
+                    onToggle={onToggleContextStatus}
+                />
+            {/if}
         {/each}
     </ul>
 </div>

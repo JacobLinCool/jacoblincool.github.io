@@ -1,7 +1,5 @@
 <script lang="ts">
-    import DemoLabSection from '$lib/components/home/DemoLabSection.svelte';
     import EngineeringImpactSection from '$lib/components/home/EngineeringImpactSection.svelte';
-    import NextStepsCtaSection from '$lib/components/home/NextStepsCtaSection.svelte';
     import PublicationsTimelineSection from '$lib/components/home/PublicationsTimelineSection.svelte';
     import ResearchQuestionsSection from '$lib/components/home/ResearchQuestionsSection.svelte';
     import '$lib/components/home/home-wide-rails.css';
@@ -51,7 +49,9 @@
     </div>
 </section>
 
-<div class="home-sections home-sections-breakout mt-14 flex w-full flex-col gap-10 pb-16 sm:mt-16 sm:gap-12 sm:pb-20 lg:gap-14 lg:pb-24">
+<div
+    class="home-sections home-sections-breakout mt-14 flex w-full flex-col gap-10 pb-16 sm:mt-16 sm:gap-12 sm:pb-20 lg:gap-14 lg:pb-24"
+>
     <ResearchQuestionsSection
         questions={data.home.homePayload.researchQuestions}
         onDeepDive={handleDeepDive}
@@ -70,20 +70,6 @@
         onDeepDive={handleDeepDive}
         disabled={ctaDisabled}
     />
-
-    <DemoLabSection
-        demos={data.home.homePayload.demos}
-        metrics={data.home.homePayload.metrics.huggingface}
-        onDeepDive={handleDeepDive}
-        disabled={ctaDisabled}
-    />
-
-    <NextStepsCtaSection
-        nextSteps={data.home.homePayload.nextSteps}
-        scholar={data.home.homePayload.metrics.scholar}
-        onDeepDive={handleDeepDive}
-        disabled={ctaDisabled}
-    />
 </div>
 
 <style>
@@ -93,7 +79,7 @@
 
     .home-sections-breakout {
         --chapter-min-h: auto;
-        --chapter-gap: clamp(2.5rem, 5vw, 4.5rem);
+        --chapter-gap: clamp(2rem, 4vw, 3.5rem);
         position: relative;
         left: 0;
         width: 100%;
@@ -167,7 +153,7 @@
             --home-wide-max: 1680px;
             --home-wide-gutter: clamp(16px, 3.5vw, 72px);
             --chapter-min-h: calc(100dvh - 3.5rem - clamp(0.75rem, 1.5vh, 1.25rem));
-            --chapter-gap: clamp(5rem, 10vh, 8rem);
+            --chapter-gap: clamp(3.75rem, 7vh, 6rem);
             left: 50%;
             width: min(var(--home-wide-max), calc(100vw - (var(--home-wide-gutter) * 2)));
             transform: translateX(-50%);

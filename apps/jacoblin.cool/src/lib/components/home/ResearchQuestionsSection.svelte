@@ -96,15 +96,24 @@
     });
 </script>
 
-<section aria-labelledby="research-questions-heading" class="section-shell rounded-3xl border border-white/10 bg-black/35 p-6 sm:p-9 lg:p-10">
+<section
+    aria-labelledby="research-questions-heading"
+    class="section-shell rounded-3xl border border-white/10 bg-black/35 p-6 sm:p-9 lg:p-10"
+>
     <div class="mb-10 flex items-start justify-between gap-5 sm:mb-12">
         <div class="flex max-w-[72ch] flex-col gap-3">
-            <p class="text-xs font-semibold tracking-[0.22em] text-cyan-300/85 uppercase">Research Focus</p>
-            <h2 id="research-questions-heading" class="text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl">
-                What I'm Exploring Right Now
+            <p class="text-xs font-semibold tracking-[0.22em] text-cyan-300/85 uppercase">
+                Research Interests
+            </p>
+            <h2
+                id="research-questions-heading"
+                class="text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl"
+            >
+                How I Think About Collaboration in the Agent Era
             </h2>
             <p class="text-sm text-zinc-300 sm:text-base">
-                Pick a card to continue this topic in chat.
+                Current questions spanning multi-human steering, agent-driven engineering, and
+                faster software evolution.
             </p>
         </div>
 
@@ -137,32 +146,54 @@
             onwheel={handleRailWheel}
         >
             {#each questions as question (question.id)}
-                <article class="home-rail-item research-rail-item home-surface-soft flex h-full flex-col p-5 sm:p-6">
-                    <h3 class="research-title mb-3 text-lg font-semibold tracking-tight text-zinc-100">
+                <article
+                    class="home-rail-item research-rail-item home-surface-soft flex h-full flex-col p-5 sm:p-6"
+                >
+                    <h3
+                        class="research-title mb-3 text-lg font-semibold tracking-tight text-zinc-100"
+                    >
                         {question.title}
                     </h3>
 
                     <div class="flex-1 space-y-4">
                         <div>
-                            <p class="text-xs font-semibold tracking-[0.18em] text-zinc-400 uppercase">The Question</p>
-                            <p class="mt-1 text-sm leading-relaxed text-zinc-200">{question.question}</p>
+                            <p
+                                class="text-xs font-semibold tracking-[0.18em] text-zinc-400 uppercase"
+                            >
+                                The Question
+                            </p>
+                            <p class="mt-1 text-sm leading-relaxed text-zinc-200">
+                                {question.question}
+                            </p>
                         </div>
 
                         <div>
-                            <p class="text-xs font-semibold tracking-[0.18em] text-zinc-400 uppercase">Why This Matters</p>
-                            <p class="mt-1 text-sm leading-relaxed text-zinc-200">{question.whyItMatters}</p>
+                            <p
+                                class="text-xs font-semibold tracking-[0.18em] text-zinc-400 uppercase"
+                            >
+                                Why This Matters
+                            </p>
+                            <p class="mt-1 text-sm leading-relaxed text-zinc-200">
+                                {question.whyItMatters}
+                            </p>
                         </div>
 
                         <div>
-                            <p class="text-xs font-semibold tracking-[0.18em] text-zinc-400 uppercase">What I'm Testing Now</p>
-                            <p class="mt-1 text-sm leading-relaxed text-zinc-200">{question.currentDirection}</p>
+                            <p
+                                class="text-xs font-semibold tracking-[0.18em] text-zinc-400 uppercase"
+                            >
+                                What I'm Testing Now
+                            </p>
+                            <p class="mt-1 text-sm leading-relaxed text-zinc-200">
+                                {question.currentDirection}
+                            </p>
                         </div>
                     </div>
 
                     <button
                         type="button"
                         class="mt-7 inline-flex cursor-pointer items-center justify-center self-start rounded-xl border border-cyan-300/35 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition-colors duration-200 hover:border-cyan-200/55 hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={disabled}
+                        {disabled}
                         onclick={() => void onDeepDive(question.promptId)}
                     >
                         Continue in chat

@@ -4,14 +4,15 @@
     "version": "0.0.1",
     "type": "module",
     "scripts": {
-        "dev": "firebase emulators:exec 'vite dev'",
+        "dev": "firebase emulators:exec --ui 'vite dev'",
         "build": "vite build",
         "preview": "vite preview",
-        "seed:content": "node ./scripts/seed-content.mjs",
         "prepare": "svelte-kit sync || echo ''",
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
         "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-        "lint": "eslint ."
+        "lint": "eslint .",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "devDependencies": {
         "@eslint/compat": "^2.0.2",
@@ -42,11 +43,13 @@
         "typescript-eslint": "^8.55.0",
         "vite": "^7.3.1",
         "vite-plugin-devtools-json": "^1.0.0",
+        "vitest": "^4.1.0",
         "zod": "^4.3.6"
     },
     "dependencies": {
         "@sveltejs/adapter-cloudflare": "^7.2.8",
         "fires2rest": "^0.3.0",
-        "jose": "^6.1.3"
+        "jose": "^6.1.3",
+        "marked": "^17.0.4"
     }
 }
