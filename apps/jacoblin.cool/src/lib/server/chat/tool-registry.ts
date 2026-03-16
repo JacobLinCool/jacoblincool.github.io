@@ -46,15 +46,92 @@ export type ChatToolRegistry = {
 };
 
 const asString = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+const asBoolean = (value: unknown) => value === true;
+const asNumber = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : null);
 
 const asRecord = (value: unknown): Record<string, unknown> =>
     value && typeof value === 'object' && !Array.isArray(value)
         ? (value as Record<string, unknown>)
         : {};
 
+const normalizeLimit = (value: unknown, fallback = 8, max = 25) => {
+    const parsed = asNumber(value);
+    if (!parsed) {
+        return fallback;
+    }
+
+    return Math.max(1, Math.min(max, Math.floor(parsed)));
+};
+
 const buildFailurePayload = (error: unknown) => ({
     ok: false,
     error: error instanceof Error ? error.message : 'Tool execution failed.'
+});
+
+type GithubCatalogRepository = {
+    fullName: string;
+    name: string;
+    url: string;
+    description: string;
+    language: string;
+    stars: number;
+    forks: number;
+    archived: boolean;
+    updatedAt: string | null;
+};
+
+type GithubLanguageSummary = {
+    language: string;
+    repositories: number;
+    stars: number;
+};
+
+const toGithubCatalogRepository = (value: unknown): GithubCatalogRepository | null => {
+    const record = asRecord(value);
+    const fullName = asString(record.fullName);
+    const name = asString(record.name);
+    const url = asString(record.url);
+    const language = asString(record.language) || 'Unknown';
+    if (!fullName || !name || !url) {
+        return null;
+    }
+
+    return {
+        fullName,
+        name,
+        url,
+        description: asString(record.description),
+        language,
+        stars: asNumber(record.stars) ?? 0,
+        forks: asNumber(record.forks) ?? 0,
+        archived: asBoolean(record.archived),
+        updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : null
+    };
+};
+
+const toGithubLanguageSummary = (value: unknown): GithubLanguageSummary | null => {
+    const record = asRecord(value);
+    const language = asString(record.language);
+    if (!language) {
+        return null;
+    }
+
+    return {
+        language,
+        repositories: asNumber(record.repositories) ?? 0,
+        stars: asNumber(record.stars) ?? 0
+    };
+};
+
+const readGithubRepoCatalog = (payload: Record<string, unknown>) => ({
+    login: asString(payload.login),
+    totalRepositories: asNumber(payload.totalRepositories) ?? 0,
+    repositories: Array.isArray(payload.repositories)
+        ? payload.repositories.map(toGithubCatalogRepository).filter((repo): repo is GithubCatalogRepository => Boolean(repo))
+        : [],
+    languages: Array.isArray(payload.languages)
+        ? payload.languages.map(toGithubLanguageSummary).filter((language): language is GithubLanguageSummary => Boolean(language))
+        : []
 });
 
 const getProjectRepositoryFullName = (item: KnowledgeItem) => {
@@ -133,6 +210,103 @@ export const createChatToolRegistry = ({
                     payload: {
                         ok: true,
                         githubProfile: snapshot.payload,
+                        revision: snapshot.revision,
+                        refreshedAt: snapshot.refreshedAt
+                    }
+                };
+            }
+        },
+        {
+            source: 'github',
+            name: 'get_github_repositories',
+            declaration: {
+                name: 'get_github_repositories',
+                description:
+                    'Read the latest cached GitHub repository catalog for JacobLinCool. Use this to discover repositories by language or keyword, for example to check whether any Rust repositories exist.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        language: {
+                            type: 'STRING',
+                            description:
+                                'Optional primary language filter, for example Rust, TypeScript, or Python.'
+                        },
+                        query: {
+                            type: 'STRING',
+                            description:
+                                'Optional case-insensitive keyword filter matched against repository name, full name, or description.'
+                        },
+                        limit: {
+                            type: 'NUMBER',
+                            description: 'Optional maximum repositories to return. Default 8, max 25.'
+                        },
+                        includeArchived: {
+                            type: 'BOOLEAN',
+                            description:
+                                'Set true to include archived repositories. Default false.'
+                        }
+                    }
+                }
+            },
+            execute: async (args) => {
+                const snapshot = await resolveDynamicTarget({
+                    db,
+                    fetchFn,
+                    config,
+                    externalToolConfig,
+                    target: {
+                        kind: 'github_repo_catalog',
+                        source: 'github',
+                        entityKey: `user:${config.githubUser.toLowerCase()}:repositories`
+                    }
+                });
+
+                const catalog = readGithubRepoCatalog(snapshot.payload);
+                const language = asString(args.language);
+                const languageFilter = language.toLowerCase();
+                const query = asString(args.query);
+                const queryFilter = query.toLowerCase();
+                const includeArchived = asBoolean(args.includeArchived);
+                const limit = normalizeLimit(args.limit);
+
+                const repositories = catalog.repositories.filter((repo) => {
+                    if (!includeArchived && repo.archived) {
+                        return false;
+                    }
+
+                    if (languageFilter && repo.language.toLowerCase() !== languageFilter) {
+                        return false;
+                    }
+
+                    if (!queryFilter) {
+                        return true;
+                    }
+
+                    return [repo.fullName, repo.name, repo.description].some((field) =>
+                        field.toLowerCase().includes(queryFilter)
+                    );
+                });
+
+                return {
+                    tool: 'github',
+                    target:
+                        language || query || `user:${config.githubUser.toLowerCase()}:repositories`,
+                    label: 'Reading GitHub repositories',
+                    refs: [],
+                    revision: snapshot.revision,
+                    payload: {
+                        ok: true,
+                        login: catalog.login || config.githubUser,
+                        totalRepositories: catalog.totalRepositories,
+                        totalMatches: repositories.length,
+                        filters: {
+                            language: language || null,
+                            query: query || null,
+                            includeArchived,
+                            limit
+                        },
+                        languages: catalog.languages,
+                        repositories: repositories.slice(0, limit),
                         revision: snapshot.revision,
                         refreshedAt: snapshot.refreshedAt
                     }

@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { auth } from '$lib/firebase/client';
+import { setAnalyticsAuthState } from '$lib/services/analytics/ga';
 import { notificationStore } from '$lib/stores/notification.svelte';
 import {
     GoogleAuthProvider,
@@ -37,6 +38,9 @@ class UserStore {
         this.authUnsubscribe = onAuthStateChanged(auth, (user) => {
             this.state.user = user;
             this.state.loading = false;
+            setAnalyticsAuthState(
+                !user ? 'signed_out' : user.isAnonymous ? 'anonymous' : 'google'
+            );
 
             if (user) {
                 this.anonymousBootstrapAttempted = true;

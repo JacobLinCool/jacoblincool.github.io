@@ -9,7 +9,7 @@
     }: {
         chips: PromptChip[];
         disabled?: boolean;
-        onSelect: (prompt: string) => void;
+        onSelect: (chip: PromptChip) => void;
     } = $props();
 </script>
 
@@ -19,7 +19,7 @@
             <button
                 type="button"
                 class="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/10 bg-zinc-900/72 px-3 text-xs text-zinc-300 transition hover:border-white/18 hover:bg-zinc-800/80 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
-                onclick={() => onSelect(chip.prompt)}
+                onclick={() => onSelect(chip)}
                 {disabled}
             >
                 {#if index === 0}

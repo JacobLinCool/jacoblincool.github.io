@@ -4,45 +4,57 @@ import {
     loadConversationMemory,
     shouldRollOverConversation
 } from '$lib/server/chat/conversation-memory';
-import {
-    persistConversationMessage,
-    resolveCurrentConversation
-} from '$lib/server/repos/conversation-repository';
+import { resolveCurrentConversation } from '$lib/server/repos/conversation-repository';
 import { FakeFirestore } from '$lib/server/test-helpers/fake-firestore';
 import { describe, expect, it } from 'vitest';
 
 describe('conversation memory', () => {
-    it('replays all finalized messages from the current conversation chapter', async () => {
+    it('returns a transient handle without writing when no current conversation exists', async () => {
         const db = new FakeFirestore();
+
         const conversation = await resolveCurrentConversation(db as never, {
             ownerUid: 'user-1',
             ownerType: 'anonymous',
             locale: 'en'
         });
 
-        let seq = conversation.seq;
-        seq += 1;
-        await persistConversationMessage(
-            db as never,
-            conversation.conversationId,
-            seq,
-            'turn-1',
-            'user',
-            'Question 1',
-            true,
-            estimateTextTokens('Question 1')
-        );
-        seq += 1;
-        await persistConversationMessage(
-            db as never,
-            conversation.conversationId,
-            seq,
-            'turn-1',
-            'assistant',
-            'Answer 1',
-            true,
-            estimateTextTokens('Answer 1')
-        );
+        expect(conversation.exists).toBe(false);
+        expect(conversation.lastTurnSeq).toBe(0);
+        expect(db.dump().size).toBe(0);
+    });
+
+    it('replays embedded conversation turns from the current chapter', async () => {
+        const db = new FakeFirestore();
+        const conversationId = 'conversation-1';
+
+        await db.doc('conversation_heads/user-1').set({
+            currentConversationId: conversationId,
+            rolloverCount: 0,
+            updatedAt: '2026-03-17T00:00:00.000Z'
+        });
+        await db.doc(`conversations/${conversationId}`).set({
+            ownerUid: 'user-1',
+            ownerType: 'anonymous',
+            locale: 'en',
+            lifecycle: 'current',
+            lastTurnSeq: 1,
+            contextTokenCount: estimateTextTokens('Question 1') + estimateTextTokens('Answer 1'),
+            carryoverSummary: null,
+            continuedFromConversationId: null,
+            continuedToConversationId: null,
+            archivedAt: null,
+            archivedReason: null,
+            turns: [
+                {
+                    turnId: 'turn-1',
+                    userText: 'Question 1',
+                    assistantText: 'Answer 1',
+                    completedAt: '2026-03-17T00:00:01.000Z'
+                }
+            ],
+            createdAt: '2026-03-17T00:00:00.000Z',
+            updatedAt: '2026-03-17T00:00:01.000Z'
+        });
 
         const reloaded = await resolveCurrentConversation(db as never, {
             ownerUid: 'user-1',
@@ -51,6 +63,8 @@ describe('conversation memory', () => {
         });
         const memory = await loadConversationMemory(db as never, reloaded);
 
+        expect(reloaded.exists).toBe(true);
+        expect(reloaded.lastTurnSeq).toBe(1);
         expect(memory.carryoverSummary).toBeNull();
         expect(memory.totalFinalizedMessages).toBe(2);
         expect(memory.contents).toHaveLength(2);
@@ -68,20 +82,22 @@ describe('conversation memory', () => {
         expect(
             shouldRollOverConversation({
                 conversationId: 'conversation-a',
-                seq: 12,
+                lastTurnSeq: 12,
                 carryoverSummary: null,
                 contextTokenCount: DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS,
-                continuedFromConversationId: null
+                continuedFromConversationId: null,
+                exists: true
             })
         ).toBe(true);
 
         expect(
             shouldRollOverConversation({
                 conversationId: 'conversation-b',
-                seq: 3,
+                lastTurnSeq: 3,
                 carryoverSummary: null,
                 contextTokenCount: DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS - 1,
-                continuedFromConversationId: null
+                continuedFromConversationId: null,
+                exists: true
             })
         ).toBe(false);
     });

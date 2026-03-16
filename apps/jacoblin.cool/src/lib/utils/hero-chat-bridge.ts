@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { chatStore } from '$lib/stores/chat.svelte';
+import type { ChatPromptSubmissionMeta } from '$lib/types/chat';
 
 const HERO_CHAT_ANCHOR_ID = 'hero-chat';
 
@@ -8,7 +9,10 @@ const wait = (ms: number) =>
         setTimeout(resolve, ms);
     });
 
-export const engageHeroChat = async (prompt: string): Promise<void> => {
+export const engageHeroChat = async (
+    prompt: string,
+    metadata: ChatPromptSubmissionMeta = { source: 'chip' }
+): Promise<void> => {
     if (!prompt.trim() || chatStore.state.isStreaming) {
         return;
     }
@@ -44,5 +48,5 @@ export const engageHeroChat = async (prompt: string): Promise<void> => {
         }
     }
 
-    await chatStore.submitChipPrompt(prompt);
+    await chatStore.submitChipPrompt(prompt, metadata);
 };

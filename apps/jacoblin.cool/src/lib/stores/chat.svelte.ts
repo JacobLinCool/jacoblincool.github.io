@@ -1,6 +1,13 @@
 import { browser } from '$app/environment';
 import { publicFeatureFlags } from '$lib/config/public-flags';
 import { createAudioStub } from '$lib/services/audio-stub';
+import {
+    trackChatTurnCompleted,
+    trackChatTurnFailed,
+    trackChatTurnStarted,
+    trackContextStatusToggled,
+    trackResponseCopied
+} from '$lib/services/analytics/ga';
 import { streamChat } from '$lib/services/chat-api';
 import { notificationStore } from '$lib/stores/notification.svelte';
 import type { BackgroundEventType } from '$lib/types/background';
@@ -8,6 +15,7 @@ import type {
     AudioUiState,
     ChatMessage,
     ChatProgressEvent,
+    ChatPromptSubmissionMeta,
     ChatRole,
     ChatSseEvent,
     ConversationStage,
@@ -25,6 +33,7 @@ type ChatState = {
     promptChips: PromptChip[];
     taglines: string[];
     composer: string;
+    composerFocusRequest: number;
     isStreaming: boolean;
     conversationStage: ConversationStage;
     typingStrength: number;
@@ -45,6 +54,7 @@ class ChatStore {
         promptChips: [],
         taglines: [],
         composer: '',
+        composerFocusRequest: 0,
         isStreaming: false,
         conversationStage: 'idle',
         typingStrength: 0,
@@ -63,6 +73,9 @@ class ChatStore {
     });
 
     private submitPulseTimeout: ReturnType<typeof setTimeout> | null = null;
+    private currentTurnStartedAt: number | null = null;
+    private currentTurnPromptSource: ChatPromptSubmissionMeta['source'] = 'composer';
+    private currentTurnToolCallCount = 0;
     private constructor() {}
 
     static getInstance() {
@@ -87,16 +100,16 @@ class ChatStore {
     }
 
     async submitComposer() {
-        await this.submitPrompt(this.state.composer);
+        await this.submitPrompt(this.state.composer, { source: 'composer' });
     }
 
-    async submitChipPrompt(prompt: string) {
+    async submitChipPrompt(prompt: string, metadata: ChatPromptSubmissionMeta = { source: 'chip' }) {
         this.state.composer = prompt;
         this.state.typingStrength = Math.min(1, prompt.trim().length / 72);
-        await this.submitPrompt(prompt);
+        await this.submitPrompt(prompt, metadata);
     }
 
-    async submitPrompt(rawPrompt: string) {
+    async submitPrompt(rawPrompt: string, metadata: ChatPromptSubmissionMeta = { source: 'composer' }) {
         const prompt = rawPrompt.trim();
         if (!prompt || this.state.isStreaming) {
             return;
@@ -112,6 +125,10 @@ class ChatStore {
         this.state.composer = '';
         this.state.typingStrength = 0;
         this.audioController.stop();
+        this.currentTurnStartedAt = Date.now();
+        this.currentTurnPromptSource = metadata.source;
+        this.currentTurnToolCallCount = 0;
+        trackChatTurnStarted(metadata.source);
         this.triggerSubmitPulse();
         this.emitBackgroundEvent('submit', SUBMIT_ACTIVATION_RATIO);
 
@@ -130,12 +147,25 @@ class ChatStore {
             this.patchMessage(assistantId, (message) => {
                 message.status = 'done';
             });
+
+            const assistantMessage = this.state.messages.find((message) => message.id === assistantId);
+            trackChatTurnCompleted({
+                promptSource: this.currentTurnPromptSource,
+                latencyMs: this.currentTurnLatencyMs(),
+                responseChars: assistantMessage?.content.length ?? 0,
+                toolCallsCount: this.currentTurnToolCallCount
+            });
         } catch (error) {
             this.patchMessage(assistantId, (message) => {
                 message.content =
                     message.content.trim() ||
                     'I hit a temporary issue while collecting verified context. Please try again.';
                 message.status = 'done';
+            });
+            trackChatTurnFailed({
+                promptSource: this.currentTurnPromptSource,
+                latencyMs: this.currentTurnLatencyMs(),
+                toolCallsCount: this.currentTurnToolCallCount
             });
             this.pushProgress(
                 'error',
@@ -146,6 +176,9 @@ class ChatStore {
             );
         } finally {
             this.state.isStreaming = false;
+            this.state.composerFocusRequest += 1;
+            this.currentTurnStartedAt = null;
+            this.currentTurnToolCallCount = 0;
         }
     }
 
@@ -162,6 +195,7 @@ class ChatStore {
 
         try {
             await navigator.clipboard.writeText(target.content);
+            trackResponseCopied(target.content.length);
             notificationStore.success('Copied to clipboard.');
         } catch {
             notificationStore.error('Unable to copy this message.');
@@ -200,6 +234,7 @@ class ChatStore {
                 break;
             }
             case 'tool_call': {
+                this.currentTurnToolCallCount += 1;
                 this.pushProgress('tool_call', event.label);
                 break;
             }
@@ -260,6 +295,7 @@ class ChatStore {
 
     toggleContextStatusCollapsed() {
         this.state.contextStatusCollapsed = !this.state.contextStatusCollapsed;
+        trackContextStatusToggled(this.state.contextStatusCollapsed);
     }
 
     private emitBackgroundEvent(type: BackgroundEventType, strength: number) {
@@ -314,6 +350,14 @@ class ChatStore {
                 : Math.random().toString(36).slice(2, 12);
 
         return `msg-${randomPart}`;
+    }
+
+    private currentTurnLatencyMs() {
+        if (!this.currentTurnStartedAt) {
+            return 0;
+        }
+
+        return Math.max(0, Date.now() - this.currentTurnStartedAt);
     }
 
     private resolveLocale() {

@@ -56,7 +56,7 @@ export const verifyFirebaseIdToken = async (
 
         const decoded = decodeJwt(token);
         if (typeof decoded.exp === 'number' && decoded.exp * 1000 <= Date.now()) {
-            throw new Error('Firebase emulator token has expired.');
+            throw new Error('Firebase emulator token has expired.', { cause: error });
         }
 
         payload = decoded;

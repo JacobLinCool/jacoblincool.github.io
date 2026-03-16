@@ -18,13 +18,19 @@ import {
     type GeminiContent
 } from '$lib/server/llm/gemini';
 import {
-    persistConversationEvent,
-    persistConversationMessage,
+    commitConversationTurn,
+    ConversationCommitConflictError,
     resolveCurrentConversation,
-    rolloverCurrentConversation,
-    updateConversationStatus
+    type ConversationHandle
 } from '$lib/server/repos/conversation-repository';
 import type { RuntimeConfig } from '$lib/server/runtime-env';
+import {
+    createChatErrorLogPayload,
+    logChatError,
+    logChatInfo,
+    logChatWarn,
+    summarizeGeminiUsage
+} from '$lib/server/telemetry/chat-logger';
 import type { ExternalToolConfig } from '$lib/server/tools/external-tool-config';
 import type { Firestore } from 'fires2rest';
 
@@ -35,6 +41,7 @@ type StreamChatInput = {
     fetchFn: typeof fetch;
     config: RuntimeConfig;
     externalToolConfig: ExternalToolConfig;
+    requestId: string;
     user: {
         uid: string;
         isAnonymous: boolean;
@@ -47,6 +54,7 @@ type StreamChatInput = {
 const MAX_TOOL_ROUNDS_PER_TURN = 8;
 
 const createTurnId = () => `turn-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+const createTraceId = () => `trace-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 const createContextBundleId = () => `ctx-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
 const buildSystemInstruction = ({
@@ -62,7 +70,7 @@ const buildSystemInstruction = ({
         'You are Jacob Lin website assistant.',
         'Answer only from verified site knowledge and tool outputs from this turn.',
         'Start from the published site index, then call site tools when the user needs section-level or item-level detail.',
-        'Prefer site tools over GitHub or Hugging Face tools. Use live tools only for freshness, repository details, or profile metrics that are not fully covered by the site bundle.',
+        'Prefer site tools over GitHub or Hugging Face tools. Use live tools only for freshness, repository discovery or details, or profile metrics that are not fully covered by the site bundle.',
         'If a tool says information is missing or disabled, explain that boundary directly instead of guessing.',
         'Treat the conversation like a user interview with Jacob. Answer as the interviewee, not as a report generator.',
         'Do not dump everything at once. Reveal information progressively: one layer first, then let the user steer deeper with follow-up questions.',
@@ -87,6 +95,11 @@ const buildToolEventPayload = (tool: ChatToolSource, target: string, label: stri
     label
 });
 
+const toUserPromptContent = (text: string): GeminiContent => ({
+    role: 'user',
+    parts: [{ text }]
+});
+
 const buildPendingToolCallPreview = (name: string, args: Record<string, unknown>) => {
     const target =
         (typeof args.id === 'string' && args.id.trim()) ||
@@ -99,6 +112,7 @@ const buildPendingToolCallPreview = (name: string, args: Record<string, unknown>
         get_knowledge_node: 'Reading knowledge node',
         get_knowledge_item: 'Reading knowledge item',
         get_github_profile: 'Reading GitHub profile',
+        get_github_repositories: 'Reading GitHub repositories',
         get_github_repo_detail: 'Reading GitHub repository details',
         get_huggingface_profile: 'Reading Hugging Face profile',
         get_huggingface_model_detail: 'Reading Hugging Face model details',
@@ -116,6 +130,7 @@ export const streamChatTurn = async ({
     fetchFn,
     config,
     externalToolConfig,
+    requestId,
     user,
     locale,
     message,
@@ -127,13 +142,49 @@ export const streamChatTurn = async ({
     }
 
     const turnId = createTurnId();
-    let conversation = await resolveCurrentConversation(db, {
+    const traceId = createTraceId();
+    const turnStartedAt = Date.now();
+    const userContextTokens = estimateTextTokens(trimmed);
+    const conversation = await resolveCurrentConversation(db, {
         ownerUid: user.uid,
         ownerType: user.isAnonymous ? 'anonymous' : 'google',
         locale
     });
 
-    if (shouldRollOverConversation(conversation, DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS)) {
+    logChatInfo('chat_turn_started', {
+        requestId,
+        traceId,
+        turnId,
+        ownerType: user.isAnonymous ? 'anonymous' : 'google',
+        locale,
+        conversationId: conversation.conversationId,
+        conversationContextTokens: conversation.contextTokenCount,
+        carryoverSummaryPresent: Boolean(conversation.carryoverSummary),
+        continuedFromConversationId: conversation.continuedFromConversationId,
+        userMessageChars: trimmed.length,
+        estimatedUserTokens: userContextTokens
+    });
+
+    let rolloverPlan:
+        | {
+              archivedReason: 'context_limit';
+              carryoverSummary: string | null;
+              carryoverContextTokenCount: number;
+              archivedConversationId: string;
+              archivedConversationContextTokens: number;
+          }
+        | null = null;
+
+    if (conversation.exists && shouldRollOverConversation(conversation, DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS)) {
+        logChatWarn('conversation_rollover_started', {
+            requestId,
+            traceId,
+            turnId,
+            archivedConversationId: conversation.conversationId,
+            archivedConversationContextTokens: conversation.contextTokenCount,
+            contextLimitTokens: DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS
+        });
+
         const carryoverSummary = await generateCarryoverSummary({
             db,
             fetchFn,
@@ -142,30 +193,20 @@ export const streamChatTurn = async ({
             conversation
         });
 
-        conversation = await rolloverCurrentConversation(db, {
-            ownerUid: user.uid,
-            ownerType: user.isAnonymous ? 'anonymous' : 'google',
-            locale,
-            currentConversationId: conversation.conversationId,
-            carryoverSummary,
+        rolloverPlan = {
             archivedReason: 'context_limit',
-            initialContextTokenCount: estimateTextTokens(carryoverSummary ?? '')
-        });
+            carryoverSummary,
+            carryoverContextTokenCount: estimateTextTokens(carryoverSummary ?? ''),
+            archivedConversationId: conversation.conversationId,
+            archivedConversationContextTokens: conversation.contextTokenCount
+        };
     }
 
-    const conversationId = conversation.conversationId;
-    let seq = conversation.seq;
+    const baseConversationId = conversation.conversationId;
     let contextTokenCount = conversation.contextTokenCount;
     const dynamicRevisions: Record<string, string> = {};
 
-    const nextSeq = () => {
-        seq += 1;
-        return seq;
-    };
-
-    await updateConversationStatus(db, conversationId, 'streaming', seq);
-
-    const pushStatus = async (
+    const pushStatus = (
         status: 'collecting_context' | 'generating_answer' | 'completed',
         detail?: string
     ) => {
@@ -174,28 +215,10 @@ export const streamChatTurn = async ({
             status,
             detail: detail ?? null
         });
-
-        await persistConversationEvent(db, conversationId, nextSeq(), turnId, 'status', {
-            status,
-            detail: detail ?? null
-        });
     };
 
     try {
-        await pushStatus('collecting_context');
-
-        const userContextTokens = estimateTextTokens(trimmed);
-        await persistConversationMessage(
-            db,
-            conversationId,
-            nextSeq(),
-            turnId,
-            'user',
-            trimmed,
-            true,
-            userContextTokens
-        );
-        contextTokenCount += userContextTokens;
+        pushStatus('collecting_context');
 
         const toolRegistry = createChatToolRegistry({
             db,
@@ -208,25 +231,32 @@ export const streamChatTurn = async ({
         const systemInstruction = buildSystemInstruction({
             locale,
             siteIndexText: toolRegistry.siteIndexText,
-            carryoverSummary: memory.carryoverSummary
+            carryoverSummary: rolloverPlan?.carryoverSummary ?? memory.carryoverSummary
         });
 
         const bundleId = createContextBundleId();
-        await persistConversationEvent(db, conversationId, nextSeq(), turnId, 'context_frozen', {
+        logChatInfo('chat_context_frozen', {
+            requestId,
+            traceId,
+            turnId,
+            conversationId: baseConversationId,
             bundleId,
             contentVersion: toolRegistry.contentVersion,
-            refs: toolRegistry.siteRefs,
             recentMessageCount: memory.recentMessages.length,
             totalFinalizedMessages: memory.totalFinalizedMessages,
             hasCarryoverSummary: Boolean(memory.carryoverSummary),
-            contextTokenCount
+            conversationContextTokens: contextTokenCount,
+            siteRefCount: toolRegistry.siteRefs.length
         });
 
-        const workingContents: GeminiContent[] = [...memory.contents];
+        const workingContents: GeminiContent[] = [
+            ...(rolloverPlan ? [] : memory.contents),
+            toUserPromptContent(trimmed)
+        ];
         let finalCandidateText: string | null = null;
-        let finalCandidateParts: GeminiContent['parts'] | null = null;
 
         let toolRounds = 0;
+        let toolCallsCount = 0;
         while (toolRounds < MAX_TOOL_ROUNDS_PER_TURN) {
             const toolRound = await generateGeminiContent({
                 fetchFn,
@@ -240,7 +270,6 @@ export const streamChatTurn = async ({
             const functionCalls = extractGeminiFunctionCalls(toolRound.content);
             if (functionCalls.length === 0) {
                 finalCandidateText = geminiContentToText(toolRound.content);
-                finalCandidateParts = toolRound.content?.parts ?? null;
                 break;
             }
 
@@ -252,6 +281,7 @@ export const streamChatTurn = async ({
 
             const functionResponseParts = [];
             for (const call of functionCalls) {
+                toolCallsCount += 1;
                 const pendingPreview = buildPendingToolCallPreview(call.name ?? 'unknown_tool', {
                     ...(call.args ?? {})
                 });
@@ -259,7 +289,8 @@ export const streamChatTurn = async ({
                     ? 'github'
                     : call.name?.startsWith('get_huggingface_')
                       ? 'huggingface'
-                      : 'site';
+                    : 'site';
+                const toolStartedAt = Date.now();
 
                 send(
                     'tool_call',
@@ -269,27 +300,43 @@ export const streamChatTurn = async ({
                         pendingPreview.label
                     )
                 );
-                await persistConversationEvent(
-                    db,
-                    conversationId,
-                    nextSeq(),
+
+                logChatInfo('chat_tool_call_started', {
+                    requestId,
+                    traceId,
                     turnId,
-                    'tool_call_started',
-                    {
-                        tool: pendingSource,
-                        target: pendingPreview.target,
-                        label: pendingPreview.label
-                    }
-                );
+                    conversationId: baseConversationId,
+                    toolRound: toolRounds,
+                    toolIndex: toolCallsCount,
+                    tool: pendingSource,
+                    toolName: call.name ?? 'unknown_tool',
+                    target: pendingPreview.target,
+                    label: pendingPreview.label
+                });
 
                 const toolResult = await toolRegistry.executeTool(call.name ?? '', call.args ?? {});
                 if (!toolResult) {
+                    const toolLatencyMs = Date.now() - toolStartedAt;
                     functionResponseParts.push(
                         toGeminiFunctionResponsePart(call.name ?? 'unknown_tool', {
                             ok: false,
                             error: `Unknown tool: ${call.name ?? 'unknown'}`
                         })
                     );
+                    logChatWarn('chat_tool_call_failed', {
+                        requestId,
+                        traceId,
+                        turnId,
+                        conversationId: baseConversationId,
+                        toolRound: toolRounds,
+                        toolIndex: toolCallsCount,
+                        tool: pendingSource,
+                        toolName: call.name ?? 'unknown_tool',
+                        target: pendingPreview.target,
+                        latencyMs: toolLatencyMs,
+                        ok: false,
+                        error: `Unknown tool: ${call.name ?? 'unknown'}`
+                    });
                     continue;
                 }
 
@@ -297,6 +344,8 @@ export const streamChatTurn = async ({
                     dynamicRevisions[`${toolResult.tool}:${toolResult.target}`] =
                         toolResult.revision;
                 }
+
+                const toolLatencyMs = Date.now() - toolStartedAt;
 
                 send('tool_result', {
                     type: 'tool_result',
@@ -310,19 +359,24 @@ export const streamChatTurn = async ({
                             ? String(toolResult.payload.error ?? 'Tool failed.')
                             : undefined
                 });
-                await persistConversationEvent(
-                    db,
-                    conversationId,
-                    nextSeq(),
-                    turnId,
-                    toolResult.payload.ok === false ? 'tool_call_failed' : 'tool_call_succeeded',
+
+                const toolSucceeded = toolResult.payload.ok !== false;
+                logChatInfo(
+                    toolSucceeded ? 'chat_tool_call_succeeded' : 'chat_tool_call_failed',
                     {
+                        requestId,
+                        traceId,
+                        turnId,
+                        conversationId: baseConversationId,
+                        toolRound: toolRounds,
+                        toolIndex: toolCallsCount,
                         tool: toolResult.tool,
+                        toolName: call.name ?? 'unknown_tool',
                         target: toolResult.target,
-                        label: toolResult.label,
-                        refs: toolResult.refs,
+                        latencyMs: toolLatencyMs,
+                        ok: toolSucceeded,
                         revision: toolResult.revision ?? null,
-                        ok: toolResult.payload.ok !== false,
+                        refsCount: toolResult.refs.length,
                         error:
                             toolResult.payload.ok === false
                                 ? String(toolResult.payload.error ?? 'Tool failed.')
@@ -346,19 +400,17 @@ export const streamChatTurn = async ({
         }
 
         if (toolRounds >= MAX_TOOL_ROUNDS_PER_TURN) {
-            await persistConversationEvent(
-                db,
-                conversationId,
-                nextSeq(),
+            logChatWarn('chat_tool_round_limit_reached', {
+                requestId,
+                traceId,
                 turnId,
-                'tool_round_limit',
-                {
-                    maxToolRoundsPerTurn: MAX_TOOL_ROUNDS_PER_TURN
-                }
-            );
+                conversationId: baseConversationId,
+                maxToolRoundsPerTurn: MAX_TOOL_ROUNDS_PER_TURN,
+                toolCallsCount
+            });
         }
 
-        await pushStatus('generating_answer');
+        pushStatus('generating_answer');
 
         let assistantText = '';
 
@@ -374,17 +426,6 @@ export const streamChatTurn = async ({
                     type: 'answer_delta',
                     delta
                 });
-
-                await persistConversationEvent(
-                    db,
-                    conversationId,
-                    nextSeq(),
-                    turnId,
-                    'answer_delta',
-                    {
-                        delta
-                    }
-                );
             }
         });
 
@@ -398,31 +439,59 @@ export const streamChatTurn = async ({
                 type: 'answer_delta',
                 delta: fallbackText
             });
-            await persistConversationEvent(db, conversationId, nextSeq(), turnId, 'answer_delta', {
-                delta: fallbackText
-            });
         }
 
         const assistantContextTokens = estimateTextTokens(assistantText);
-        await persistConversationMessage(
+        const turnContextTokenCount = userContextTokens + assistantContextTokens;
+
+        const committedConversation: ConversationHandle = await commitConversationTurn(
             db,
-            conversationId,
-            nextSeq(),
-            turnId,
-            'assistant',
-            assistantText,
-            true,
-            assistantContextTokens,
             {
-                model: config.geminiModel,
-                usage: completion.usage ?? undefined,
-                parts: completion.content?.parts ?? finalCandidateParts ?? undefined
+                ownerUid: user.uid,
+                ownerType: user.isAnonymous ? 'anonymous' : 'google',
+                locale,
+                baseConversation: conversation,
+                turnId,
+                userText: trimmed,
+                assistantText,
+                turnContextTokenCount,
+                rollover: rolloverPlan
             }
         );
-        contextTokenCount += assistantContextTokens;
+        contextTokenCount = committedConversation.contextTokenCount;
 
-        await pushStatus('completed');
-        await updateConversationStatus(db, conversationId, 'done', seq);
+        pushStatus('completed');
+
+        if (rolloverPlan) {
+            logChatInfo('conversation_rollover_completed', {
+                requestId,
+                traceId,
+                turnId,
+                archivedConversationId: rolloverPlan.archivedConversationId,
+                archivedConversationContextTokens: rolloverPlan.archivedConversationContextTokens,
+                newConversationId: committedConversation.conversationId,
+                newConversationContextTokens: committedConversation.contextTokenCount,
+                carryoverSummaryChars: rolloverPlan.carryoverSummary?.length ?? 0,
+                carryoverSummaryTokens: rolloverPlan.carryoverContextTokenCount,
+                continuedFromConversationId: committedConversation.continuedFromConversationId
+            });
+        }
+
+        logChatInfo('chat_turn_completed', {
+            requestId,
+            traceId,
+            turnId,
+            conversationId: committedConversation.conversationId,
+            durationMs: Date.now() - turnStartedAt,
+            toolRounds,
+            toolCallsCount,
+            responseChars: assistantText.length,
+            estimatedAssistantTokens: assistantContextTokens,
+            conversationContextTokens: contextTokenCount,
+            finishReason: completion.finishReason,
+            geminiUsage: summarizeGeminiUsage(completion.usage),
+            dynamicRevisionCount: Object.keys(dynamicRevisions).length
+        });
 
         send('done', {
             type: 'done',
@@ -430,10 +499,29 @@ export const streamChatTurn = async ({
             dynamicRevisions
         });
     } catch (error) {
-        await persistConversationEvent(db, conversationId, nextSeq(), turnId, 'error', {
-            message: error instanceof Error ? error.message : 'Unknown chat failure'
-        });
-        await updateConversationStatus(db, conversationId, 'error', seq);
+        if (error instanceof ConversationCommitConflictError) {
+            logChatWarn('chat_turn_commit_conflict', {
+                requestId,
+                traceId,
+                turnId,
+                conversationId: baseConversationId,
+                durationMs: Date.now() - turnStartedAt,
+                conversationContextTokens: contextTokenCount
+            });
+            throw error;
+        }
+
+        logChatError(
+            'chat_turn_failed',
+            createChatErrorLogPayload(error, {
+                requestId,
+                traceId,
+                turnId,
+                conversationId: baseConversationId,
+                durationMs: Date.now() - turnStartedAt,
+                conversationContextTokens: contextTokenCount
+            })
+        );
         throw error;
     }
 };

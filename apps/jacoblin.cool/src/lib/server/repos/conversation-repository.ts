@@ -1,4 +1,4 @@
-import { FieldValue, type Firestore } from 'fires2rest';
+import type { Firestore } from 'fires2rest';
 
 type ConversationHeadDoc = {
     currentConversationId?: string;
@@ -11,7 +11,6 @@ type ConversationDoc = {
     ownerType?: 'anonymous' | 'google';
     locale?: string;
     lifecycle?: 'current' | 'archived';
-    status?: 'pending' | 'streaming' | 'done' | 'error';
     lastTurnSeq?: number;
     contextTokenCount?: number;
     carryoverSummary?: string | null;
@@ -19,14 +18,25 @@ type ConversationDoc = {
     continuedToConversationId?: string | null;
     archivedAt?: string | null;
     archivedReason?: 'context_limit' | 'manual_reset' | null;
+    turns?: ConversationTurn[];
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+export type ConversationTurn = {
+    turnId: string;
+    userText: string;
+    assistantText: string;
+    completedAt: string;
 };
 
 export type ConversationHandle = {
     conversationId: string;
-    seq: number;
+    lastTurnSeq: number;
     carryoverSummary: string | null;
     contextTokenCount: number;
     continuedFromConversationId: string | null;
+    exists: boolean;
 };
 
 export type StoredConversationMessage = {
@@ -48,30 +58,82 @@ export type ResolveCurrentConversationInput = {
     locale: string;
 };
 
-type RolloverConversationInput = ResolveCurrentConversationInput & {
-    currentConversationId: string;
-    carryoverSummary: string | null;
-    archivedReason: 'context_limit' | 'manual_reset';
-    initialContextTokenCount: number;
+type CommitConversationTurnInput = ResolveCurrentConversationInput & {
+    baseConversation: ConversationHandle;
+    turnId: string;
+    userText: string;
+    assistantText: string;
+    turnContextTokenCount: number;
+    rollover?: {
+        archivedReason: 'context_limit' | 'manual_reset';
+        carryoverSummary: string | null;
+        carryoverContextTokenCount: number;
+    } | null;
 };
+
+const CONFLICT_MESSAGE = 'Conversation changed during generation. Please retry your message.';
 
 const nowIso = () => new Date().toISOString();
 
 const conversationHeadPath = (ownerUid: string) => `conversation_heads/${ownerUid}`;
 const conversationPath = (conversationId: string) => `conversations/${conversationId}`;
 
+const toLastTurnSeq = (raw: ConversationDoc | undefined) =>
+    typeof raw?.lastTurnSeq === 'number' ? raw.lastTurnSeq : 0;
+
+const toContextTokenCount = (raw: ConversationDoc | undefined) =>
+    typeof raw?.contextTokenCount === 'number' ? raw.contextTokenCount : 0;
+
+const toCarryoverSummary = (raw: ConversationDoc | undefined) =>
+    typeof raw?.carryoverSummary === 'string' ? raw.carryoverSummary : null;
+
+const toContinuedFromConversationId = (raw: ConversationDoc | undefined) =>
+    typeof raw?.continuedFromConversationId === 'string' ? raw.continuedFromConversationId : null;
+
+const isConversationTurn = (value: unknown): value is ConversationTurn => {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+
+    const candidate = value as Record<string, unknown>;
+    return (
+        typeof candidate.turnId === 'string' &&
+        typeof candidate.userText === 'string' &&
+        typeof candidate.assistantText === 'string' &&
+        typeof candidate.completedAt === 'string'
+    );
+};
+
+const normalizeTurns = (value: unknown): ConversationTurn[] =>
+    Array.isArray(value) ? value.filter(isConversationTurn) : [];
+
+const hasReadableTurns = (raw: ConversationDoc | undefined) => Array.isArray(raw?.turns);
+
+const isReadableCurrentConversation = (
+    raw: ConversationDoc | undefined,
+    ownerUid: string
+) => raw?.ownerUid === ownerUid && raw?.lifecycle !== 'archived' && hasReadableTurns(raw);
+
 const createConversationHandle = (
     conversationId: string,
-    raw: ConversationDoc | undefined
+    raw: ConversationDoc | undefined,
+    exists: boolean
 ): ConversationHandle => ({
     conversationId,
-    seq: typeof raw?.lastTurnSeq === 'number' ? raw.lastTurnSeq : 0,
-    carryoverSummary: typeof raw?.carryoverSummary === 'string' ? raw.carryoverSummary : null,
-    contextTokenCount: typeof raw?.contextTokenCount === 'number' ? raw.contextTokenCount : 0,
-    continuedFromConversationId:
-        typeof raw?.continuedFromConversationId === 'string'
-            ? raw.continuedFromConversationId
-            : null
+    lastTurnSeq: toLastTurnSeq(raw),
+    carryoverSummary: toCarryoverSummary(raw),
+    contextTokenCount: toContextTokenCount(raw),
+    continuedFromConversationId: toContinuedFromConversationId(raw),
+    exists
+});
+
+const createTransientConversationHandle = (db: Firestore): ConversationHandle => ({
+    conversationId: db.collection('conversations').doc().id,
+    lastTurnSeq: 0,
+    carryoverSummary: null,
+    contextTokenCount: 0,
+    continuedFromConversationId: null,
+    exists: false
 });
 
 const createConversationDoc = ({
@@ -80,7 +142,9 @@ const createConversationDoc = ({
     locale,
     carryoverSummary,
     continuedFromConversationId,
-    contextTokenCount
+    contextTokenCount,
+    turns,
+    lastTurnSeq
 }: {
     ownerUid: string;
     ownerType: 'anonymous' | 'google';
@@ -88,174 +152,218 @@ const createConversationDoc = ({
     carryoverSummary: string | null;
     continuedFromConversationId: string | null;
     contextTokenCount: number;
-}): ConversationDoc & {
-    createdAt: string;
-    updatedAt: string;
-} => {
+    turns: ConversationTurn[];
+    lastTurnSeq: number;
+}): ConversationDoc => {
     const timestamp = nowIso();
     return {
         ownerUid,
         ownerType,
         locale,
         lifecycle: 'current',
-        status: 'pending',
         createdAt: timestamp,
         updatedAt: timestamp,
-        lastTurnSeq: 0,
+        lastTurnSeq,
         contextTokenCount,
         carryoverSummary,
         continuedFromConversationId,
         continuedToConversationId: null,
         archivedAt: null,
-        archivedReason: null
+        archivedReason: null,
+        turns
     };
 };
 
-const getConversationHandleFromHead = async (
-    db: Firestore,
-    ownerUid: string
-): Promise<ConversationHandle | null> => {
-    const headSnapshot = await db.doc(conversationHeadPath(ownerUid)).get();
-    if (!headSnapshot.exists) {
-        return null;
-    }
+const buildStoredMessages = (turns: ConversationTurn[]): StoredConversationMessage[] =>
+    turns.flatMap((turn, index) => {
+        const userSeq = index * 2 + 1;
+        const assistantSeq = userSeq + 1;
 
-    const head = headSnapshot.data() as ConversationHeadDoc | undefined;
-    if (typeof head?.currentConversationId !== 'string' || !head.currentConversationId) {
-        return null;
-    }
+        return [
+            {
+                id: `user-${turn.turnId}-${String(userSeq).padStart(6, '0')}`,
+                seq: userSeq,
+                turnId: turn.turnId,
+                role: 'user' as const,
+                content: turn.userText,
+                final: true,
+                model: null,
+                usage: null,
+                parts: null,
+                createdAt: turn.completedAt
+            },
+            {
+                id: `assistant-${turn.turnId}-${String(assistantSeq).padStart(6, '0')}`,
+                seq: assistantSeq,
+                turnId: turn.turnId,
+                role: 'assistant' as const,
+                content: turn.assistantText,
+                final: true,
+                model: null,
+                usage: null,
+                parts: null,
+                createdAt: turn.completedAt
+            }
+        ];
+    });
 
-    const conversationSnapshot = await db.doc(conversationPath(head.currentConversationId)).get();
-    if (!conversationSnapshot.exists) {
-        return null;
+const assertCommitCondition = (condition: boolean) => {
+    if (!condition) {
+        throw new ConversationCommitConflictError();
     }
-
-    const raw = conversationSnapshot.data() as ConversationDoc | undefined;
-    if (raw?.ownerUid !== ownerUid || raw?.lifecycle === 'archived') {
-        return null;
-    }
-
-    return createConversationHandle(head.currentConversationId, raw);
 };
+
+export class ConversationCommitConflictError extends Error {
+    constructor(message = CONFLICT_MESSAGE) {
+        super(message);
+        this.name = 'ConversationCommitConflictError';
+    }
+}
 
 export const resolveCurrentConversation = async (
     db: Firestore,
     input: ResolveCurrentConversationInput
 ): Promise<ConversationHandle> => {
-    const existing = await getConversationHandleFromHead(db, input.ownerUid);
-    if (existing) {
-        return existing;
+    const headSnapshot = await db.doc(conversationHeadPath(input.ownerUid)).get();
+    if (!headSnapshot.exists) {
+        return createTransientConversationHandle(db);
     }
 
-    const headRef = db.doc(conversationHeadPath(input.ownerUid));
-    const conversationId = db.collection('conversations').doc().id;
-    const conversationRef = db.doc(conversationPath(conversationId));
+    const head = (headSnapshot.data() as ConversationHeadDoc | undefined) ?? {};
+    const currentConversationId =
+        typeof head.currentConversationId === 'string' ? head.currentConversationId : null;
+    if (!currentConversationId) {
+        return createTransientConversationHandle(db);
+    }
 
-    return db.runTransaction(async (transaction) => {
-        const headSnapshot = await transaction.get(headRef);
-        const head = headSnapshot.exists
-            ? ((headSnapshot.data() as ConversationHeadDoc) ?? {})
-            : {};
-        const currentConversationId =
-            typeof head.currentConversationId === 'string' ? head.currentConversationId : null;
+    const conversationSnapshot = await db.doc(conversationPath(currentConversationId)).get();
+    if (!conversationSnapshot.exists) {
+        return createTransientConversationHandle(db);
+    }
 
-        if (currentConversationId) {
-            const currentSnapshot = await transaction.get(
-                db.doc(conversationPath(currentConversationId))
-            );
-            if (currentSnapshot.exists) {
-                const raw = (currentSnapshot.data() as ConversationDoc | undefined) ?? {};
-                if (raw.ownerUid !== input.ownerUid) {
-                    throw new Error('Current conversation does not belong to this user.');
-                }
+    const raw = conversationSnapshot.data() as ConversationDoc | undefined;
+    if (!isReadableCurrentConversation(raw, input.ownerUid)) {
+        return createTransientConversationHandle(db);
+    }
 
-                if (raw.lifecycle !== 'archived') {
-                    return createConversationHandle(currentConversationId, raw);
-                }
-            }
-        }
-
-        const createdDoc = createConversationDoc({
-            ownerUid: input.ownerUid,
-            ownerType: input.ownerType,
-            locale: input.locale,
-            carryoverSummary: null,
-            continuedFromConversationId: null,
-            contextTokenCount: 0
-        });
-
-        transaction.set(conversationRef, createdDoc);
-        transaction.set(
-            headRef,
-            {
-                currentConversationId: conversationId,
-                rolloverCount: typeof head.rolloverCount === 'number' ? head.rolloverCount : 0,
-                updatedAt: createdDoc.updatedAt
-            },
-            { merge: true }
-        );
-
-        return createConversationHandle(conversationId, createdDoc);
-    });
+    return createConversationHandle(currentConversationId, raw, true);
 };
 
-export const rolloverCurrentConversation = async (
+export const commitConversationTurn = async (
     db: Firestore,
-    input: RolloverConversationInput
+    input: CommitConversationTurnInput
 ): Promise<ConversationHandle> => {
     const headRef = db.doc(conversationHeadPath(input.ownerUid));
-    const currentRef = db.doc(conversationPath(input.currentConversationId));
-    const nextConversationId = db.collection('conversations').doc().id;
-    const nextConversationRef = db.doc(conversationPath(nextConversationId));
+    const createNewConversation = !input.baseConversation.exists || Boolean(input.rollover);
+    const nextConversationId =
+        createNewConversation && input.baseConversation.exists
+            ? db.collection('conversations').doc().id
+            : input.baseConversation.conversationId;
 
     return db.runTransaction(async (transaction) => {
+        const timestamp = nowIso();
+        const turn: ConversationTurn = {
+            turnId: input.turnId,
+            userText: input.userText,
+            assistantText: input.assistantText,
+            completedAt: timestamp
+        };
+
         const headSnapshot = await transaction.get(headRef);
-        const currentSnapshot = await transaction.get(currentRef);
-
-        if (!currentSnapshot.exists) {
-            throw new Error('Current conversation is missing.');
-        }
-
-        const current = (currentSnapshot.data() as ConversationDoc | undefined) ?? {};
-        if (current.ownerUid !== input.ownerUid) {
-            throw new Error('Current conversation does not belong to this user.');
-        }
-
         const head = headSnapshot.exists
-            ? ((headSnapshot.data() as ConversationHeadDoc) ?? {})
+            ? ((headSnapshot.data() as ConversationHeadDoc | undefined) ?? {})
             : {};
         const headConversationId =
             typeof head.currentConversationId === 'string' ? head.currentConversationId : null;
 
-        if (headConversationId && headConversationId !== input.currentConversationId) {
-            const activeSnapshot = await transaction.get(
-                db.doc(conversationPath(headConversationId))
-            );
-            if (activeSnapshot.exists) {
-                const active = (activeSnapshot.data() as ConversationDoc | undefined) ?? {};
-                if (active.ownerUid === input.ownerUid && active.lifecycle !== 'archived') {
-                    return createConversationHandle(headConversationId, active);
+        if (!input.baseConversation.exists) {
+            if (headConversationId) {
+                const activeSnapshot = await transaction.get(
+                    db.doc(conversationPath(headConversationId))
+                );
+                if (activeSnapshot.exists) {
+                    const active = activeSnapshot.data() as ConversationDoc | undefined;
+                    assertCommitCondition(!hasReadableTurns(active) || active?.lifecycle === 'archived');
                 }
             }
+
+            const createdDoc = createConversationDoc({
+                ownerUid: input.ownerUid,
+                ownerType: input.ownerType,
+                locale: input.locale,
+                carryoverSummary: null,
+                continuedFromConversationId: null,
+                contextTokenCount: input.turnContextTokenCount,
+                turns: [turn],
+                lastTurnSeq: 1
+            });
+
+            transaction.set(db.doc(conversationPath(nextConversationId)), createdDoc);
+            transaction.set(
+                headRef,
+                {
+                    currentConversationId: nextConversationId,
+                    rolloverCount: typeof head.rolloverCount === 'number' ? head.rolloverCount : 0,
+                    updatedAt: createdDoc.updatedAt
+                },
+                { merge: true }
+            );
+
+            return createConversationHandle(nextConversationId, createdDoc, true);
         }
 
+        const currentConversationRef = db.doc(conversationPath(input.baseConversation.conversationId));
+        const currentSnapshot = await transaction.get(currentConversationRef);
+        assertCommitCondition(currentSnapshot.exists);
+
+        const current = currentSnapshot.data() as ConversationDoc | undefined;
+        assertCommitCondition(headConversationId === input.baseConversation.conversationId);
+        assertCommitCondition(isReadableCurrentConversation(current, input.ownerUid));
+        assertCommitCondition(toLastTurnSeq(current) === input.baseConversation.lastTurnSeq);
+
+        const currentTurns = normalizeTurns(current?.turns);
+
+        if (!input.rollover) {
+            const updatedDoc: ConversationDoc = {
+                turns: [...currentTurns, turn],
+                lastTurnSeq: input.baseConversation.lastTurnSeq + 1,
+                contextTokenCount: toContextTokenCount(current) + input.turnContextTokenCount,
+                updatedAt: timestamp
+            };
+
+            transaction.set(currentConversationRef, updatedDoc, { merge: true });
+
+            return createConversationHandle(
+                input.baseConversation.conversationId,
+                {
+                    ...current,
+                    ...updatedDoc
+                },
+                true
+            );
+        }
+
+        const nextConversationRef = db.doc(conversationPath(nextConversationId));
         const nextConversationDoc = createConversationDoc({
             ownerUid: input.ownerUid,
             ownerType: input.ownerType,
             locale: input.locale,
-            carryoverSummary: input.carryoverSummary,
-            continuedFromConversationId: input.currentConversationId,
-            contextTokenCount: input.initialContextTokenCount
+            carryoverSummary: input.rollover.carryoverSummary,
+            continuedFromConversationId: input.baseConversation.conversationId,
+            contextTokenCount:
+                input.rollover.carryoverContextTokenCount + input.turnContextTokenCount,
+            turns: [turn],
+            lastTurnSeq: 1
         });
 
         transaction.set(
-            currentRef,
+            currentConversationRef,
             {
                 lifecycle: 'archived',
-                archivedAt: nowIso(),
-                archivedReason: input.archivedReason,
+                archivedAt: timestamp,
+                archivedReason: input.rollover.archivedReason,
                 continuedToConversationId: nextConversationId,
-                updatedAt: nowIso()
+                updatedAt: timestamp
             },
             { merge: true }
         );
@@ -271,120 +379,23 @@ export const rolloverCurrentConversation = async (
             { merge: true }
         );
 
-        return createConversationHandle(nextConversationId, nextConversationDoc);
+        return createConversationHandle(nextConversationId, nextConversationDoc, true);
     });
-};
-
-export const persistConversationMessage = async (
-    db: Firestore,
-    conversationId: string,
-    seq: number,
-    turnId: string,
-    role: 'user' | 'assistant',
-    content: string,
-    final: boolean,
-    contextTokenDelta: number,
-    meta?: {
-        model?: string;
-        usage?: Record<string, unknown>;
-        parts?: unknown[];
-    }
-) => {
-    await db.runTransaction(async (transaction) => {
-        const conversationRef = db.doc(conversationPath(conversationId));
-        const messageRef = db.doc(
-            `conversations/${conversationId}/messages/${role}-${turnId}-${String(seq).padStart(6, '0')}`
-        );
-        const conversationSnapshot = await transaction.get(conversationRef);
-        if (!conversationSnapshot.exists) {
-            throw new Error('Conversation is missing.');
-        }
-
-        const raw = (conversationSnapshot.data() as ConversationDoc | undefined) ?? {};
-        const nextContextTokenCount =
-            (typeof raw.contextTokenCount === 'number' ? raw.contextTokenCount : 0) +
-            Math.max(0, contextTokenDelta);
-
-        transaction.set(messageRef, {
-            seq,
-            turnId,
-            role,
-            content,
-            final,
-            model: meta?.model ?? null,
-            usage: meta?.usage ?? null,
-            parts: Array.isArray(meta?.parts) ? meta?.parts : null,
-            createdAt: nowIso()
-        });
-        transaction.set(
-            conversationRef,
-            {
-                contextTokenCount: nextContextTokenCount,
-                updatedAt: nowIso()
-            },
-            { merge: true }
-        );
-    });
-};
-
-export const persistConversationEvent = async (
-    db: Firestore,
-    conversationId: string,
-    seq: number,
-    turnId: string,
-    type: string,
-    data: Record<string, unknown>
-) => {
-    await db
-        .doc(`conversations/${conversationId}/events/${String(seq).padStart(6, '0')}-${turnId}`)
-        .set({
-            seq,
-            turnId,
-            type,
-            data,
-            createdAt: nowIso()
-        });
-};
-
-export const updateConversationStatus = async (
-    db: Firestore,
-    conversationId: string,
-    status: 'pending' | 'streaming' | 'done' | 'error',
-    lastTurnSeq: number
-) => {
-    await db.doc(conversationPath(conversationId)).set(
-        {
-            status,
-            updatedAt: nowIso(),
-            lastTurnSeq,
-            lastEventAt: FieldValue.serverTimestamp()
-        },
-        { merge: true }
-    );
 };
 
 export const listConversationMessages = async (
     db: Firestore,
     conversationId: string
 ): Promise<StoredConversationMessage[]> => {
-    const snapshot = await db
-        .collection(`conversations/${conversationId}/messages`)
-        .orderBy('seq', 'asc')
-        .get();
+    const snapshot = await db.doc(conversationPath(conversationId)).get();
+    if (!snapshot.exists) {
+        return [];
+    }
 
-    return snapshot.docs.map((doc) => {
-        const raw = doc.data() as Partial<StoredConversationMessage>;
-        return {
-            id: doc.id,
-            seq: typeof raw.seq === 'number' ? raw.seq : 0,
-            turnId: typeof raw.turnId === 'string' ? raw.turnId : '',
-            role: raw.role === 'assistant' ? 'assistant' : 'user',
-            content: typeof raw.content === 'string' ? raw.content : '',
-            final: raw.final !== false,
-            model: typeof raw.model === 'string' ? raw.model : null,
-            usage: raw.usage && typeof raw.usage === 'object' ? raw.usage : null,
-            parts: Array.isArray(raw.parts) ? raw.parts : null,
-            createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : ''
-        };
-    });
+    const raw = snapshot.data() as ConversationDoc | undefined;
+    if (!hasReadableTurns(raw)) {
+        return [];
+    }
+
+    return buildStoredMessages(normalizeTurns(raw?.turns));
 };

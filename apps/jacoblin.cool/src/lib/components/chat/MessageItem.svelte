@@ -45,6 +45,7 @@
                         : 'prose-invert prose-a:text-sky-100 hover:prose-a:text-white prose-code:bg-white/10 prose-code:px-1 prose-code:py-0.5 prose-code:before:hidden prose-code:after:hidden'
                 }`}
             >
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                 {@html renderedContent}
             </div>
             {#if isAssistant && message.status === 'streaming'}

@@ -1,8 +1,7 @@
 import {
     geminiContentToText,
     generateGeminiContent,
-    type GeminiContent,
-    type GeminiPart
+    type GeminiContent
 } from '$lib/server/llm/gemini';
 import {
     listConversationMessages,
@@ -26,17 +25,9 @@ const clampText = (value: string, maxChars: number) => {
     return `${normalized.slice(0, Math.max(0, maxChars - 1)).trimEnd()}…`;
 };
 
-const toGeminiParts = (message: StoredConversationMessage): GeminiPart[] => {
-    if (message.role === 'assistant' && Array.isArray(message.parts) && message.parts.length > 0) {
-        return message.parts as GeminiPart[];
-    }
-
-    return [{ text: message.content }];
-};
-
 const toGeminiContent = (message: StoredConversationMessage): GeminiContent => ({
     role: message.role === 'assistant' ? 'model' : 'user',
-    parts: toGeminiParts(message)
+    parts: [{ text: message.content }]
 });
 
 export const estimateTextTokens = (value: string) => {

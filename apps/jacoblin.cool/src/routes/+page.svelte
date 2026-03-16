@@ -4,6 +4,7 @@
     import ResearchQuestionsSection from '$lib/components/home/ResearchQuestionsSection.svelte';
     import '$lib/components/home/home-wide-rails.css';
     import ChatPanel from '$lib/components/chat/ChatPanel.svelte';
+    import { trackDeepDivePromptClicked } from '$lib/services/analytics/ga';
     import { chatStore } from '$lib/stores/chat.svelte';
     import { engageHeroChat } from '$lib/utils/hero-chat-bridge';
     import type { PageData } from './$types';
@@ -27,7 +28,11 @@
             return;
         }
 
-        await engageHeroChat(prompt);
+        trackDeepDivePromptClicked(targetItemId);
+        await engageHeroChat(prompt, {
+            source: 'deep_dive',
+            sourceId: targetItemId
+        });
     };
 </script>
 

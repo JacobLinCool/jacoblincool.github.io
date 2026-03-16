@@ -14,6 +14,13 @@ export type PromptChip = {
     prompt: string;
 };
 
+export type ChatPromptSource = 'composer' | 'chip' | 'deep_dive';
+
+export type ChatPromptSubmissionMeta = {
+    source: ChatPromptSource;
+    sourceId?: string;
+};
+
 export type AudioUiState = {
     state: 'idle' | 'playing';
     messageId: string | null;

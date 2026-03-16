@@ -5,16 +5,20 @@
     let {
         value,
         disabled = false,
+        focusRequest = 0,
         onChange,
         onSubmit
     }: {
         value: string;
         disabled?: boolean;
+        focusRequest?: number;
         onChange: (value: string) => void;
         onSubmit: () => void;
     } = $props();
 
     let isComposing = $state(false);
+    let textareaRef: HTMLTextAreaElement | null = null;
+    let lastHandledFocusRequest = 0;
 
     const handleInput = (event: Event) => {
         const target = event.currentTarget as HTMLTextAreaElement;
@@ -42,6 +46,15 @@
         event.preventDefault();
         onSubmit();
     };
+
+    $effect(() => {
+        if (disabled || focusRequest <= lastHandledFocusRequest) {
+            return;
+        }
+
+        lastHandledFocusRequest = focusRequest;
+        textareaRef?.focus();
+    });
 </script>
 
 <div
@@ -50,6 +63,7 @@
     <label class="sr-only" for="chat-composer">Message {siteConfig.identity.shortName}</label>
     <textarea
         id="chat-composer"
+        bind:this={textareaRef}
         rows={2}
         class="max-h-44 min-h-16 w-full resize-none rounded-2xl border-0 bg-transparent px-2 py-2 text-[15px] leading-7 text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
         placeholder="Ask me anything..."

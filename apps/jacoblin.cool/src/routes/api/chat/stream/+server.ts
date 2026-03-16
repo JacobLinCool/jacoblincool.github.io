@@ -13,6 +13,11 @@ type RequestBody = {
     locale?: unknown;
 };
 
+const createRequestId = (request: Request) =>
+    request.headers.get('cf-ray') ||
+    request.headers.get('x-request-id') ||
+    crypto.randomUUID();
+
 export const POST: RequestHandler = async ({ request, fetch, platform, url }) => {
     const config = readRuntimeConfig(
         (platform?.env ?? undefined) as Record<string, unknown> | undefined
@@ -48,27 +53,36 @@ export const POST: RequestHandler = async ({ request, fetch, platform, url }) =>
         : resolveLocale(url.pathname, request.headers.get('accept-language'));
 
     const db = getAdminDb(config);
+    const requestId = createRequestId(request);
 
-    return createSseResponse(async (send) => {
-        try {
-            await streamChatTurn({
-                db,
-                fetchFn: fetch,
-                config,
-                externalToolConfig: EXTERNAL_TOOL_CONFIG,
-                user: {
-                    uid: user.uid,
-                    isAnonymous: user.isAnonymous
-                },
-                locale,
-                message,
-                send
-            });
-        } catch (error) {
-            send('error', {
-                type: 'error',
-                message: error instanceof Error ? error.message : 'Chat stream failed.'
-            });
+    return createSseResponse(
+        async (send) => {
+            try {
+                await streamChatTurn({
+                    db,
+                    fetchFn: fetch,
+                    config,
+                    externalToolConfig: EXTERNAL_TOOL_CONFIG,
+                    requestId,
+                    user: {
+                        uid: user.uid,
+                        isAnonymous: user.isAnonymous
+                    },
+                    locale,
+                    message,
+                    send
+                });
+            } catch (error) {
+                send('error', {
+                    type: 'error',
+                    message: error instanceof Error ? error.message : 'Chat stream failed.'
+                });
+            }
+        },
+        {
+            headers: {
+                'x-request-id': requestId
+            }
         }
-    });
+    );
 };

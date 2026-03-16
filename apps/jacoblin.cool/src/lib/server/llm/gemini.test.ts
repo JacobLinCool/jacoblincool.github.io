@@ -16,6 +16,7 @@ const config: RuntimeConfig = {
     geminiApiKey: 'test-key',
     geminiModel: 'gemini-3.1-flash-lite-preview',
     geminiMaxOutputTokens: 512,
+    githubToken: null,
     githubUser: 'JacobLinCool',
     huggingfaceUser: 'JacobLinCool'
 };

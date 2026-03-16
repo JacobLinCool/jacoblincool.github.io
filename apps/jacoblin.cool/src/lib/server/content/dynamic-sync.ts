@@ -8,6 +8,7 @@ import {
 } from '$lib/server/repos/dynamic-snapshot-repository';
 import type { RuntimeConfig } from '$lib/server/runtime-env';
 import {
+    fetchGithubRepoCatalog,
     fetchGithubRepoDetail,
     fetchGithubUserSummary,
     fetchHuggingFaceModelDetail,
@@ -21,6 +22,7 @@ import type { Firestore } from 'fires2rest';
 export type DynamicTargetKind =
     | 'github_user_summary'
     | 'github_repo_detail'
+    | 'github_repo_catalog'
     | 'huggingface_user_summary'
     | 'huggingface_model_detail'
     | 'huggingface_space_detail';
@@ -55,6 +57,8 @@ const getTtlForTarget = (target: DynamicTarget, externalToolConfig: ExternalTool
             return externalToolConfig.freshnessBySource.githubUserSummaryMs;
         case 'github_repo_detail':
             return externalToolConfig.freshnessBySource.githubRepoDetailMs;
+        case 'github_repo_catalog':
+            return externalToolConfig.freshnessBySource.githubRepoCatalogMs;
         case 'huggingface_user_summary':
             return externalToolConfig.freshnessBySource.huggingfaceUserSummaryMs;
         case 'huggingface_model_detail':
@@ -79,7 +83,9 @@ const fetchTargetPayload = async (
         case 'github_user_summary':
             return fetchGithubUserSummary(fetchFn, config, timeoutMs);
         case 'github_repo_detail':
-            return fetchGithubRepoDetail(fetchFn, target.entityKey, timeoutMs);
+            return fetchGithubRepoDetail(fetchFn, config, target.entityKey, timeoutMs);
+        case 'github_repo_catalog':
+            return fetchGithubRepoCatalog(fetchFn, config, timeoutMs);
         case 'huggingface_user_summary':
             return fetchHuggingFaceUserSummary(fetchFn, config, timeoutMs);
         case 'huggingface_model_detail':

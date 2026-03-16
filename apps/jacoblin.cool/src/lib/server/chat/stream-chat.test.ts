@@ -15,6 +15,7 @@ const config: RuntimeConfig = {
     geminiApiKey: 'test-key',
     geminiModel: 'gemini-3.1-flash-lite-preview',
     geminiMaxOutputTokens: 512,
+    githubToken: null,
     githubUser: 'JacobLinCool',
     huggingfaceUser: 'JacobLinCool'
 };
@@ -24,6 +25,7 @@ const externalToolConfig: ExternalToolConfig = {
     freshnessBySource: {
         githubUserSummaryMs: 1000,
         githubRepoDetailMs: 1000,
+        githubRepoCatalogMs: 1000,
         huggingfaceUserSummaryMs: 1000,
         huggingfaceModelDetailMs: 1000,
         huggingfaceSpaceDetailMs: 1000
@@ -57,14 +59,23 @@ const sseResponse = (blocks: Array<Record<string, unknown>>) =>
         }
     );
 
+const rootConversationDocs = (db: FakeFirestore) =>
+    [...db.dump('conversations')].filter(([path]) => /^conversations\/[^/]+$/.test(path));
+
 describe('streamChatTurn', () => {
-    it('runs site tools through Gemini orchestration and streams the final answer', async () => {
+    it('runs site tools through Gemini orchestration and commits one embedded turn after streaming', async () => {
         const db = new FakeFirestore();
         const sentEvents: Array<{ event: string; data: Record<string, unknown> }> = [];
+        const storageSnapshotsAtDelta: Array<{ heads: number; conversations: number }> = [];
+        const capturedRequests: Array<{ url: string; body: Record<string, unknown> }> = [];
         let generateCall = 0;
 
         const fetchFn: typeof fetch = vi.fn(async (input, init) => {
             const url = String(input);
+            const body = init?.body
+                ? (JSON.parse(String(init.body)) as Record<string, unknown>)
+                : {};
+            capturedRequests.push({ url, body });
             if (url.includes(':generateContent')) {
                 generateCall += 1;
                 if (generateCall === 1) {
@@ -128,6 +139,7 @@ describe('streamChatTurn', () => {
             fetchFn,
             config,
             externalToolConfig,
+            requestId: 'req-1',
             user: {
                 uid: 'user-1',
                 isAnonymous: true
@@ -135,6 +147,12 @@ describe('streamChatTurn', () => {
             locale: 'en',
             message: 'What are you studying now?',
             send: (event, data) => {
+                if (event === 'answer_delta') {
+                    storageSnapshotsAtDelta.push({
+                        heads: db.dump('conversation_heads').size,
+                        conversations: rootConversationDocs(db).length
+                    });
+                }
                 sentEvents.push({ event, data: data as Record<string, unknown> });
             }
         });
@@ -146,32 +164,55 @@ describe('streamChatTurn', () => {
             tool: 'site',
             label: 'Reading knowledge node'
         });
+        expect(storageSnapshotsAtDelta).toEqual([{ heads: 0, conversations: 0 }]);
+        expect(
+            JSON.stringify(
+                capturedRequests.find(({ url }) => url.includes(':generateContent'))?.body
+                    .contents ?? []
+            )
+        ).toContain('What are you studying now?');
+        expect(
+            JSON.stringify(
+                capturedRequests.find(({ url }) => url.includes(':streamGenerateContent'))?.body
+                    .contents ?? []
+            )
+        ).toContain('What are you studying now?');
 
-        const messages = [...db.dump('conversations')]
-            .filter(([path]) => path.includes('/messages/'))
-            .map(([, value]) => value);
-        expect(messages).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    role: 'assistant',
-                    content:
-                        'You study HCI, multi-human steering, and agent-driven software engineering.',
-                    model: 'gemini-3.1-flash-lite-preview'
-                })
-            ])
-        );
+        const headDocs = [...db.dump('conversation_heads')];
+        const conversationDocs = rootConversationDocs(db);
+        expect(headDocs).toHaveLength(1);
+        expect(conversationDocs).toHaveLength(1);
+        expect(conversationDocs[0]?.[1]).toMatchObject({
+            ownerUid: 'user-1',
+            lifecycle: 'current',
+            lastTurnSeq: 1,
+            carryoverSummary: null,
+            turns: [
+                {
+                    userText: 'What are you studying now?',
+                    assistantText:
+                        'You study HCI, multi-human steering, and agent-driven software engineering.'
+                }
+            ]
+        });
+        expect(
+            [...db.dump('conversations')].filter(([path]) => path.includes('/messages/'))
+        ).toHaveLength(0);
+        expect(
+            [...db.dump('conversations')].filter(([path]) => path.includes('/events/'))
+        ).toHaveLength(0);
     });
 
-    it('replays prior conversation history on the next turn of the same current conversation', async () => {
+    it('replays prior embedded turns on the next request in the same conversation', async () => {
         const db = new FakeFirestore();
-        const capturedBodies: Array<Record<string, unknown>> = [];
+        const capturedRequests: Array<{ url: string; body: Record<string, unknown> }> = [];
 
         const fetchFn: typeof fetch = vi.fn(async (input, init) => {
             const url = String(input);
             const body = init?.body
                 ? (JSON.parse(String(init.body)) as Record<string, unknown>)
                 : {};
-            capturedBodies.push(body);
+            capturedRequests.push({ url, body });
 
             if (url.includes(':generateContent')) {
                 return jsonResponse({
@@ -220,6 +261,7 @@ describe('streamChatTurn', () => {
             fetchFn,
             config,
             externalToolConfig,
+            requestId: 'req-2',
             user: {
                 uid: 'user-1',
                 isAnonymous: true
@@ -234,6 +276,7 @@ describe('streamChatTurn', () => {
             fetchFn,
             config,
             externalToolConfig,
+            requestId: 'req-3',
             user: {
                 uid: 'user-1',
                 isAnonymous: true
@@ -243,16 +286,42 @@ describe('streamChatTurn', () => {
             send
         });
 
-        const secondGenerateRequest = capturedBodies.filter((body) =>
-            Array.isArray(body.contents)
-        )[2];
-        expect(JSON.stringify(secondGenerateRequest.contents)).toContain('First question');
-        expect(JSON.stringify(secondGenerateRequest.contents)).toContain('First answer.');
+        const secondGenerateRequest = capturedRequests.filter(({ url }) =>
+            url.includes(':generateContent')
+        )[1];
+        const secondGenerateContents = JSON.stringify(secondGenerateRequest?.body.contents ?? []);
+        expect(secondGenerateContents).toContain('First question');
+        expect(secondGenerateContents).toContain('First answer.');
+        expect(secondGenerateContents).toContain('Second question');
+
+        const secondStreamRequest = capturedRequests.filter(({ url }) =>
+            url.includes(':streamGenerateContent')
+        )[1];
+        const secondStreamContents = JSON.stringify(secondStreamRequest?.body.contents ?? []);
+        expect(secondStreamContents).toContain('First question');
+        expect(secondStreamContents).toContain('First answer.');
+        expect(secondStreamContents).toContain('Second question');
+
+        const conversationDocs = rootConversationDocs(db);
+        expect(conversationDocs).toHaveLength(1);
+        expect(conversationDocs[0]?.[1]).toMatchObject({
+            lastTurnSeq: 2,
+            turns: [
+                {
+                    userText: 'First question',
+                    assistantText: 'First answer.'
+                },
+                {
+                    userText: 'Second question',
+                    assistantText: 'Second answer with memory.'
+                }
+            ]
+        });
     });
 
-    it('rolls over into a new current conversation when the stored context limit has already been reached', async () => {
+    it('rolls over into a new conversation only when the turn commit succeeds', async () => {
         const db = new FakeFirestore();
-        const capturedBodies: Array<Record<string, unknown>> = [];
+        const capturedRequests: Array<{ url: string; body: Record<string, unknown> }> = [];
         const oldConversationId = 'conversation-old';
 
         await db.doc('conversation_heads/user-1').set({
@@ -265,38 +334,23 @@ describe('streamChatTurn', () => {
             ownerType: 'anonymous',
             locale: 'en',
             lifecycle: 'current',
-            status: 'done',
-            lastTurnSeq: 2,
+            lastTurnSeq: 1,
             contextTokenCount: DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS + 10,
             carryoverSummary: 'Previous chapter focused on research positioning.',
             continuedFromConversationId: null,
             continuedToConversationId: null,
             archivedAt: null,
             archivedReason: null,
+            turns: [
+                {
+                    turnId: 'turn-1',
+                    userText: 'Tell me about your research agenda.',
+                    assistantText: 'I focus on HCI, agents, and software engineering workflows.',
+                    completedAt: '2026-03-17T00:00:02.000Z'
+                }
+            ],
             createdAt: '2026-03-17T00:00:00.000Z',
-            updatedAt: '2026-03-17T00:00:00.000Z'
-        });
-        await db.doc(`conversations/${oldConversationId}/messages/user-turn-1-000001`).set({
-            seq: 1,
-            turnId: 'turn-1',
-            role: 'user',
-            content: 'Tell me about your research agenda.',
-            final: true,
-            model: null,
-            usage: null,
-            parts: null,
-            createdAt: '2026-03-17T00:00:01.000Z'
-        });
-        await db.doc(`conversations/${oldConversationId}/messages/assistant-turn-1-000002`).set({
-            seq: 2,
-            turnId: 'turn-1',
-            role: 'assistant',
-            content: 'I focus on HCI, agents, and software engineering workflows.',
-            final: true,
-            model: 'gemini-3.1-flash-lite-preview',
-            usage: null,
-            parts: null,
-            createdAt: '2026-03-17T00:00:02.000Z'
+            updatedAt: '2026-03-17T00:00:02.000Z'
         });
 
         const fetchFn: typeof fetch = vi.fn(async (input, init) => {
@@ -304,7 +358,7 @@ describe('streamChatTurn', () => {
             const body = init?.body
                 ? (JSON.parse(String(init.body)) as Record<string, unknown>)
                 : {};
-            capturedBodies.push(body);
+            capturedRequests.push({ url, body });
             const systemInstructionText = JSON.stringify(body.systemInstruction ?? {});
 
             if (url.includes(':generateContent')) {
@@ -365,6 +419,7 @@ describe('streamChatTurn', () => {
             fetchFn,
             config,
             externalToolConfig,
+            requestId: 'req-4',
             user: {
                 uid: 'user-1',
                 isAnonymous: true
@@ -376,9 +431,7 @@ describe('streamChatTurn', () => {
             }
         });
 
-        const conversationDocs = [...db.dump('conversations')].filter(([path]) =>
-            /^conversations\/[^/]+$/.test(path)
-        );
+        const conversationDocs = rootConversationDocs(db);
         expect(conversationDocs).toHaveLength(2);
 
         const archivedConversation = conversationDocs.find(([path]) =>
@@ -394,8 +447,15 @@ describe('streamChatTurn', () => {
         });
         expect(newConversation?.[1]).toMatchObject({
             lifecycle: 'current',
+            lastTurnSeq: 1,
             continuedFromConversationId: oldConversationId,
-            carryoverSummary: 'Topics: research direction Open threads: workflow design'
+            carryoverSummary: 'Topics: research direction Open threads: workflow design',
+            turns: [
+                {
+                    userText: 'Keep going.',
+                    assistantText: 'New chapter answer.'
+                }
+            ]
         });
         expect(archivedConversation?.[1]).toMatchObject({
             continuedToConversationId: newConversation?.[0].split('/').at(-1)
@@ -407,19 +467,23 @@ describe('streamChatTurn', () => {
             contentVersion: expect.any(String)
         });
 
-        const mainStreamRequest = capturedBodies.find(
-            (body) =>
-                Array.isArray(body.contents) &&
+        const mainStreamRequest = capturedRequests.find(
+            ({ url, body }) =>
+                url.includes(':streamGenerateContent') &&
                 JSON.stringify(body.systemInstruction ?? {}).includes(
                     'Conversation carryover from earlier chapters'
                 )
         );
-        expect(JSON.stringify(mainStreamRequest?.systemInstruction ?? {})).toContain(
+        expect(JSON.stringify(mainStreamRequest?.body.systemInstruction ?? {})).toContain(
             'Topics: research direction Open threads: workflow design'
+        );
+        expect(JSON.stringify(mainStreamRequest?.body.contents ?? [])).toContain('Keep going.');
+        expect(JSON.stringify(mainStreamRequest?.body.contents ?? [])).not.toContain(
+            'Tell me about your research agenda.'
         );
     });
 
-    it('stops tool planning after the configured limit and records the limit event', async () => {
+    it('stops tool planning after the configured limit without persisting streaming events', async () => {
         const db = new FakeFirestore();
         let generateCalls = 0;
 
@@ -473,6 +537,7 @@ describe('streamChatTurn', () => {
             fetchFn,
             config,
             externalToolConfig,
+            requestId: 'req-5',
             user: {
                 uid: 'user-1',
                 isAnonymous: true
@@ -483,19 +548,190 @@ describe('streamChatTurn', () => {
         });
 
         expect(generateCalls).toBe(8);
+        expect(
+            [...db.dump('conversations')].filter(([path]) => path.includes('/events/'))
+        ).toHaveLength(0);
+        expect(
+            [...db.dump('conversations')].filter(([path]) => path.includes('/messages/'))
+        ).toHaveLength(0);
+    });
 
-        const events = [...db.dump('conversations')]
-            .filter(([path]) => path.includes('/events/'))
-            .map(([, value]) => value);
-        expect(events).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    type: 'tool_round_limit',
-                    data: {
-                        maxToolRoundsPerTurn: 8
+    it('leaves Firestore unchanged when generation fails before commit', async () => {
+        const db = new FakeFirestore();
+
+        const fetchFn: typeof fetch = vi.fn(async (input) => {
+            const url = String(input);
+            if (url.includes(':generateContent')) {
+                return jsonResponse({
+                    candidates: [
+                        {
+                            content: {
+                                role: 'model',
+                                parts: [{ text: 'No tools needed.' }]
+                            }
+                        }
+                    ]
+                });
+            }
+
+            if (url.includes(':streamGenerateContent')) {
+                return new Response('boom', { status: 500 });
+            }
+
+            throw new Error(`Unexpected fetch url: ${url}`);
+        }) as typeof fetch;
+
+        await expect(
+            streamChatTurn({
+                db: db as never,
+                fetchFn,
+                config,
+                externalToolConfig,
+                requestId: 'req-6',
+                user: {
+                    uid: 'user-1',
+                    isAnonymous: true
+                },
+                locale: 'en',
+                message: 'This should fail.',
+                send: () => {}
+            })
+        ).rejects.toThrow('Gemini stream request failed (500): boom');
+
+        expect(db.dump().size).toBe(0);
+    });
+
+    it('rejects stale commits when the conversation changed during streaming', async () => {
+        const db = new FakeFirestore();
+        const conversationId = 'conversation-concurrent';
+
+        await db.doc('conversation_heads/user-1').set({
+            currentConversationId: conversationId,
+            rolloverCount: 0,
+            updatedAt: '2026-03-17T00:00:00.000Z'
+        });
+        await db.doc(`conversations/${conversationId}`).set({
+            ownerUid: 'user-1',
+            ownerType: 'anonymous',
+            locale: 'en',
+            lifecycle: 'current',
+            lastTurnSeq: 1,
+            contextTokenCount: 32,
+            carryoverSummary: null,
+            continuedFromConversationId: null,
+            continuedToConversationId: null,
+            archivedAt: null,
+            archivedReason: null,
+            turns: [
+                {
+                    turnId: 'turn-1',
+                    userText: 'First question',
+                    assistantText: 'First answer',
+                    completedAt: '2026-03-17T00:00:01.000Z'
+                }
+            ],
+            createdAt: '2026-03-17T00:00:00.000Z',
+            updatedAt: '2026-03-17T00:00:01.000Z'
+        });
+
+        const fetchFn: typeof fetch = vi.fn(async (input) => {
+            const url = String(input);
+            if (url.includes(':generateContent')) {
+                return jsonResponse({
+                    candidates: [
+                        {
+                            content: {
+                                role: 'model',
+                                parts: [{ text: 'No tools needed.' }]
+                            }
+                        }
+                    ]
+                });
+            }
+
+            if (url.includes(':streamGenerateContent')) {
+                return sseResponse([
+                    {
+                        candidates: [
+                            {
+                                content: {
+                                    role: 'model',
+                                    parts: [{ text: 'Outdated answer.' }]
+                                }
+                            }
+                        ]
                     }
-                })
-            ])
-        );
+                ]);
+            }
+
+            throw new Error(`Unexpected fetch url: ${url}`);
+        }) as typeof fetch;
+
+        await expect(
+            streamChatTurn({
+                db: db as never,
+                fetchFn,
+                config,
+                externalToolConfig,
+                requestId: 'req-7',
+                user: {
+                    uid: 'user-1',
+                    isAnonymous: true
+                },
+                locale: 'en',
+                message: 'Second question',
+                send: (event) => {
+                    if (event !== 'answer_delta') {
+                        return;
+                    }
+
+                    void db.doc(`conversations/${conversationId}`).set({
+                        ownerUid: 'user-1',
+                        ownerType: 'anonymous',
+                        locale: 'en',
+                        lifecycle: 'current',
+                        lastTurnSeq: 2,
+                        contextTokenCount: 64,
+                        carryoverSummary: null,
+                        continuedFromConversationId: null,
+                        continuedToConversationId: null,
+                        archivedAt: null,
+                        archivedReason: null,
+                        turns: [
+                            {
+                                turnId: 'turn-1',
+                                userText: 'First question',
+                                assistantText: 'First answer',
+                                completedAt: '2026-03-17T00:00:01.000Z'
+                            },
+                            {
+                                turnId: 'turn-competing',
+                                userText: 'Competing question',
+                                assistantText: 'Competing answer',
+                                completedAt: '2026-03-17T00:00:02.000Z'
+                            }
+                        ],
+                        createdAt: '2026-03-17T00:00:00.000Z',
+                        updatedAt: '2026-03-17T00:00:02.000Z'
+                    });
+                }
+            })
+        ).rejects.toThrow('Conversation changed during generation. Please retry your message.');
+
+        const finalConversation = db.dump('conversations').get(`conversations/${conversationId}`);
+        expect(finalConversation).toMatchObject({
+            lastTurnSeq: 2,
+            turns: [
+                {
+                    userText: 'First question',
+                    assistantText: 'First answer'
+                },
+                {
+                    userText: 'Competing question',
+                    assistantText: 'Competing answer'
+                }
+            ]
+        });
+        expect(JSON.stringify(finalConversation)).not.toContain('Outdated answer.');
     });
 });

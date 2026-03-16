@@ -1,6 +1,7 @@
 <script lang="ts">
     import { browser } from '$app/environment';
     import { X } from '@lucide/svelte';
+    import { trackLoginGoogleClicked, trackLoginSuccess } from '$lib/services/analytics/ga';
     import { notificationStore } from '$lib/stores/notification.svelte';
     import { uiStore } from '$lib/stores/ui.svelte';
     import { userStore } from '$lib/stores/user.svelte';
@@ -85,8 +86,10 @@
 
     const handleGoogleSignIn = async () => {
         isSubmitting = true;
+        trackLoginGoogleClicked();
         try {
             await userStore.signInWithGoogle();
+            trackLoginSuccess();
             notificationStore.success('Signed in with Google.');
             closeModal();
         } catch (error) {

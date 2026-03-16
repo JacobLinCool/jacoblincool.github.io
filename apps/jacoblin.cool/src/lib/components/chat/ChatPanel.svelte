@@ -4,10 +4,16 @@
     import MessageList from '$lib/components/chat/MessageList.svelte';
     import PromptChips from '$lib/components/chat/PromptChips.svelte';
     import TypingTagline from '$lib/components/chat/TypingTagline.svelte';
+    import { trackPromptChipClicked } from '$lib/services/analytics/ga';
     import { chatStore } from '$lib/stores/chat.svelte';
+    import type { PromptChip } from '$lib/types/chat';
 
-    const handleChipSelect = async (prompt: string) => {
-        await chatStore.submitChipPrompt(prompt);
+    const handleChipSelect = async (chip: PromptChip) => {
+        trackPromptChipClicked(chip.id);
+        await chatStore.submitChipPrompt(chip.prompt, {
+            source: 'chip',
+            sourceId: chip.id
+        });
     };
 
     const handleSubmit = async () => {
@@ -101,6 +107,7 @@
             <Composer
                 value={chatStore.state.composer}
                 disabled={chatStore.state.isStreaming}
+                focusRequest={chatStore.state.composerFocusRequest}
                 onChange={(value) => chatStore.setComposer(value)}
                 onSubmit={handleSubmit}
             />

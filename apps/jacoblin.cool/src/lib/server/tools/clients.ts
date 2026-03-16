@@ -1,6 +1,21 @@
 import type { RuntimeConfig } from '$lib/server/runtime-env';
+import { Octokit } from 'octokit';
 
 type FetchLike = typeof fetch;
+
+const withAbortSignal = async <T>(
+    timeoutMs: number,
+    run: (signal: AbortSignal) => Promise<T>
+): Promise<T> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        return await run(controller.signal);
+    } finally {
+        clearTimeout(timer);
+    }
+};
 
 const withTimeout = async <T>(
     fetchFn: FetchLike,
@@ -28,15 +43,17 @@ const withTimeout = async <T>(
 };
 
 type GitHubRepo = {
+    fork?: boolean;
+    archived?: boolean;
     name?: string;
     full_name?: string;
     html_url?: string;
-    description?: string;
-    language?: string;
+    description?: string | null;
+    language?: string | null;
     stargazers_count?: number;
     forks_count?: number;
     open_issues_count?: number;
-    updated_at?: string;
+    updated_at?: string | null;
 };
 
 type GitHubUser = {
@@ -47,6 +64,18 @@ type GitHubUser = {
 
 type GitHubSearchResponse = {
     items?: GitHubRepo[];
+};
+
+type GitHubCatalogRepository = {
+    fullName: string;
+    name: string;
+    url: string;
+    description: string;
+    language: string;
+    stars: number;
+    forks: number;
+    archived: boolean;
+    updatedAt: string | null;
 };
 
 type HuggingFaceModel = {
@@ -64,40 +93,64 @@ type HuggingFaceSpace = {
     lastModified?: string;
 };
 
-const githubHeaders = {
-    accept: 'application/vnd.github+json',
-    'user-agent': 'jacoblin.cool-agent-tools'
-};
-
 const huggingFaceHeaders = {
     accept: 'application/json',
     'user-agent': 'jacoblin.cool-agent-tools'
 };
+
+const createGithubClient = (fetchFn: FetchLike, config: RuntimeConfig) =>
+    new Octokit({
+        auth: config.githubToken ?? undefined,
+        userAgent: 'jacoblin.cool-agent-tools',
+        request: {
+            fetch: fetchFn
+        }
+    });
+
+const compareByStarsThenName = (
+    left: GitHubCatalogRepository,
+    right: GitHubCatalogRepository
+) =>
+    right.stars - left.stars || left.fullName.localeCompare(right.fullName);
+
+const toGithubCatalogRepository = (repo: GitHubRepo): GitHubCatalogRepository => ({
+    fullName: repo.full_name ?? '',
+    name: repo.name ?? '',
+    url: repo.html_url ?? '',
+    description: repo.description ?? '',
+    language: repo.language ?? 'Unknown',
+    stars: repo.stargazers_count ?? 0,
+    forks: repo.forks_count ?? 0,
+    archived: repo.archived ?? false,
+    updatedAt: repo.updated_at ?? null
+});
 
 export const fetchGithubUserSummary = async (
     fetchFn: FetchLike,
     config: RuntimeConfig,
     timeoutMs: number
 ) => {
-    const [user, repos] = await Promise.all([
-        withTimeout<GitHubUser>(
-            fetchFn,
-            `https://api.github.com/users/${config.githubUser}`,
-            {
-                headers: githubHeaders
-            },
-            timeoutMs
+    const client = createGithubClient(fetchFn, config);
+    const [userResponse, reposResponse] = await Promise.all([
+        withAbortSignal(timeoutMs, (signal) =>
+            client.request('GET /users/{username}', {
+                username: config.githubUser,
+                request: { signal }
+            })
         ),
-        withTimeout<GitHubSearchResponse>(
-            fetchFn,
-            `https://api.github.com/search/repositories?q=user:${config.githubUser}+fork:false&sort=stars&order=desc&per_page=100`,
-            {
-                headers: githubHeaders
-            },
-            timeoutMs
+        withAbortSignal(timeoutMs, (signal) =>
+            client.request('GET /search/repositories', {
+                q: `user:${config.githubUser} fork:false`,
+                sort: 'stars',
+                order: 'desc',
+                per_page: 100,
+                request: { signal }
+            })
         )
     ]);
 
+    const user = userResponse.data as GitHubUser;
+    const repos = reposResponse.data as GitHubSearchResponse;
     const items = repos.items ?? [];
     const totalStars = items.reduce((sum, repo) => sum + (repo.stargazers_count ?? 0), 0);
     const topRepo = items[0] ?? null;
@@ -117,30 +170,91 @@ export const fetchGithubUserSummary = async (
     };
 };
 
+export const fetchGithubRepoCatalog = async (
+    fetchFn: FetchLike,
+    config: RuntimeConfig,
+    timeoutMs: number
+) => {
+    const client = createGithubClient(fetchFn, config);
+    const repos = (await withAbortSignal(timeoutMs, (signal) =>
+        client.paginate(client.rest.repos.listForUser, {
+            username: config.githubUser,
+            type: 'owner',
+            sort: 'updated',
+            direction: 'desc',
+            per_page: 100,
+            request: { signal }
+        })
+    )) as GitHubRepo[];
+
+    const repositories = repos
+        .filter((repo) => !repo.fork)
+        .map(toGithubCatalogRepository)
+        .sort(compareByStarsThenName);
+
+    const languages = [...repositories.reduce<Map<string, { repositories: number; stars: number }>>(
+        (summary, repo) => {
+            const current = summary.get(repo.language) ?? { repositories: 0, stars: 0 };
+            summary.set(repo.language, {
+                repositories: current.repositories + 1,
+                stars: current.stars + repo.stars
+            });
+            return summary;
+        },
+        new Map()
+    ).entries()]
+        .map(([language, stats]) => ({
+            language,
+            repositories: stats.repositories,
+            stars: stats.stars
+        }))
+        .sort(
+            (left, right) =>
+                right.repositories - left.repositories ||
+                right.stars - left.stars ||
+                left.language.localeCompare(right.language)
+        );
+
+    return {
+        login: config.githubUser,
+        totalRepositories: repositories.length,
+        languages,
+        repositories
+    };
+};
+
 export const fetchGithubRepoDetail = async (
     fetchFn: FetchLike,
+    config: RuntimeConfig,
     repoFullName: string,
     timeoutMs: number
 ) => {
-    const repo = await withTimeout<GitHubRepo>(
-        fetchFn,
-        `https://api.github.com/repos/${repoFullName}`,
-        {
-            headers: githubHeaders
-        },
-        timeoutMs
+    const [owner, repo] = repoFullName.split('/');
+    if (!owner || !repo) {
+        throw new Error(`Invalid GitHub repository full name: ${repoFullName}`);
+    }
+
+    const client = createGithubClient(fetchFn, config);
+    const response = await withAbortSignal(timeoutMs, (signal) =>
+        client.request('GET /repos/{owner}/{repo}', {
+            owner,
+            repo,
+            request: { signal }
+        })
     );
+    const repository = response.data as GitHubRepo;
 
     return {
-        fullName: repo.full_name ?? repoFullName,
-        name: repo.name ?? repoFullName.split('/').at(-1) ?? repoFullName,
-        url: repo.html_url ?? `https://github.com/${repoFullName}`,
-        description: repo.description ?? '',
-        language: repo.language ?? 'Unknown',
-        stars: repo.stargazers_count ?? 0,
-        forks: repo.forks_count ?? 0,
-        openIssues: repo.open_issues_count ?? 0,
-        updatedAt: repo.updated_at ?? null
+        fullName: repository.full_name ?? repoFullName,
+        name: repository.name ?? repo,
+        url: repository.html_url ?? `https://github.com/${repoFullName}`,
+        description: repository.description ?? '',
+        language: repository.language ?? 'Unknown',
+        stars: repository.stargazers_count ?? 0,
+        forks: repository.forks_count ?? 0,
+        openIssues: repository.open_issues_count ?? 0,
+        archived: repository.archived ?? false,
+        updatedAt: repository.updated_at ?? null
     };
 };
 

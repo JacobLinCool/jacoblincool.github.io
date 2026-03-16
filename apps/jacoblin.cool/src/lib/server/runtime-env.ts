@@ -11,6 +11,7 @@ export type RuntimeConfig = {
     geminiApiKey: string | null;
     geminiModel: string;
     geminiMaxOutputTokens: number;
+    githubToken: string | null;
     githubUser: string;
     huggingfaceUser: string;
 };
@@ -86,6 +87,9 @@ export const readRuntimeConfig = (platformEnv?: EnvLike): RuntimeConfig => {
         geminiModel:
             readString('GEMINI_CHAT_MODEL', platformEnv) ?? 'gemini-3.1-flash-lite-preview',
         geminiMaxOutputTokens: readNumber('GEMINI_MAX_OUTPUT_TOKENS', 1024, platformEnv),
+        githubToken:
+            readString('GITHUB_TOKEN', platformEnv) ??
+            readString('GITHUB_API_TOKEN', platformEnv),
         githubUser: readString('GITHUB_USER', platformEnv) ?? 'JacobLinCool',
         huggingfaceUser: readString('HUGGINGFACE_USER', platformEnv) ?? 'JacobLinCool'
     };

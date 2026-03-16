@@ -1,8 +1,12 @@
 <script lang="ts">
+    import { browser } from '$app/environment';
+    import { afterNavigate } from '$app/navigation';
     import TopBar from '$lib/components/app/TopBar.svelte';
     import Sidebar from '$lib/components/app/Sidebar.svelte';
+    import SiteFooter from '$lib/components/app/SiteFooter.svelte';
     import Notifications from '$lib/components/app/Notifications.svelte';
     import LoginModal from '$lib/components/auth/LoginModal.svelte';
+    import { trackPageView } from '$lib/services/analytics/ga';
     import NeuralBackground from '$lib/components/visual/NeuralBackground.svelte';
     import { chatStore } from '$lib/stores/chat.svelte';
     import { uiStore } from '$lib/stores/ui.svelte';
@@ -15,6 +19,12 @@
 
     const sidebarId = 'app-sidebar';
     const showSidebar = false;
+
+    if (browser) {
+        afterNavigate(({ to }) => {
+            trackPageView(to?.url ?? window.location.href);
+        });
+    }
 
     onMount(() => {
         const cleanupUserStore = userStore.init();
@@ -78,6 +88,7 @@
                     }`}
                 >
                     {@render children()}
+                    <SiteFooter />
                 </div>
             </main>
         </div>
