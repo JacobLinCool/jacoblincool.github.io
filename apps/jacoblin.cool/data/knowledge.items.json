@@ -1,0 +1,321 @@
+{
+    "items": {
+        "profile.scholar": {
+            "id": "profile.scholar",
+            "type": "profile",
+            "title": "Scholar Profile",
+            "summary": "Graduate student working on HCI, AI agents, and software systems, with earlier publications in speech and language technology.",
+            "tags": ["Profile", "Scholar"],
+            "attributes": {
+                "profileUrl": "https://scholar.google.com/citations?user=BdzYgY0AAAAJ",
+                "citations": 8,
+                "hIndex": 2,
+                "i10Index": 0,
+                "topics": ["Human-Computer Interaction", "AI Agents", "Software Engineering"]
+            },
+            "body": [
+                {
+                    "id": "current-position",
+                    "label": "Current Position",
+                    "text": "I am a 1st year graduate student at NYCU, working across Human-Computer Interaction, AI agents, and software systems."
+                },
+                {
+                    "id": "orientation",
+                    "label": "Research Orientation",
+                    "text": "My current work asks how people should collaborate with increasingly capable agents, especially in software engineering and high-speed knowledge work."
+                }
+            ],
+            "links": [
+                {
+                    "id": "scholar-profile",
+                    "label": "Google Scholar",
+                    "url": "https://scholar.google.com/citations?user=BdzYgY0AAAAJ",
+                    "kind": "scholar-profile"
+                }
+            ],
+            "relatedItemIds": [
+                "rq-agent-collaboration",
+                "rq-agent-software-engineering",
+                "rq-software-evolution"
+            ]
+        },
+        "rq-agent-collaboration": {
+            "id": "rq-agent-collaboration",
+            "type": "research-question",
+            "title": "Multi-Human Steering for Agent Systems",
+            "summary": "How should teams coordinate around a shared agent system when planning, analysis, and execution move faster than any single person can fully review?",
+            "tags": ["HCI", "AI Agents", "Collaboration"],
+            "attributes": {},
+            "body": [
+                {
+                    "id": "question",
+                    "label": "Question",
+                    "text": "How should teams coordinate around a shared agent system when planning, analysis, and execution all happen faster than any single person can fully review?"
+                },
+                {
+                    "id": "why-it-matters",
+                    "label": "Why It Matters",
+                    "text": "One person should not carry the full cost of understanding, auditing, and steering a high-speed agent. I want collaboration models where people guide the system from different areas of expertise instead of chasing it alone."
+                },
+                {
+                    "id": "current-direction",
+                    "label": "Current Direction",
+                    "text": "I am studying interaction models where multiple people provide feedback, constraints, and reinforcement through a unified agent interface so teams can stay aligned without forcing everyone to inspect everything."
+                }
+            ],
+            "links": [],
+            "relatedItemIds": [
+                "rq-agent-software-engineering",
+                "rq-software-evolution",
+                "profile.scholar"
+            ]
+        },
+        "rq-agent-software-engineering": {
+            "id": "rq-agent-software-engineering",
+            "type": "research-question",
+            "title": "Interfaces for Agent-Driven Software Engineering",
+            "summary": "What new development environments, representations, and visualizations do we need when agents can read, modify, and generate code faster than humans can track?",
+            "tags": ["Software Engineering", "AI Agents", "Interfaces"],
+            "attributes": {},
+            "body": [
+                {
+                    "id": "question",
+                    "label": "Question",
+                    "text": "What new development environments, representations, and visualizations do we need when agents can read, modify, and generate code faster than humans can track?"
+                },
+                {
+                    "id": "why-it-matters",
+                    "label": "Why It Matters",
+                    "text": "Traditional code editors assume humans inspect changes directly, while pure CLI workflows compress away too much context. Neither is enough when agent activity becomes dense, parallel, and continuous."
+                },
+                {
+                    "id": "current-direction",
+                    "label": "Current Direction",
+                    "text": "I am exploring workflow designs that make agent behavior observable, reviewable, and steerable so humans can keep judgment and control inside highly automated engineering loops."
+                }
+            ],
+            "links": [],
+            "relatedItemIds": [
+                "rq-agent-collaboration",
+                "rq-software-evolution",
+                "project-d1-manager"
+            ]
+        },
+        "rq-software-evolution": {
+            "id": "rq-software-evolution",
+            "type": "research-question",
+            "title": "Shortening the Path from User Need to Software Change",
+            "summary": "How can software evolve much faster in agent-mediated product teams without losing safety, controllability, or human understanding?",
+            "tags": ["Software Evolution", "Governance", "AI Agents"],
+            "attributes": {},
+            "body": [
+                {
+                    "id": "question",
+                    "label": "Question",
+                    "text": "How can software evolve much faster in agent-mediated product teams without losing safety, controllability, or human understanding?"
+                },
+                {
+                    "id": "why-it-matters",
+                    "label": "Why It Matters",
+                    "text": "As agents get better at turning intent into concrete changes, the distance between end users and software updates can shrink dramatically. We need new processes that preserve oversight while letting products adapt faster."
+                },
+                {
+                    "id": "current-direction",
+                    "label": "Current Direction",
+                    "text": "I am thinking about frameworks, governance mechanisms, and transition paths that help teams move into agent-driven work while redirecting human effort toward deeper reasoning, creativity, and cross-domain problem solving."
+                }
+            ],
+            "links": [],
+            "relatedItemIds": ["rq-agent-collaboration", "rq-agent-software-engineering"]
+        },
+        "pub-si-2025-open-track": {
+            "id": "pub-si-2025-open-track",
+            "type": "publication",
+            "title": "The NTNU System at the S&I Challenge 2025 SLA Open Track",
+            "summary": "A shared-task system paper on spoken language assessment that combines complementary speech and multimodal signals in one evaluation pipeline.",
+            "tags": ["SLA", "ASR", "Multimodal"],
+            "attributes": {
+                "authors": "HY Lin, TH Lo, YH Fang, JK Lin, CC Wang, HC Lu, B Chen",
+                "venue": "arXiv:2506.05121",
+                "year": 2025,
+                "citations": 2
+            },
+            "body": [
+                {
+                    "id": "contribution",
+                    "label": "Contribution",
+                    "text": "A shared-task system paper on spoken language assessment that combines complementary speech and multimodal signals in a single evaluation pipeline."
+                },
+                {
+                    "id": "summary",
+                    "label": "Summary",
+                    "text": "It documents the NTNU approach, task setup, and practical tradeoffs involved in building a competitive challenge submission."
+                }
+            ],
+            "links": [
+                {
+                    "id": "paper",
+                    "label": "Open publication",
+                    "url": "https://arxiv.org/abs/2506.05121",
+                    "kind": "paper"
+                }
+            ],
+            "relatedItemIds": ["pub-asa-multifaceted-2025"]
+        },
+        "pub-asa-multifaceted-2025": {
+            "id": "pub-asa-multifaceted-2025",
+            "type": "publication",
+            "title": "Advancing Automated Speaking Assessment Leveraging Multifaceted Relevance and Grammar Information",
+            "summary": "A study of automated speaking assessment that brings together relevance and grammar signals instead of relying on a single coarse judgment.",
+            "tags": ["Automated Speaking Assessment", "Grammar", "Relevance"],
+            "attributes": {
+                "authors": "HC Lu, JK Lin, HY Lin, CC Wang, B Chen",
+                "venue": "arXiv:2506.16285",
+                "year": 2025,
+                "citations": 1
+            },
+            "body": [
+                {
+                    "id": "contribution",
+                    "label": "Contribution",
+                    "text": "A study of automated speaking assessment that brings together relevance and grammar signals instead of relying on a single coarse judgment."
+                },
+                {
+                    "id": "summary",
+                    "label": "Summary",
+                    "text": "The experiments examine how richer linguistic structure can improve scoring reliability and make the model's reasoning easier to analyze."
+                }
+            ],
+            "links": [
+                {
+                    "id": "paper",
+                    "label": "Open publication",
+                    "url": "https://arxiv.org/abs/2506.16285",
+                    "kind": "paper"
+                }
+            ],
+            "relatedItemIds": ["pub-si-2025-open-track"]
+        },
+        "pub-hesitation-tagging-2025": {
+            "id": "pub-hesitation-tagging-2025",
+            "type": "publication",
+            "title": "Acoustically Precise Hesitation Tagging Is Essential for End-to-End Verbatim Transcription Systems",
+            "summary": "A transcription study showing that hesitation should be modeled explicitly rather than collapsed away in end-to-end verbatim ASR systems.",
+            "tags": ["Verbatim ASR", "Whisper", "Disfluency"],
+            "attributes": {
+                "authors": "JK Lin, HC Lu, CC Wang, HY Lin, B Chen",
+                "venue": "arXiv:2506.04076",
+                "year": 2025,
+                "citations": 1
+            },
+            "body": [
+                {
+                    "id": "contribution",
+                    "label": "Contribution",
+                    "text": "A transcription study showing that hesitation should be modeled explicitly rather than collapsed away in end-to-end verbatim ASR systems."
+                },
+                {
+                    "id": "summary",
+                    "label": "Summary",
+                    "text": "The results show that preserving disfluency as first-class information improves fidelity for realistic speech transcription tasks."
+                }
+            ],
+            "links": [
+                {
+                    "id": "paper",
+                    "label": "Open publication",
+                    "url": "https://arxiv.org/abs/2506.04076",
+                    "kind": "paper"
+                }
+            ],
+            "relatedItemIds": []
+        },
+        "project-d1-manager": {
+            "id": "project-d1-manager",
+            "type": "project",
+            "title": "d1-manager",
+            "summary": "A database workbench for Cloudflare D1 with schema browsing, query tools, and natural-language assistance for inspecting and debugging data.",
+            "tags": ["Open Source", "Database Tools", "Cloudflare"],
+            "attributes": {
+                "language": "Svelte",
+                "stars": 609,
+                "updatedAt": "2026-02-16T15:19:50Z",
+                "repositoryFullName": "JacobLinCool/d1-manager"
+            },
+            "body": [
+                {
+                    "id": "overview",
+                    "label": "Overview",
+                    "text": "I built d1-manager as a practical workbench for inspecting Cloudflare D1 databases, browsing schema, running queries, and debugging data issues more efficiently."
+                }
+            ],
+            "links": [
+                {
+                    "id": "repository",
+                    "label": "View repository",
+                    "url": "https://github.com/JacobLinCool/d1-manager",
+                    "kind": "repository"
+                }
+            ],
+            "relatedItemIds": ["rq-agent-software-engineering"]
+        },
+        "project-smart-whisper": {
+            "id": "project-smart-whisper",
+            "type": "project",
+            "title": "smart-whisper",
+            "summary": "A Node.js addon around whisper.cpp focused on practical model loading, offloading, and runtime integration for speech applications.",
+            "tags": ["Open Source", "Speech", "Machine Learning"],
+            "attributes": {
+                "language": "TypeScript",
+                "stars": 72,
+                "updatedAt": "2026-02-16T08:28:14Z",
+                "repositoryFullName": "JacobLinCool/smart-whisper"
+            },
+            "body": [
+                {
+                    "id": "overview",
+                    "label": "Overview",
+                    "text": "smart-whisper wraps whisper.cpp for Node.js so speech applications can load models, offload work, and integrate inference into runtime systems with less friction."
+                }
+            ],
+            "links": [
+                {
+                    "id": "repository",
+                    "label": "View repository",
+                    "url": "https://github.com/JacobLinCool/smart-whisper",
+                    "kind": "repository"
+                }
+            ],
+            "relatedItemIds": []
+        },
+        "project-leetcode-stats-card": {
+            "id": "project-leetcode-stats-card",
+            "type": "project",
+            "title": "LeetCode-Stats-Card",
+            "summary": "A card generator that turns LeetCode activity into embeddable visuals for GitHub profiles and personal sites.",
+            "tags": ["Open Source", "Visualization", "Developer Tools"],
+            "attributes": {
+                "language": "TypeScript",
+                "stars": 893,
+                "updatedAt": "2026-02-15T22:06:53Z",
+                "repositoryFullName": "JacobLinCool/LeetCode-Stats-Card"
+            },
+            "body": [
+                {
+                    "id": "overview",
+                    "label": "Overview",
+                    "text": "LeetCode-Stats-Card turns coding practice data into reusable visuals that can be embedded in GitHub profiles and personal sites."
+                }
+            ],
+            "links": [
+                {
+                    "id": "repository",
+                    "label": "View repository",
+                    "url": "https://github.com/JacobLinCool/LeetCode-Stats-Card",
+                    "kind": "repository"
+                }
+            ],
+            "relatedItemIds": []
+        }
+    }
+}

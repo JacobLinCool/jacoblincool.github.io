@@ -1,9 +1,8 @@
 import type { PromptChip } from '$lib/types/chat';
 
-export type DeepDivePromptId = string;
-
 export type DeepDivePrompt = {
-    id: DeepDivePromptId;
+    id: string;
+    targetItemId: string;
     label: string;
     prompt: string;
 };
@@ -14,7 +13,6 @@ export type ResearchQuestionCard = {
     question: string;
     whyItMatters: string;
     currentDirection: string;
-    promptId: DeepDivePromptId;
 };
 
 export type PublicationHighlight = {
@@ -28,7 +26,6 @@ export type PublicationHighlight = {
     summary: string;
     url: string;
     tags: string[];
-    promptId: DeepDivePromptId;
 };
 
 export type FeaturedProject = {
@@ -39,7 +36,6 @@ export type FeaturedProject = {
     language: string;
     stars: number;
     updatedAt: string;
-    promptId: DeepDivePromptId;
 };
 
 export type ProfileMetricsSnapshot = {
@@ -84,27 +80,31 @@ export type HomeSectionPayload = {
     projects: FeaturedProject[];
 };
 
-export type HomeCurationPayload = Omit<HomeSectionPayload, 'metrics'> & {
-    scholar: ProfileMetricsSnapshot['scholar'];
+export type HomeSectionConfig = {
+    id: string;
+    rootNodeId: string;
+    variant: 'research-cards' | 'publication-rail' | 'project-rail';
+    maxItems: number;
+    eyebrow: string;
+    heading: string;
+    description: string;
+    ctaLabel: string;
+};
+
+export type HomeUiConfig = {
+    sections: Record<string, HomeSectionConfig>;
 };
 
 export type ChatContentConfig = {
     taglines: string[];
     promptChips: PromptChip[];
-    deepDivePrompts: Record<string, DeepDivePrompt>;
+    deepDivePromptsByItemId: Record<string, DeepDivePrompt>;
 };
 
 export type HomeApiResponse = {
     contentVersion: string;
     dynamicRevisions: Record<string, string>;
     homePayload: HomeSectionPayload;
+    homeUi: HomeUiConfig;
     chatConfig: ChatContentConfig;
-};
-
-export type CanonicalContentBundle = {
-    locale: string;
-    versionId: string;
-    updatedAt: string;
-    home: HomeCurationPayload;
-    chat: ChatContentConfig;
 };

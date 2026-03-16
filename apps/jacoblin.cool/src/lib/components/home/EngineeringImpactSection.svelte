@@ -2,17 +2,23 @@
     import { ChevronLeft, ChevronRight } from '@lucide/svelte';
     import { computeRailEdgeState, scrollRailByViewport } from '$lib/utils/rail-scroll';
     import { formatCount, formatUtcDateTime } from '$lib/utils/display-format';
-    import type { FeaturedProject, ProfileMetricsSnapshot } from '$lib/types/home';
+    import type {
+        FeaturedProject,
+        HomeSectionConfig,
+        ProfileMetricsSnapshot
+    } from '$lib/types/home';
 
     let {
+        section,
         projects,
         metrics,
         onDeepDive,
         disabled = false
     }: {
+        section: HomeSectionConfig;
         projects: FeaturedProject[];
         metrics: ProfileMetricsSnapshot['github'];
-        onDeepDive: (promptId: string) => void | Promise<void>;
+        onDeepDive: (targetItemId: string) => void | Promise<void>;
         disabled?: boolean;
     } = $props();
 
@@ -112,18 +118,16 @@
     <div class="mb-10 flex items-start justify-between gap-5 sm:mb-12">
         <div class="flex max-w-[72ch] flex-col gap-3">
             <p class="text-xs font-semibold tracking-[0.22em] text-sky-300/85 uppercase">
-                Side Projects
+                {section.eyebrow}
             </p>
             <h2
                 id="engineering-heading"
                 class="text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl"
             >
-                Open Source and Side Projects
+                {section.heading}
             </h2>
             <p class="text-sm text-zinc-300 sm:text-base">
-                A mix of developer tools, ML experiments, and open-source utilities I have built
-                over time. Some overlap with my research interests; many simply solve practical
-                problems I care about.
+                {section.description}
             </p>
         </div>
 
@@ -218,9 +222,9 @@
                             type="button"
                             class="inline-flex cursor-pointer items-center rounded-xl border border-sky-300/35 bg-sky-500/10 px-3 py-2 text-sm font-medium text-sky-100 transition-colors duration-200 hover:border-sky-200/55 hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-60"
                             {disabled}
-                            onclick={() => void onDeepDive(project.promptId)}
+                            onclick={() => void onDeepDive(project.id)}
                         >
-                            Discuss this project in chat
+                            {section.ctaLabel}
                         </button>
                     </div>
                 </article>

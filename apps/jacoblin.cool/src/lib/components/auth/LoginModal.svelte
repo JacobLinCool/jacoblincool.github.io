@@ -87,12 +87,12 @@
         isSubmitting = true;
         try {
             await userStore.signInWithGoogle();
-            notificationStore.success('Google sign-in flow opened.');
+            notificationStore.success('Signed in with Google.');
             closeModal();
         } catch (error) {
             const message =
                 error instanceof Error ? error.message : 'Unable to start Google sign-in.';
-            notificationStore.warning(`Auth stub: ${message}`);
+            notificationStore.warning(message);
         } finally {
             isSubmitting = false;
         }
@@ -122,8 +122,8 @@
                         Sign in
                     </h2>
                     <p class="mt-1 text-sm text-slate-300">
-                        Continue with your identity, which will be used to personalize with our
-                        common experiences.
+                        Continue with your identity to keep your current conversation available
+                        across sessions.
                     </p>
                 </div>
 

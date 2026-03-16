@@ -7,13 +7,13 @@
     let panelRef = $state<HTMLDivElement | null>(null);
     let triggerRef = $state<HTMLButtonElement | null>(null);
 
-    const isAuthed = $derived(Boolean(userStore.state.user));
-    const userAvatar = $derived(userStore.state.user?.photoURL ?? null);
-    const profile = $derived(userStore.state.profile);
+    const user = $derived(userStore.state.user);
+    const isAuthed = $derived(Boolean(user && !user.isAnonymous));
+    const userAvatar = $derived(isAuthed ? (user?.photoURL ?? null) : null);
     const isSheet = $derived(uiStore.state.accountMenuPresentation === 'sheet');
 
-    const displayName = $derived(profile?.displayName ?? userStore.state.user?.displayName ?? null);
-    const email = $derived(profile?.email ?? userStore.state.user?.email ?? null);
+    const displayName = $derived(isAuthed ? (user?.displayName ?? null) : null);
+    const email = $derived(isAuthed ? (user?.email ?? null) : null);
 
     $effect(() => {
         if (!browser || !uiStore.state.isUserMenuOpen) {
@@ -55,11 +55,6 @@
         uiStore.openLoginModal();
     };
 
-    const openProfileModal = () => {
-        uiStore.closeUserMenu();
-        uiStore.openProfileModal();
-    };
-
     const handleSignOut = async () => {
         await userStore.signOut();
         uiStore.closeUserMenu();
@@ -67,12 +62,7 @@
 </script>
 
 {#snippet profileSummary()}
-    <button
-        type="button"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
-        onclick={openProfileModal}
-        role="menuitem"
-    >
+    <div class="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left">
         <span
             class="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-zinc-200"
         >
@@ -90,7 +80,7 @@
                 <p class="truncate text-xs text-zinc-400">{email}</p>
             {/if}
         </div>
-    </button>
+    </div>
 {/snippet}
 
 <div class="relative">

@@ -2,15 +2,17 @@
     import { ChevronLeft, ChevronRight } from '@lucide/svelte';
     import { computeRailEdgeState, scrollRailByViewport } from '$lib/utils/rail-scroll';
     import { formatCount } from '$lib/utils/display-format';
-    import type { PublicationHighlight } from '$lib/types/home';
+    import type { HomeSectionConfig, PublicationHighlight } from '$lib/types/home';
 
     let {
+        section,
         publications,
         onAskPaper,
         disabled = false
     }: {
+        section: HomeSectionConfig;
         publications: PublicationHighlight[];
-        onAskPaper: (promptId: string) => void | Promise<void>;
+        onAskPaper: (targetItemId: string) => void | Promise<void>;
         disabled?: boolean;
     } = $props();
 
@@ -23,23 +25,6 @@
     let railTrackRef: HTMLOListElement | null = null;
     let canScrollPrev = $state(false);
     let canScrollNext = $state(false);
-
-    const getPublicationYearRangeLabel = (items: PublicationHighlight[]): string => {
-        const years = items
-            .map((item) => item.year)
-            .filter((year): year is number => Number.isFinite(year))
-            .sort((a, b) => a - b);
-
-        if (years.length === 0) {
-            return 'N/A';
-        }
-
-        const minYear = years[0];
-        const maxYear = years[years.length - 1];
-        return minYear === maxYear ? `${minYear}` : `${minYear}-${maxYear}`;
-    };
-
-    const publicationYearRangeLabel = $derived(getPublicationYearRangeLabel(publications));
 
     const getCitationLabel = (count: number): string => {
         const unit = count === 1 ? 'citation' : 'citations';
@@ -132,17 +117,16 @@
     <div class="mb-10 flex items-start justify-between gap-5 sm:mb-12">
         <div class="flex max-w-[72ch] flex-col gap-3">
             <p class="text-xs font-semibold tracking-[0.22em] text-emerald-300/85 uppercase">
-                Previous Publications
+                {section.eyebrow}
             </p>
             <h2
                 id="publications-heading"
                 class="text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl"
             >
-                Selected Papers from Earlier Work
+                {section.heading}
             </h2>
             <p class="text-sm text-zinc-300 sm:text-base">
-                Selected papers from {publicationYearRangeLabel} on speech assessment, transcription fidelity,
-                and multimodal systems.
+                {section.description}
             </p>
         </div>
 
@@ -243,9 +227,9 @@
                             type="button"
                             class="inline-flex cursor-pointer items-center rounded-xl border border-emerald-300/35 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-100 transition-colors duration-200 hover:border-emerald-200/55 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
                             {disabled}
-                            onclick={() => void onAskPaper(publication.promptId)}
+                            onclick={() => void onAskPaper(publication.id)}
                         >
-                            Discuss this paper in chat
+                            {section.ctaLabel}
                         </button>
                     </div>
 

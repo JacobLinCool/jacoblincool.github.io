@@ -1,21 +1,13 @@
-import { getStaticPublishedContent } from '$lib/server/content/static-content';
+import {
+    countDescendantItems,
+    getStaticKnowledgeRegistry,
+    type KnowledgeItem,
+    type KnowledgeNode,
+    type KnowledgeRegistry
+} from '$lib/server/content/knowledge-registry';
 import type { GeminiFunctionDeclaration } from '$lib/server/llm/gemini';
-import type {
-    FeaturedProject,
-    HomeCurationPayload,
-    ProfileMetricsSnapshot,
-    PublicationHighlight,
-    ResearchQuestionCard
-} from '$lib/types/home';
 
-export type SiteToolName =
-    | 'get_site_overview'
-    | 'get_scholar_profile'
-    | 'get_research_interests'
-    | 'get_previous_publications'
-    | 'get_publication_detail'
-    | 'get_side_projects'
-    | 'get_project_detail';
+export type SiteToolName = 'get_knowledge_root' | 'get_knowledge_node' | 'get_knowledge_item';
 
 export type SiteToolExecutionResult = {
     label: string;
@@ -31,7 +23,6 @@ type SiteToolDefinition = {
 };
 
 export type SiteToolRegistry = {
-    locale: string;
     contentVersion: string;
     refs: string[];
     siteIndexText: string;
@@ -39,90 +30,52 @@ export type SiteToolRegistry = {
     executeTool: (name: string, args: Record<string, unknown>) => SiteToolExecutionResult | null;
 };
 
-const asRecord = (value: unknown): Record<string, unknown> =>
-    value && typeof value === 'object' && !Array.isArray(value)
-        ? (value as Record<string, unknown>)
-        : {};
-
 const asString = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
-const researchRef = (id: string) => `research:${id}`;
-const publicationRef = (id: string) => `publication:${id}`;
-const projectRef = (id: string) => `project:${id}`;
+const nodeRef = (id: string) => `node:${id}`;
+const itemRef = (id: string) => `item:${id}`;
 
-const buildSiteRefs = (home: HomeCurationPayload) => [
-    'site:overview',
-    'scholar:profile',
-    ...home.researchQuestions.map((item) => researchRef(item.id)),
-    ...home.publications.map((item) => publicationRef(item.id)),
-    ...home.projects.map((item) => projectRef(item.id))
-];
-
-const toResearchListItem = (item: ResearchQuestionCard) => ({
+const toItemSummary = (item: KnowledgeItem) => ({
     id: item.id,
+    type: item.type,
     title: item.title,
-    question: item.question
-});
-
-const toPublicationListItem = (item: PublicationHighlight) => ({
-    id: item.id,
-    title: item.title,
-    year: item.year,
-    venue: item.venue,
-    citations: item.citations,
+    summary: item.summary,
     tags: item.tags
 });
 
-const toProjectListItem = (item: FeaturedProject) => ({
-    id: item.id,
-    name: item.name,
-    language: item.language,
-    stars: item.stars,
-    updatedAt: item.updatedAt
+const toNodeSummary = (node: KnowledgeNode, descendantItemCount: number) => ({
+    id: node.id,
+    nodeType: node.nodeType,
+    title: node.title,
+    summary: node.summary,
+    childNodeCount: node.childNodeIds.length,
+    childItemCount: node.childItemIds.length,
+    descendantItemCount
 });
 
-const buildSiteOverview = (home: HomeCurationPayload, locale: string, contentVersion: string) => ({
-    locale,
-    contentVersion,
-    sections: {
-        scholarProfile: {
-            topics: home.scholar.topics,
-            citations: home.scholar.citations,
-            hIndex: home.scholar.hIndex,
-            i10Index: home.scholar.i10Index
-        },
-        researchInterests: home.researchQuestions.map(toResearchListItem),
-        previousPublications: home.publications.map(toPublicationListItem),
-        sideProjects: home.projects.map(toProjectListItem)
-    },
-    counts: {
-        researchInterests: home.researchQuestions.length,
-        previousPublications: home.publications.length,
-        sideProjects: home.projects.length
-    }
-});
+const buildSiteIndexText = (registry: KnowledgeRegistry) => {
+    const collectionLines = registry.rootNodeIds.map((rootNodeId) => {
+        const node = registry.nodesById[rootNodeId];
+        const childLines = node.childNodeIds
+            .map((childNodeId) => {
+                const child = registry.nodesById[childNodeId];
+                return `    - [${child.id}] ${child.title} (${countDescendantItems(registry, child.id)} items)`;
+            })
+            .join('\n');
 
-const buildSiteIndexText = (home: HomeCurationPayload, locale: string, contentVersion: string) => {
-    const research = home.researchQuestions
-        .map((item) => `  - [${item.id}] ${item.title}`)
-        .join('\n');
-    const publications = home.publications
-        .map((item) => `  - [${item.id}] ${item.year} ${item.title} (${item.tags.join(', ')})`)
-        .join('\n');
-    const projects = home.projects
-        .map((item) => `  - [${item.id}] ${item.name} (${item.language}, ${item.stars} stars)`)
-        .join('\n');
+        return [
+            `  - [${node.id}] ${node.title} (${countDescendantItems(registry, node.id)} items)`,
+            childLines
+        ]
+            .filter(Boolean)
+            .join('\n');
+    });
 
     return [
-        `Published site knowledge index (locale=${locale}, version=${contentVersion}):`,
-        `- Scholar topics: ${home.scholar.topics.join(', ')}`,
-        `- Research interests (${home.researchQuestions.length}):`,
-        research,
-        `- Previous publications (${home.publications.length}):`,
-        publications,
-        `- Side projects (${home.projects.length}):`,
-        projects,
-        'Use site tools for detailed content instead of guessing from the index alone.'
+        `Published site knowledge index (version=${registry.version}, language=${registry.language}):`,
+        '- Root collections:',
+        ...collectionLines,
+        'Use get_knowledge_node(id) for category-level detail and get_knowledge_item(id) for full item detail.'
     ].join('\n');
 };
 
@@ -131,179 +84,114 @@ const buildErrorPayload = (message: string) => ({
     error: message
 });
 
-const buildScholarPayload = (scholar: ProfileMetricsSnapshot['scholar']) => ({
-    ok: true,
-    scholar
-});
+const buildKnowledgeRootPayload = (registry: KnowledgeRegistry) => {
+    return {
+        ok: true,
+        root: {
+            version: registry.version,
+            language: registry.language,
+            updatedAt: registry.updatedAt,
+            collections: registry.rootNodeIds.map((rootNodeId) =>
+                toNodeSummary(
+                    registry.nodesById[rootNodeId],
+                    countDescendantItems(registry, rootNodeId)
+                )
+            )
+        }
+    };
+};
 
-const buildResearchPayload = (items: ResearchQuestionCard[]) => ({
-    ok: true,
-    researchInterests: items.map((item) => ({
-        id: item.id,
-        title: item.title,
-        question: item.question,
-        whyItMatters: item.whyItMatters,
-        currentDirection: item.currentDirection
-    }))
-});
+const buildKnowledgeNodePayload = (registry: KnowledgeRegistry, nodeId: string) => {
+    const node = registry.nodesById[nodeId];
+    if (!node) {
+        return buildErrorPayload('Unknown knowledge node id.');
+    }
 
-const buildPublicationListPayload = (items: PublicationHighlight[]) => ({
-    ok: true,
-    previousPublications: items.map((item) => ({
-        id: item.id,
-        title: item.title,
-        year: item.year,
-        venue: item.venue,
-        citations: item.citations,
-        tags: item.tags,
-        summary: item.summary
-    }))
-});
+    return {
+        ok: true,
+        node: {
+            ...toNodeSummary(node, countDescendantItems(registry, node.id)),
+            parentNodeId: node.parentNodeId,
+            childNodes: node.childNodeIds.map((childNodeId) =>
+                toNodeSummary(
+                    registry.nodesById[childNodeId],
+                    countDescendantItems(registry, childNodeId)
+                )
+            ),
+            childItems: node.childItemIds.map((childItemId) =>
+                toItemSummary(registry.itemsById[childItemId])
+            )
+        }
+    };
+};
 
-const buildProjectListPayload = (items: FeaturedProject[]) => ({
-    ok: true,
-    sideProjects: items.map((item) => ({
-        id: item.id,
-        name: item.name,
-        language: item.language,
-        stars: item.stars,
-        updatedAt: item.updatedAt,
-        description: item.description
-    }))
-});
+const buildKnowledgeItemPayload = (registry: KnowledgeRegistry, itemId: string) => {
+    const item = registry.itemsById[itemId];
+    if (!item) {
+        return buildErrorPayload('Unknown knowledge item id.');
+    }
 
-const buildPublicationDetailPayload = (item: PublicationHighlight | undefined) =>
-    item
-        ? {
-              ok: true,
-              publication: {
-                  id: item.id,
-                  title: item.title,
-                  authors: item.authors,
-                  venue: item.venue,
-                  year: item.year,
-                  citations: item.citations,
-                  tags: item.tags,
-                  impact: item.impact,
-                  summary: item.summary,
-                  url: item.url
-              }
-          }
-        : buildErrorPayload('Unknown publication id.');
+    return {
+        ok: true,
+        item: {
+            id: item.id,
+            type: item.type,
+            title: item.title,
+            summary: item.summary,
+            tags: item.tags,
+            attributes: item.attributes,
+            body: item.body,
+            links: item.links,
+            relatedItems: item.relatedItemIds.map((relatedItemId) =>
+                toItemSummary(registry.itemsById[relatedItemId])
+            )
+        }
+    };
+};
 
-const buildProjectDetailPayload = (item: FeaturedProject | undefined) =>
-    item
-        ? {
-              ok: true,
-              project: {
-                  id: item.id,
-                  name: item.name,
-                  description: item.description,
-                  url: item.url,
-                  language: item.language,
-                  stars: item.stars,
-                  updatedAt: item.updatedAt
-              }
-          }
-        : buildErrorPayload('Unknown project id.');
-
-export const createSiteToolRegistry = (locale: string): SiteToolRegistry => {
-    const published = getStaticPublishedContent(locale);
-    const home = published.bundle.home;
-    const refs = buildSiteRefs(home);
-    const siteOverview = buildSiteOverview(home, published.locale, published.versionId);
-
-    const publicationById = new Map(home.publications.map((item) => [item.id, item]));
-    const projectById = new Map(home.projects.map((item) => [item.id, item]));
+export const createSiteToolRegistryFromRegistry = (
+    registry: KnowledgeRegistry
+): SiteToolRegistry => {
+    const refs = [
+        'site:root',
+        ...Object.keys(registry.nodesById).map((nodeId) => nodeRef(nodeId)),
+        ...Object.keys(registry.itemsById).map((itemId) => itemRef(itemId))
+    ];
+    const siteIndexText = buildSiteIndexText(registry);
 
     const tools: SiteToolDefinition[] = [
         {
-            name: 'get_site_overview',
+            name: 'get_knowledge_root',
             declaration: {
-                name: 'get_site_overview',
+                name: 'get_knowledge_root',
                 description:
-                    'Read the published site structure, section counts, and item ids before choosing more specific site tools.',
+                    'Read the top-level knowledge collections and item counts before choosing a specific node or item.',
                 parameters: {
                     type: 'OBJECT',
                     properties: {}
                 }
             },
             execute: () => ({
-                label: 'Reading site overview',
-                target: 'site overview',
-                refs: ['site:overview'],
-                payload: {
-                    ok: true,
-                    overview: siteOverview
-                }
+                label: 'Reading knowledge root',
+                target: 'knowledge root',
+                refs: registry.rootNodeIds.map((rootNodeId) => nodeRef(rootNodeId)),
+                payload: buildKnowledgeRootPayload(registry)
             })
         },
         {
-            name: 'get_scholar_profile',
+            name: 'get_knowledge_node',
             declaration: {
-                name: 'get_scholar_profile',
+                name: 'get_knowledge_node',
                 description:
-                    'Read the published scholar profile, including topics and citation metrics.',
-                parameters: {
-                    type: 'OBJECT',
-                    properties: {}
-                }
-            },
-            execute: () => ({
-                label: 'Reading scholar profile',
-                target: 'scholar profile',
-                refs: ['scholar:profile'],
-                payload: buildScholarPayload(home.scholar)
-            })
-        },
-        {
-            name: 'get_research_interests',
-            declaration: {
-                name: 'get_research_interests',
-                description:
-                    'Read the full published research interests section, including questions, why they matter, and current directions.',
-                parameters: {
-                    type: 'OBJECT',
-                    properties: {}
-                }
-            },
-            execute: () => ({
-                label: 'Reading research interests',
-                target: 'research interests',
-                refs: home.researchQuestions.map((item) => researchRef(item.id)),
-                payload: buildResearchPayload(home.researchQuestions)
-            })
-        },
-        {
-            name: 'get_previous_publications',
-            declaration: {
-                name: 'get_previous_publications',
-                description:
-                    'Read the list of previous publications with ids, venues, years, tags, and summaries.',
-                parameters: {
-                    type: 'OBJECT',
-                    properties: {}
-                }
-            },
-            execute: () => ({
-                label: 'Reading previous publications',
-                target: 'previous publications',
-                refs: home.publications.map((item) => publicationRef(item.id)),
-                payload: buildPublicationListPayload(home.publications)
-            })
-        },
-        {
-            name: 'get_publication_detail',
-            declaration: {
-                name: 'get_publication_detail',
-                description: 'Read the full published details for one publication by id.',
+                    'Read one knowledge node by id, including child categories and immediate child items.',
                 parameters: {
                     type: 'OBJECT',
                     properties: {
                         id: {
                             type: 'STRING',
-                            description: 'Publication id from get_previous_publications.',
-                            enum: home.publications.map((item) => item.id)
+                            description:
+                                'Knowledge node id from get_knowledge_root or get_knowledge_node.',
+                            enum: Object.keys(registry.nodesById)
                         }
                     },
                     required: ['id']
@@ -311,48 +199,37 @@ export const createSiteToolRegistry = (locale: string): SiteToolRegistry => {
             },
             execute: (args) => {
                 const id = asString(args.id);
-                const publication = publicationById.get(id);
+                const node = registry.nodesById[id];
 
                 return {
-                    label: publication
-                        ? `Reading publication: ${publication.title}`
-                        : 'Reading publication details',
-                    target: publication?.id ?? (id || 'publication detail'),
-                    refs: publication ? [publicationRef(publication.id)] : [],
-                    payload: buildPublicationDetailPayload(publication)
+                    label: node
+                        ? `Reading knowledge node: ${node.title}`
+                        : 'Reading knowledge node',
+                    target: node?.title ?? (id || 'knowledge node'),
+                    refs: node
+                        ? [
+                              nodeRef(node.id),
+                              ...node.childNodeIds.map((childNodeId) => nodeRef(childNodeId)),
+                              ...node.childItemIds.map((childItemId) => itemRef(childItemId))
+                          ]
+                        : [],
+                    payload: buildKnowledgeNodePayload(registry, id)
                 };
             }
         },
         {
-            name: 'get_side_projects',
+            name: 'get_knowledge_item',
             declaration: {
-                name: 'get_side_projects',
+                name: 'get_knowledge_item',
                 description:
-                    'Read the list of side projects with ids, languages, stars, and short descriptions.',
-                parameters: {
-                    type: 'OBJECT',
-                    properties: {}
-                }
-            },
-            execute: () => ({
-                label: 'Reading side projects',
-                target: 'side projects',
-                refs: home.projects.map((item) => projectRef(item.id)),
-                payload: buildProjectListPayload(home.projects)
-            })
-        },
-        {
-            name: 'get_project_detail',
-            declaration: {
-                name: 'get_project_detail',
-                description: 'Read the full published details for one side project by id.',
+                    'Read one knowledge item by id, including full body, links, and related items.',
                 parameters: {
                     type: 'OBJECT',
                     properties: {
                         id: {
                             type: 'STRING',
-                            description: 'Project id from get_side_projects.',
-                            enum: home.projects.map((item) => item.id)
+                            description: 'Knowledge item id from get_knowledge_node.',
+                            enum: Object.keys(registry.itemsById)
                         }
                     },
                     required: ['id']
@@ -360,31 +237,38 @@ export const createSiteToolRegistry = (locale: string): SiteToolRegistry => {
             },
             execute: (args) => {
                 const id = asString(args.id);
-                const project = projectById.get(id);
+                const item = registry.itemsById[id];
 
                 return {
-                    label: project ? `Reading project: ${project.name}` : 'Reading project details',
-                    target: project?.id ?? (id || 'project detail'),
-                    refs: project ? [projectRef(project.id)] : [],
-                    payload: buildProjectDetailPayload(project)
+                    label: item
+                        ? `Reading knowledge item: ${item.title}`
+                        : 'Reading knowledge item',
+                    target: item?.title ?? (id || 'knowledge item'),
+                    refs: item
+                        ? [
+                              itemRef(item.id),
+                              ...(registry.itemToParentNodeIds[item.id] ?? []).map((parentNodeId) =>
+                                  nodeRef(parentNodeId)
+                              ),
+                              ...item.relatedItemIds.map((relatedItemId) => itemRef(relatedItemId))
+                          ]
+                        : [],
+                    payload: buildKnowledgeItemPayload(registry, id)
                 };
             }
         }
     ];
 
-    return {
-        locale: published.locale,
-        contentVersion: published.versionId,
-        refs,
-        siteIndexText: buildSiteIndexText(home, published.locale, published.versionId),
-        toolDeclarations: tools.map((tool) => tool.declaration),
-        executeTool: (name, args) => {
-            const tool = tools.find((candidate) => candidate.name === name);
-            if (!tool) {
-                return null;
-            }
+    const toolMap = new Map(tools.map((tool) => [tool.name, tool]));
 
-            return tool.execute(asRecord(args));
-        }
+    return {
+        contentVersion: registry.version,
+        refs,
+        siteIndexText,
+        toolDeclarations: tools.map((tool) => tool.declaration),
+        executeTool: (name, args) => toolMap.get(name as SiteToolName)?.execute(args) ?? null
     };
 };
+
+export const createSiteToolRegistry = () =>
+    createSiteToolRegistryFromRegistry(getStaticKnowledgeRegistry());

@@ -1,8 +1,8 @@
 import { DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS } from '$lib/server/chat/conversation-memory';
 import { streamChatTurn } from '$lib/server/chat/stream-chat';
-import type { ToolPolicy } from '$lib/server/repos/tool-policy-repository';
 import type { RuntimeConfig } from '$lib/server/runtime-env';
 import { FakeFirestore } from '$lib/server/test-helpers/fake-firestore';
+import type { ExternalToolConfig } from '$lib/server/tools/external-tool-config';
 import { describe, expect, it, vi } from 'vitest';
 
 const config: RuntimeConfig = {
@@ -19,10 +19,8 @@ const config: RuntimeConfig = {
     huggingfaceUser: 'JacobLinCool'
 };
 
-const policy: ToolPolicy = {
-    maxCallsPerTurn: 2,
+const externalToolConfig: ExternalToolConfig = {
     timeoutMs: 1000,
-    enabledTools: ['github', 'huggingface'],
     freshnessBySource: {
         githubUserSummaryMs: 1000,
         githubRepoDetailMs: 1000,
@@ -78,8 +76,10 @@ describe('streamChatTurn', () => {
                                     parts: [
                                         {
                                             functionCall: {
-                                                name: 'get_research_interests',
-                                                args: {}
+                                                name: 'get_knowledge_node',
+                                                args: {
+                                                    id: 'research'
+                                                }
                                             }
                                         }
                                     ]
@@ -127,7 +127,7 @@ describe('streamChatTurn', () => {
             db: db as never,
             fetchFn,
             config,
-            policy,
+            externalToolConfig,
             user: {
                 uid: 'user-1',
                 isAnonymous: true
@@ -144,7 +144,7 @@ describe('streamChatTurn', () => {
         );
         expect(sentEvents.find((event) => event.event === 'tool_call')?.data).toMatchObject({
             tool: 'site',
-            label: 'Reading research interests'
+            label: 'Reading knowledge node'
         });
 
         const messages = [...db.dump('conversations')]
@@ -219,7 +219,7 @@ describe('streamChatTurn', () => {
             db: db as never,
             fetchFn,
             config,
-            policy,
+            externalToolConfig,
             user: {
                 uid: 'user-1',
                 isAnonymous: true
@@ -233,7 +233,7 @@ describe('streamChatTurn', () => {
             db: db as never,
             fetchFn,
             config,
-            policy,
+            externalToolConfig,
             user: {
                 uid: 'user-1',
                 isAnonymous: true
@@ -364,7 +364,7 @@ describe('streamChatTurn', () => {
             db: db as never,
             fetchFn,
             config,
-            policy,
+            externalToolConfig,
             user: {
                 uid: 'user-1',
                 isAnonymous: true
@@ -402,7 +402,10 @@ describe('streamChatTurn', () => {
         });
 
         const doneEvent = sentEvents.find((event) => event.event === 'done');
-        expect(doneEvent?.data.conversationId).toBe(newConversation?.[0].split('/').at(-1));
+        expect(doneEvent?.data).toMatchObject({
+            type: 'done',
+            contentVersion: expect.any(String)
+        });
 
         const mainStreamRequest = capturedBodies.find(
             (body) =>
@@ -432,7 +435,7 @@ describe('streamChatTurn', () => {
                                 parts: [
                                     {
                                         functionCall: {
-                                            name: 'get_site_overview',
+                                            name: 'get_knowledge_root',
                                             args: {}
                                         }
                                     }
@@ -469,7 +472,7 @@ describe('streamChatTurn', () => {
             db: db as never,
             fetchFn,
             config,
-            policy,
+            externalToolConfig,
             user: {
                 uid: 'user-1',
                 isAnonymous: true

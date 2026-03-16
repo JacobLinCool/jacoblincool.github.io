@@ -3,8 +3,8 @@ import { createSseResponse } from '$lib/server/chat/sse';
 import { streamChatTurn } from '$lib/server/chat/stream-chat';
 import { resolveLocale } from '$lib/server/content/locale';
 import { getAdminDb } from '$lib/server/firestore-admin';
-import { getToolPolicy } from '$lib/server/repos/tool-policy-repository';
 import { readRuntimeConfig } from '$lib/server/runtime-env';
+import { EXTERNAL_TOOL_CONFIG } from '$lib/server/tools/external-tool-config';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
@@ -48,7 +48,6 @@ export const POST: RequestHandler = async ({ request, fetch, platform, url }) =>
         : resolveLocale(url.pathname, request.headers.get('accept-language'));
 
     const db = getAdminDb(config);
-    const policy = await getToolPolicy(db);
 
     return createSseResponse(async (send) => {
         try {
@@ -56,7 +55,7 @@ export const POST: RequestHandler = async ({ request, fetch, platform, url }) =>
                 db,
                 fetchFn: fetch,
                 config,
-                policy,
+                externalToolConfig: EXTERNAL_TOOL_CONFIG,
                 user: {
                     uid: user.uid,
                     isAnonymous: user.isAnonymous

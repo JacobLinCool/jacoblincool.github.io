@@ -1,0 +1,127 @@
+{
+    "version": "v3",
+    "language": "en",
+    "updatedAt": "2026-03-17T00:00:00.000Z",
+    "rootNodeIds": ["profile", "research", "publications", "projects"],
+    "nodes": {
+        "profile": {
+            "id": "profile",
+            "nodeType": "collection",
+            "title": "Profile",
+            "summary": "Background and profile-level context for Jacob Lin.",
+            "parentNodeId": null,
+            "childNodeIds": [],
+            "childItemIds": ["profile.scholar"]
+        },
+        "research": {
+            "id": "research",
+            "nodeType": "collection",
+            "title": "Research Interests",
+            "summary": "Current research directions around HCI, AI agents, and software systems.",
+            "parentNodeId": null,
+            "childNodeIds": [
+                "research.multi-human-steering",
+                "research.agent-driven-engineering",
+                "research.software-evolution"
+            ],
+            "childItemIds": []
+        },
+        "research.multi-human-steering": {
+            "id": "research.multi-human-steering",
+            "nodeType": "category",
+            "title": "Multi-Human Steering",
+            "summary": "How teams coordinate around shared agent systems.",
+            "parentNodeId": "research",
+            "childNodeIds": [],
+            "childItemIds": ["rq-agent-collaboration"]
+        },
+        "research.agent-driven-engineering": {
+            "id": "research.agent-driven-engineering",
+            "nodeType": "category",
+            "title": "Agent-Driven Software Engineering",
+            "summary": "Interfaces and workflows for engineering with fast agents.",
+            "parentNodeId": "research",
+            "childNodeIds": [],
+            "childItemIds": ["rq-agent-software-engineering"]
+        },
+        "research.software-evolution": {
+            "id": "research.software-evolution",
+            "nodeType": "category",
+            "title": "Software Evolution",
+            "summary": "Shortening the path from user need to product change.",
+            "parentNodeId": "research",
+            "childNodeIds": [],
+            "childItemIds": ["rq-software-evolution"]
+        },
+        "publications": {
+            "id": "publications",
+            "nodeType": "collection",
+            "title": "Previous Publications",
+            "summary": "Selected papers from earlier work in speech and language technology.",
+            "parentNodeId": null,
+            "childNodeIds": [
+                "publications.speaking-assessment",
+                "publications.transcription-fidelity"
+            ],
+            "childItemIds": []
+        },
+        "publications.speaking-assessment": {
+            "id": "publications.speaking-assessment",
+            "nodeType": "category",
+            "title": "Speaking Assessment",
+            "summary": "Assessment systems, relevance, grammar, and multimodal scoring.",
+            "parentNodeId": "publications",
+            "childNodeIds": [],
+            "childItemIds": ["pub-si-2025-open-track", "pub-asa-multifaceted-2025"]
+        },
+        "publications.transcription-fidelity": {
+            "id": "publications.transcription-fidelity",
+            "nodeType": "category",
+            "title": "Transcription Fidelity",
+            "summary": "Verbatim transcription quality and hesitation modeling.",
+            "parentNodeId": "publications",
+            "childNodeIds": [],
+            "childItemIds": ["pub-hesitation-tagging-2025"]
+        },
+        "projects": {
+            "id": "projects",
+            "nodeType": "collection",
+            "title": "Open Source and Side Projects",
+            "summary": "Developer tools, ML experiments, and open-source utilities.",
+            "parentNodeId": null,
+            "childNodeIds": [
+                "projects.database-tools",
+                "projects.speech-and-ml",
+                "projects.visualization"
+            ],
+            "childItemIds": []
+        },
+        "projects.database-tools": {
+            "id": "projects.database-tools",
+            "nodeType": "category",
+            "title": "Database Tools",
+            "summary": "Tools for inspecting, querying, and debugging data systems.",
+            "parentNodeId": "projects",
+            "childNodeIds": [],
+            "childItemIds": ["project-d1-manager"]
+        },
+        "projects.speech-and-ml": {
+            "id": "projects.speech-and-ml",
+            "nodeType": "category",
+            "title": "Speech and ML Tooling",
+            "summary": "Runtime integrations for speech models and ML workflows.",
+            "parentNodeId": "projects",
+            "childNodeIds": [],
+            "childItemIds": ["project-smart-whisper"]
+        },
+        "projects.visualization": {
+            "id": "projects.visualization",
+            "nodeType": "category",
+            "title": "Visualization Utilities",
+            "summary": "Utilities that turn activity data into embeddable visuals.",
+            "parentNodeId": "projects",
+            "childNodeIds": [],
+            "childItemIds": ["project-leetcode-stats-card"]
+        }
+    }
+}

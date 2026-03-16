@@ -31,7 +31,6 @@ export type ChatProgressEvent = {
 export type ChatSseStatusEvent = {
     type: 'status';
     status: 'collecting_context' | 'generating_answer' | 'completed';
-    conversationId: string;
     detail?: string | null;
 };
 
@@ -59,7 +58,8 @@ export type ChatSseAnswerDeltaEvent = {
 
 export type ChatSseDoneEvent = {
     type: 'done';
-    conversationId: string;
+    contentVersion: string;
+    dynamicRevisions: Record<string, string>;
 };
 
 export type ChatSseErrorEvent = {

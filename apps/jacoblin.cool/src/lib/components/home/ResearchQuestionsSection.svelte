@@ -1,15 +1,17 @@
 <script lang="ts">
     import { ChevronLeft, ChevronRight } from '@lucide/svelte';
     import { computeRailEdgeState, scrollRailByViewport } from '$lib/utils/rail-scroll';
-    import type { ResearchQuestionCard } from '$lib/types/home';
+    import type { HomeSectionConfig, ResearchQuestionCard } from '$lib/types/home';
 
     let {
+        section,
         questions,
         onDeepDive,
         disabled = false
     }: {
+        section: HomeSectionConfig;
         questions: ResearchQuestionCard[];
-        onDeepDive: (promptId: string) => void | Promise<void>;
+        onDeepDive: (targetItemId: string) => void | Promise<void>;
         disabled?: boolean;
     } = $props();
 
@@ -103,17 +105,16 @@
     <div class="mb-10 flex items-start justify-between gap-5 sm:mb-12">
         <div class="flex max-w-[72ch] flex-col gap-3">
             <p class="text-xs font-semibold tracking-[0.22em] text-cyan-300/85 uppercase">
-                Research Interests
+                {section.eyebrow}
             </p>
             <h2
                 id="research-questions-heading"
                 class="text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl"
             >
-                How I Think About Collaboration in the Agent Era
+                {section.heading}
             </h2>
             <p class="text-sm text-zinc-300 sm:text-base">
-                Current questions spanning multi-human steering, agent-driven engineering, and
-                faster software evolution.
+                {section.description}
             </p>
         </div>
 
@@ -194,9 +195,9 @@
                         type="button"
                         class="mt-7 inline-flex cursor-pointer items-center justify-center self-start rounded-xl border border-cyan-300/35 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100 transition-colors duration-200 hover:border-cyan-200/55 hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-60"
                         {disabled}
-                        onclick={() => void onDeepDive(question.promptId)}
+                        onclick={() => void onDeepDive(question.id)}
                     >
-                        Continue in chat
+                        {section.ctaLabel}
                     </button>
                 </article>
             {/each}

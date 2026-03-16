@@ -47,7 +47,7 @@ describe('mergeGeminiContent', () => {
                 {
                     text: 'Hello',
                     functionCall: {
-                        name: 'get_project_detail',
+                        name: 'get_knowledge_item',
                         args: {
                             id: 'project-d1-manager'
                         }
@@ -76,7 +76,7 @@ describe('mergeGeminiContent', () => {
                 {
                     text: 'Hello world',
                     functionCall: {
-                        name: 'get_project_detail',
+                        name: 'get_knowledge_item',
                         args: {
                             id: 'project-d1-manager',
                             includeStats: true

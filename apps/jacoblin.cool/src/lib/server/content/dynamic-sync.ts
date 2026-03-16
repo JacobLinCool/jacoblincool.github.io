@@ -1,5 +1,11 @@
-import type { Firestore } from 'fires2rest';
-import type { ProfileMetricsSnapshot } from '$lib/types/home';
+import {
+    getDynamicSnapshot,
+    isSnapshotFresh,
+    markDynamicSnapshotError,
+    upsertDynamicSnapshot,
+    type DynamicSnapshotRecord,
+    type DynamicSource
+} from '$lib/server/repos/dynamic-snapshot-repository';
 import type { RuntimeConfig } from '$lib/server/runtime-env';
 import {
     fetchGithubRepoDetail,
@@ -8,15 +14,9 @@ import {
     fetchHuggingFaceSpaceDetail,
     fetchHuggingFaceUserSummary
 } from '$lib/server/tools/clients';
-import {
-    getDynamicSnapshot,
-    isSnapshotFresh,
-    markDynamicSnapshotError,
-    type DynamicSnapshotRecord,
-    type DynamicSource,
-    upsertDynamicSnapshot
-} from '$lib/server/repos/dynamic-snapshot-repository';
-import type { ToolPolicy } from '$lib/server/repos/tool-policy-repository';
+import type { ExternalToolConfig } from '$lib/server/tools/external-tool-config';
+import type { ProfileMetricsSnapshot } from '$lib/types/home';
+import type { Firestore } from 'fires2rest';
 
 export type DynamicTargetKind =
     | 'github_user_summary'
@@ -43,24 +43,24 @@ type ResolveTargetOptions = {
     db: Firestore;
     fetchFn: typeof fetch;
     config: RuntimeConfig;
-    policy: ToolPolicy;
+    externalToolConfig: ExternalToolConfig;
     target: DynamicTarget;
     forceRefresh?: boolean;
     onToolEvent?: ToolEventHandler;
 };
 
-const getTtlForTarget = (target: DynamicTarget, policy: ToolPolicy) => {
+const getTtlForTarget = (target: DynamicTarget, externalToolConfig: ExternalToolConfig) => {
     switch (target.kind) {
         case 'github_user_summary':
-            return policy.freshnessBySource.githubUserSummaryMs;
+            return externalToolConfig.freshnessBySource.githubUserSummaryMs;
         case 'github_repo_detail':
-            return policy.freshnessBySource.githubRepoDetailMs;
+            return externalToolConfig.freshnessBySource.githubRepoDetailMs;
         case 'huggingface_user_summary':
-            return policy.freshnessBySource.huggingfaceUserSummaryMs;
+            return externalToolConfig.freshnessBySource.huggingfaceUserSummaryMs;
         case 'huggingface_model_detail':
-            return policy.freshnessBySource.huggingfaceModelDetailMs;
+            return externalToolConfig.freshnessBySource.huggingfaceModelDetailMs;
         case 'huggingface_space_detail':
-            return policy.freshnessBySource.huggingfaceSpaceDetailMs;
+            return externalToolConfig.freshnessBySource.huggingfaceSpaceDetailMs;
         default:
             return 10 * 60 * 1000;
     }
@@ -94,7 +94,7 @@ const fetchTargetPayload = async (
 export const resolveDynamicTarget = async (
     options: ResolveTargetOptions
 ): Promise<DynamicSnapshotRecord> => {
-    const ttlMs = getTtlForTarget(options.target, options.policy);
+    const ttlMs = getTtlForTarget(options.target, options.externalToolConfig);
     const existing = await getDynamicSnapshot(
         options.db,
         options.target.source,
@@ -117,7 +117,7 @@ export const resolveDynamicTarget = async (
             options.fetchFn,
             options.config,
             options.target,
-            options.policy.timeoutMs
+            options.externalToolConfig.timeoutMs
         );
 
         const updated = await upsertDynamicSnapshot(options.db, {

@@ -24,8 +24,8 @@ import {
     rolloverCurrentConversation,
     updateConversationStatus
 } from '$lib/server/repos/conversation-repository';
-import type { ToolPolicy } from '$lib/server/repos/tool-policy-repository';
 import type { RuntimeConfig } from '$lib/server/runtime-env';
+import type { ExternalToolConfig } from '$lib/server/tools/external-tool-config';
 import type { Firestore } from 'fires2rest';
 
 type SendSseFn = (event: string, data: unknown) => void;
@@ -34,7 +34,7 @@ type StreamChatInput = {
     db: Firestore;
     fetchFn: typeof fetch;
     config: RuntimeConfig;
-    policy: ToolPolicy;
+    externalToolConfig: ExternalToolConfig;
     user: {
         uid: string;
         isAnonymous: boolean;
@@ -95,13 +95,9 @@ const buildPendingToolCallPreview = (name: string, args: Record<string, unknown>
         name;
 
     const labelMap: Record<string, string> = {
-        get_site_overview: 'Reading site overview',
-        get_scholar_profile: 'Reading scholar profile',
-        get_research_interests: 'Reading research interests',
-        get_previous_publications: 'Reading previous publications',
-        get_publication_detail: 'Reading publication details',
-        get_side_projects: 'Reading side projects',
-        get_project_detail: 'Reading project details',
+        get_knowledge_root: 'Reading knowledge root',
+        get_knowledge_node: 'Reading knowledge node',
+        get_knowledge_item: 'Reading knowledge item',
         get_github_profile: 'Reading GitHub profile',
         get_github_repo_detail: 'Reading GitHub repository details',
         get_huggingface_profile: 'Reading Hugging Face profile',
@@ -119,7 +115,7 @@ export const streamChatTurn = async ({
     db,
     fetchFn,
     config,
-    policy,
+    externalToolConfig,
     user,
     locale,
     message,
@@ -176,7 +172,6 @@ export const streamChatTurn = async ({
         send('status', {
             type: 'status',
             status,
-            conversationId,
             detail: detail ?? null
         });
 
@@ -206,8 +201,7 @@ export const streamChatTurn = async ({
             db,
             fetchFn,
             config,
-            policy,
-            locale
+            externalToolConfig
         });
 
         const memory = await loadConversationMemory(db, conversation);
@@ -432,7 +426,6 @@ export const streamChatTurn = async ({
 
         send('done', {
             type: 'done',
-            conversationId,
             contentVersion: toolRegistry.contentVersion,
             dynamicRevisions
         });

@@ -17,12 +17,12 @@
     const isIdle = $derived(chatStore.state.conversationStage === 'idle');
     const ctaDisabled = $derived(chatStore.state.isStreaming);
 
-    const handleDeepDive = async (promptId: string) => {
+    const handleDeepDive = async (targetItemId: string) => {
         if (chatStore.state.isStreaming) {
             return;
         }
 
-        const prompt = data.home.chatConfig.deepDivePrompts[promptId]?.prompt;
+        const prompt = data.home.chatConfig.deepDivePromptsByItemId[targetItemId]?.prompt;
         if (!prompt) {
             return;
         }
@@ -53,18 +53,21 @@
     class="home-sections home-sections-breakout mt-14 flex w-full flex-col gap-10 pb-16 sm:mt-16 sm:gap-12 sm:pb-20 lg:gap-14 lg:pb-24"
 >
     <ResearchQuestionsSection
+        section={data.home.homeUi.sections.research}
         questions={data.home.homePayload.researchQuestions}
         onDeepDive={handleDeepDive}
         disabled={ctaDisabled}
     />
 
     <PublicationsTimelineSection
+        section={data.home.homeUi.sections.publications}
         publications={data.home.homePayload.publications}
         onAskPaper={handleDeepDive}
         disabled={ctaDisabled}
     />
 
     <EngineeringImpactSection
+        section={data.home.homeUi.sections.projects}
         projects={data.home.homePayload.projects}
         metrics={data.home.homePayload.metrics.github}
         onDeepDive={handleDeepDive}

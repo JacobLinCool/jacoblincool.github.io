@@ -1,9 +1,12 @@
 import { createSiteToolRegistry } from '$lib/server/content/context-builder';
 import { getEntityKeyFromGithubUrl, resolveDynamicTarget } from '$lib/server/content/dynamic-sync';
-import { getStaticPublishedContent } from '$lib/server/content/static-content';
+import {
+    getStaticKnowledgeRegistry,
+    type KnowledgeItem
+} from '$lib/server/content/knowledge-registry';
 import type { GeminiFunctionDeclaration, GeminiFunctionResponse } from '$lib/server/llm/gemini';
-import type { ToolPolicy } from '$lib/server/repos/tool-policy-repository';
 import type { RuntimeConfig } from '$lib/server/runtime-env';
+import type { ExternalToolConfig } from '$lib/server/tools/external-tool-config';
 import type { Firestore } from 'fires2rest';
 
 export type ChatToolSource = 'site' | 'github' | 'huggingface';
@@ -28,8 +31,7 @@ type ToolRegistryInput = {
     db: Firestore;
     fetchFn: typeof fetch;
     config: RuntimeConfig;
-    policy: ToolPolicy;
-    locale: string;
+    externalToolConfig: ExternalToolConfig;
 };
 
 export type ChatToolRegistry = {
@@ -50,28 +52,33 @@ const asRecord = (value: unknown): Record<string, unknown> =>
         ? (value as Record<string, unknown>)
         : {};
 
-const buildDisabledPayload = (tool: 'github' | 'huggingface') => ({
-    ok: false,
-    error: `${tool} tool is disabled by policy.`
-});
-
 const buildFailurePayload = (error: unknown) => ({
     ok: false,
     error: error instanceof Error ? error.message : 'Tool execution failed.'
 });
 
+const getProjectRepositoryFullName = (item: KnowledgeItem) => {
+    const explicitRepository = item.attributes.repositoryFullName;
+    if (typeof explicitRepository === 'string' && explicitRepository.trim()) {
+        return explicitRepository.trim();
+    }
+
+    const repositoryUrl = item.links.find((link) => link.kind === 'repository')?.url;
+    return repositoryUrl ? getEntityKeyFromGithubUrl(repositoryUrl) : null;
+};
+
 export const createChatToolRegistry = ({
     db,
     fetchFn,
     config,
-    policy,
-    locale
+    externalToolConfig
 }: ToolRegistryInput): ChatToolRegistry => {
-    const siteRegistry = createSiteToolRegistry(locale);
-    const published = getStaticPublishedContent(locale);
+    const siteRegistry = createSiteToolRegistry();
+    const knowledgeRegistry = getStaticKnowledgeRegistry();
     const projectRepoById = new Map(
-        published.bundle.home.projects
-            .map((project) => [project.id, getEntityKeyFromGithubUrl(project.url)] as const)
+        Object.values(knowledgeRegistry.itemsById)
+            .filter((item) => item.type === 'project')
+            .map((project) => [project.id, getProjectRepositoryFullName(project)] as const)
             .filter((entry): entry is readonly [string, string] => Boolean(entry[1]))
     );
 
@@ -105,21 +112,11 @@ export const createChatToolRegistry = ({
                 }
             },
             execute: async () => {
-                if (!policy.enabledTools.includes('github')) {
-                    return {
-                        tool: 'github',
-                        target: `user:${config.githubUser.toLowerCase()}`,
-                        label: 'Reading GitHub profile',
-                        refs: [],
-                        payload: buildDisabledPayload('github')
-                    };
-                }
-
                 const snapshot = await resolveDynamicTarget({
                     db,
                     fetchFn,
                     config,
-                    policy,
+                    externalToolConfig,
                     target: {
                         kind: 'github_user_summary',
                         source: 'github',
@@ -182,21 +179,11 @@ export const createChatToolRegistry = ({
                     };
                 }
 
-                if (!policy.enabledTools.includes('github')) {
-                    return {
-                        tool: 'github',
-                        target: entityKey,
-                        label: 'Reading GitHub repository details',
-                        refs: projectId ? [`project:${projectId}`] : [],
-                        payload: buildDisabledPayload('github')
-                    };
-                }
-
                 const snapshot = await resolveDynamicTarget({
                     db,
                     fetchFn,
                     config,
-                    policy,
+                    externalToolConfig,
                     target: {
                         kind: 'github_repo_detail',
                         source: 'github',
@@ -232,21 +219,11 @@ export const createChatToolRegistry = ({
                 }
             },
             execute: async () => {
-                if (!policy.enabledTools.includes('huggingface')) {
-                    return {
-                        tool: 'huggingface',
-                        target: `user:${config.huggingfaceUser.toLowerCase()}`,
-                        label: 'Reading Hugging Face profile',
-                        refs: [],
-                        payload: buildDisabledPayload('huggingface')
-                    };
-                }
-
                 const snapshot = await resolveDynamicTarget({
                     db,
                     fetchFn,
                     config,
-                    policy,
+                    externalToolConfig,
                     target: {
                         kind: 'huggingface_user_summary',
                         source: 'huggingface',
@@ -302,21 +279,11 @@ export const createChatToolRegistry = ({
                     };
                 }
 
-                if (!policy.enabledTools.includes('huggingface')) {
-                    return {
-                        tool: 'huggingface',
-                        target: id,
-                        label: `Reading Hugging Face model: ${id}`,
-                        refs: [],
-                        payload: buildDisabledPayload('huggingface')
-                    };
-                }
-
                 const snapshot = await resolveDynamicTarget({
                     db,
                     fetchFn,
                     config,
-                    policy,
+                    externalToolConfig,
                     target: {
                         kind: 'huggingface_model_detail',
                         source: 'huggingface',
@@ -372,21 +339,11 @@ export const createChatToolRegistry = ({
                     };
                 }
 
-                if (!policy.enabledTools.includes('huggingface')) {
-                    return {
-                        tool: 'huggingface',
-                        target: id,
-                        label: `Reading Hugging Face Space: ${id}`,
-                        refs: [],
-                        payload: buildDisabledPayload('huggingface')
-                    };
-                }
-
                 const snapshot = await resolveDynamicTarget({
                     db,
                     fetchFn,
                     config,
-                    policy,
+                    externalToolConfig,
                     target: {
                         kind: 'huggingface_space_detail',
                         source: 'huggingface',
