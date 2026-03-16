@@ -1,7 +1,7 @@
 import { requireFirebaseUser } from '$lib/server/auth/verify-firebase-token';
+import { createSseResponse } from '$lib/server/chat/sse';
 import { streamChatTurn } from '$lib/server/chat/stream-chat';
 import { resolveLocale } from '$lib/server/content/locale';
-import { createSseResponse } from '$lib/server/chat/sse';
 import { getAdminDb } from '$lib/server/firestore-admin';
 import { getToolPolicy } from '$lib/server/repos/tool-policy-repository';
 import { readRuntimeConfig } from '$lib/server/runtime-env';
@@ -10,12 +10,13 @@ import type { RequestHandler } from './$types';
 
 type RequestBody = {
     message?: unknown;
-    conversationId?: unknown;
     locale?: unknown;
 };
 
 export const POST: RequestHandler = async ({ request, fetch, platform, url }) => {
-    const config = readRuntimeConfig((platform?.env ?? undefined) as Record<string, unknown> | undefined);
+    const config = readRuntimeConfig(
+        (platform?.env ?? undefined) as Record<string, unknown> | undefined
+    );
 
     let user;
     try {
@@ -46,11 +47,6 @@ export const POST: RequestHandler = async ({ request, fetch, platform, url }) =>
         ? localeCandidate
         : resolveLocale(url.pathname, request.headers.get('accept-language'));
 
-    const requestedConversationId =
-        typeof body.conversationId === 'string' && body.conversationId.trim()
-            ? body.conversationId
-            : null;
-
     const db = getAdminDb(config);
     const policy = await getToolPolicy(db);
 
@@ -66,7 +62,6 @@ export const POST: RequestHandler = async ({ request, fetch, platform, url }) =>
                     isAnonymous: user.isAnonymous
                 },
                 locale,
-                requestedConversationId,
                 message,
                 send
             });

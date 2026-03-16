@@ -4,7 +4,6 @@ import { signInAnonymously } from 'firebase/auth';
 
 type StreamChatOptions = {
     message: string;
-    conversationId: string | null;
     locale: string;
     onEvent: (event: ChatSseEvent) => void;
 };
@@ -58,12 +57,7 @@ const parseSse = (chunk: string): Array<{ event: string; data: string }> => {
     return parsed;
 };
 
-export const streamChat = async ({
-    message,
-    conversationId,
-    locale,
-    onEvent
-}: StreamChatOptions) => {
+export const streamChat = async ({ message, locale, onEvent }: StreamChatOptions) => {
     const token = await ensureAuthToken();
 
     const response = await fetch('/api/chat/stream', {
@@ -74,7 +68,6 @@ export const streamChat = async ({
         },
         body: JSON.stringify({
             message,
-            conversationId,
             locale
         })
     });

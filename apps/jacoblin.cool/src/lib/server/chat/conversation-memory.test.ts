@@ -1,68 +1,88 @@
 import {
-    compactConversationMemory,
-    loadConversationMemory
+    DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS,
+    estimateTextTokens,
+    loadConversationMemory,
+    shouldRollOverConversation
 } from '$lib/server/chat/conversation-memory';
 import {
-    ensureConversation,
-    persistConversationMessage
+    persistConversationMessage,
+    resolveCurrentConversation
 } from '$lib/server/repos/conversation-repository';
 import { FakeFirestore } from '$lib/server/test-helpers/fake-firestore';
 import { describe, expect, it } from 'vitest';
 
-describe('conversation memory compaction', () => {
-    it('summarizes older finalized messages and keeps only the latest eight for replay', async () => {
+describe('conversation memory', () => {
+    it('replays all finalized messages from the current conversation chapter', async () => {
         const db = new FakeFirestore();
-        const conversation = await ensureConversation(db as never, {
-            requestedConversationId: 'conversation-memory',
+        const conversation = await resolveCurrentConversation(db as never, {
             ownerUid: 'user-1',
             ownerType: 'anonymous',
             locale: 'en'
         });
 
         let seq = conversation.seq;
-        for (let index = 0; index < 7; index += 1) {
-            seq += 1;
-            await persistConversationMessage(
-                db as never,
-                conversation.conversationId,
-                seq,
-                `turn-${index}`,
-                'user',
-                `Question ${index + 1}`,
-                true
-            );
-            seq += 1;
-            await persistConversationMessage(
-                db as never,
-                conversation.conversationId,
-                seq,
-                `turn-${index}`,
-                'assistant',
-                `Answer ${index + 1}`,
-                true
-            );
-        }
+        seq += 1;
+        await persistConversationMessage(
+            db as never,
+            conversation.conversationId,
+            seq,
+            'turn-1',
+            'user',
+            'Question 1',
+            true,
+            estimateTextTokens('Question 1')
+        );
+        seq += 1;
+        await persistConversationMessage(
+            db as never,
+            conversation.conversationId,
+            seq,
+            'turn-1',
+            'assistant',
+            'Answer 1',
+            true,
+            estimateTextTokens('Answer 1')
+        );
 
-        const summary = await compactConversationMemory(db as never, conversation);
-        expect(summary.summarySeq).toBeGreaterThan(0);
-        expect(summary.memorySummary).toContain('Earlier conversation summary');
-        expect(summary.memorySummary).toContain('Question 3');
-
-        const reloaded = await ensureConversation(db as never, {
-            requestedConversationId: conversation.conversationId,
+        const reloaded = await resolveCurrentConversation(db as never, {
             ownerUid: 'user-1',
             ownerType: 'anonymous',
             locale: 'en'
         });
         const memory = await loadConversationMemory(db as never, reloaded);
 
-        expect(memory.memorySummary).toBeTruthy();
-        expect(memory.recentContents).toHaveLength(8);
-        expect(memory.recentContents.at(0)?.parts[0]).toMatchObject({
-            text: 'Question 4'
+        expect(memory.carryoverSummary).toBeNull();
+        expect(memory.totalFinalizedMessages).toBe(2);
+        expect(memory.contents).toHaveLength(2);
+        expect(memory.contents.at(0)).toMatchObject({
+            role: 'user',
+            parts: [{ text: 'Question 1' }]
         });
-        expect(memory.recentContents.at(-1)?.parts[0]).toMatchObject({
-            text: 'Answer 7'
+        expect(memory.contents.at(-1)).toMatchObject({
+            role: 'model',
+            parts: [{ text: 'Answer 1' }]
         });
+    });
+
+    it('uses the stored context token count to decide when a rollover is required', () => {
+        expect(
+            shouldRollOverConversation({
+                conversationId: 'conversation-a',
+                seq: 12,
+                carryoverSummary: null,
+                contextTokenCount: DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS,
+                continuedFromConversationId: null
+            })
+        ).toBe(true);
+
+        expect(
+            shouldRollOverConversation({
+                conversationId: 'conversation-b',
+                seq: 3,
+                carryoverSummary: null,
+                contextTokenCount: DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS - 1,
+                continuedFromConversationId: null
+            })
+        ).toBe(false);
     });
 });

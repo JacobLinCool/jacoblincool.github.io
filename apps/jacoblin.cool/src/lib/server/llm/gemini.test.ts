@@ -12,7 +12,6 @@ const config: RuntimeConfig = {
     firestoreClientEmail: null,
     firestorePrivateKey: null,
     firestoreEmulatorHost: '127.0.0.1:8080',
-    ownerUid: null,
     geminiApiBaseUrl: 'https://example.invalid/v1beta',
     geminiApiKey: 'test-key',
     geminiModel: 'gemini-3.1-flash-lite-preview',

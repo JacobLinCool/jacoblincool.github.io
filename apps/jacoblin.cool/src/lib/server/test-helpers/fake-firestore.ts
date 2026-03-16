@@ -136,6 +136,30 @@ class FakeDocRef {
     }
 }
 
+class FakeTransaction {
+    private readonly staged = new Map<string, DocData>();
+
+    constructor(private readonly store: Map<string, DocData>) {}
+
+    async get(ref: FakeDocRef) {
+        return new FakeDocSnapshot(
+            ref.id,
+            this.staged.get(ref.path) ?? this.store.get(ref.path) ?? null
+        );
+    }
+
+    set(ref: FakeDocRef, value: DocData, options?: { merge?: boolean }) {
+        const existing = this.staged.get(ref.path) ?? this.store.get(ref.path) ?? {};
+        this.staged.set(ref.path, options?.merge ? { ...existing, ...clone(value) } : clone(value));
+    }
+
+    commit() {
+        for (const [path, value] of this.staged.entries()) {
+            this.store.set(path, clone(value));
+        }
+    }
+}
+
 export class FakeFirestore {
     private readonly store = new Map<string, DocData>();
     private nextId = 0;
@@ -149,6 +173,13 @@ export class FakeFirestore {
             this.nextId += 1;
             return `fake-${this.nextId}`;
         });
+    }
+
+    async runTransaction<R>(updateFn: (transaction: FakeTransaction) => Promise<R>) {
+        const transaction = new FakeTransaction(this.store);
+        const result = await updateFn(transaction);
+        transaction.commit();
+        return result;
     }
 
     dump(pathPrefix?: string) {

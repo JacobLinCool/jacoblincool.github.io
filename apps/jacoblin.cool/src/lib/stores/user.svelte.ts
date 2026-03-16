@@ -1,14 +1,10 @@
 import { browser } from '$app/environment';
-import { page } from '$app/state';
 import { auth, db } from '$lib/firebase/client';
 import { notificationStore } from '$lib/stores/notification.svelte';
 import {
     GoogleAuthProvider,
-    isSignInWithEmailLink,
     onAuthStateChanged,
-    sendSignInLinkToEmail,
     signInAnonymously,
-    signInWithEmailLink,
     signInWithPopup,
     signOut,
     type User
@@ -23,8 +19,6 @@ export type UserProfile = {
     badges?: string[];
     createdAt?: string | null;
 };
-
-const EMAIL_LINK_STORAGE_KEY = 'auth.emailForSignIn';
 
 class UserStore {
     static instance: UserStore | null = null;
@@ -128,49 +122,6 @@ class UserStore {
 
         const provider = new GoogleAuthProvider();
         await signInWithPopup(auth, provider);
-    }
-
-    async sendMagicLink(email: string) {
-        if (!browser) return;
-        this.state.authError = null;
-        this.state.message = null;
-
-        const actionCodeSettings = {
-            url: `${page.url.origin}/auth/complete`,
-            handleCodeInApp: true
-        };
-
-        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-        window.localStorage.setItem(EMAIL_LINK_STORAGE_KEY, email);
-        this.state.message = 'Magic link sent. Check your inbox to continue.';
-        notificationStore.success(this.state.message);
-    }
-
-    async completeMagicLink(email: string | null, url: string) {
-        if (!browser) return false;
-        this.state.authError = null;
-        this.state.message = null;
-
-        if (!isSignInWithEmailLink(auth, url)) {
-            this.state.authError = 'This sign-in link is invalid or expired.';
-            notificationStore.error(this.state.authError);
-            return false;
-        }
-
-        const storedEmail = window.localStorage.getItem(EMAIL_LINK_STORAGE_KEY);
-        const emailForSignIn = email || storedEmail || '';
-
-        if (!emailForSignIn) {
-            this.state.authError = 'Please enter your email to finish sign-in.';
-            notificationStore.error(this.state.authError);
-            return false;
-        }
-
-        const result = await signInWithEmailLink(auth, emailForSignIn, url);
-        window.localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
-        this.state.message = `Signed in as ${result.user.email ?? 'user'}.`;
-        notificationStore.success(this.state.message);
-        return true;
     }
 
     async signOut() {

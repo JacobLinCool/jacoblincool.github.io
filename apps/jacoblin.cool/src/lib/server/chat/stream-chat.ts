@@ -1,6 +1,9 @@
 import {
-    compactConversationMemory,
-    loadConversationMemory
+    DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS,
+    estimateTextTokens,
+    generateCarryoverSummary,
+    loadConversationMemory,
+    shouldRollOverConversation
 } from '$lib/server/chat/conversation-memory';
 import {
     createChatToolRegistry,
@@ -15,9 +18,10 @@ import {
     type GeminiContent
 } from '$lib/server/llm/gemini';
 import {
-    ensureConversation,
     persistConversationEvent,
     persistConversationMessage,
+    resolveCurrentConversation,
+    rolloverCurrentConversation,
     updateConversationStatus
 } from '$lib/server/repos/conversation-repository';
 import type { ToolPolicy } from '$lib/server/repos/tool-policy-repository';
@@ -36,7 +40,6 @@ type StreamChatInput = {
         isAnonymous: boolean;
     };
     locale: string;
-    requestedConversationId: string | null;
     message: string;
     send: SendSseFn;
 };
@@ -49,11 +52,11 @@ const createContextBundleId = () => `ctx-${Date.now()}-${Math.random().toString(
 const buildSystemInstruction = ({
     locale,
     siteIndexText,
-    memorySummary
+    carryoverSummary
 }: {
     locale: string;
     siteIndexText: string;
-    memorySummary: string | null;
+    carryoverSummary: string | null;
 }) =>
     [
         'You are Jacob Lin website assistant.',
@@ -69,7 +72,9 @@ const buildSystemInstruction = ({
         locale === 'zh-tw'
             ? 'Reply in Traditional Chinese by default unless the user clearly uses another language.'
             : 'Reply in the user language when clear; otherwise default to English.',
-        memorySummary ? memorySummary : '',
+        carryoverSummary
+            ? `Conversation carryover from earlier chapters:\n${carryoverSummary}`
+            : '',
         siteIndexText
     ]
         .filter(Boolean)
@@ -117,7 +122,6 @@ export const streamChatTurn = async ({
     policy,
     user,
     locale,
-    requestedConversationId,
     message,
     send
 }: StreamChatInput) => {
@@ -127,15 +131,35 @@ export const streamChatTurn = async ({
     }
 
     const turnId = createTurnId();
-    const conversation = await ensureConversation(db, {
-        requestedConversationId,
+    let conversation = await resolveCurrentConversation(db, {
         ownerUid: user.uid,
         ownerType: user.isAnonymous ? 'anonymous' : 'google',
         locale
     });
 
+    if (shouldRollOverConversation(conversation, DEFAULT_CONVERSATION_CONTEXT_LIMIT_TOKENS)) {
+        const carryoverSummary = await generateCarryoverSummary({
+            db,
+            fetchFn,
+            config,
+            locale,
+            conversation
+        });
+
+        conversation = await rolloverCurrentConversation(db, {
+            ownerUid: user.uid,
+            ownerType: user.isAnonymous ? 'anonymous' : 'google',
+            locale,
+            currentConversationId: conversation.conversationId,
+            carryoverSummary,
+            archivedReason: 'context_limit',
+            initialContextTokenCount: estimateTextTokens(carryoverSummary ?? '')
+        });
+    }
+
     const conversationId = conversation.conversationId;
     let seq = conversation.seq;
+    let contextTokenCount = conversation.contextTokenCount;
     const dynamicRevisions: Record<string, string> = {};
 
     const nextSeq = () => {
@@ -165,6 +189,7 @@ export const streamChatTurn = async ({
     try {
         await pushStatus('collecting_context');
 
+        const userContextTokens = estimateTextTokens(trimmed);
         await persistConversationMessage(
             db,
             conversationId,
@@ -172,8 +197,10 @@ export const streamChatTurn = async ({
             turnId,
             'user',
             trimmed,
-            true
+            true,
+            userContextTokens
         );
+        contextTokenCount += userContextTokens;
 
         const toolRegistry = createChatToolRegistry({
             db,
@@ -187,7 +214,7 @@ export const streamChatTurn = async ({
         const systemInstruction = buildSystemInstruction({
             locale,
             siteIndexText: toolRegistry.siteIndexText,
-            memorySummary: memory.memorySummary
+            carryoverSummary: memory.carryoverSummary
         });
 
         const bundleId = createContextBundleId();
@@ -197,10 +224,11 @@ export const streamChatTurn = async ({
             refs: toolRegistry.siteRefs,
             recentMessageCount: memory.recentMessages.length,
             totalFinalizedMessages: memory.totalFinalizedMessages,
-            hasMemorySummary: Boolean(memory.memorySummary)
+            hasCarryoverSummary: Boolean(memory.carryoverSummary),
+            contextTokenCount
         });
 
-        const workingContents: GeminiContent[] = [...memory.recentContents];
+        const workingContents: GeminiContent[] = [...memory.contents];
         let finalCandidateText: string | null = null;
         let finalCandidateParts: GeminiContent['parts'] | null = null;
 
@@ -381,6 +409,7 @@ export const streamChatTurn = async ({
             });
         }
 
+        const assistantContextTokens = estimateTextTokens(assistantText);
         await persistConversationMessage(
             db,
             conversationId,
@@ -389,14 +418,15 @@ export const streamChatTurn = async ({
             'assistant',
             assistantText,
             true,
+            assistantContextTokens,
             {
                 model: config.geminiModel,
                 usage: completion.usage ?? undefined,
                 parts: completion.content?.parts ?? finalCandidateParts ?? undefined
             }
         );
+        contextTokenCount += assistantContextTokens;
 
-        await compactConversationMemory(db, conversation);
         await pushStatus('completed');
         await updateConversationStatus(db, conversationId, 'done', seq);
 

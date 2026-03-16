@@ -19,7 +19,6 @@ const BASE_BACKGROUND_NODE_COUNT = 200;
 const TYPING_ACTIVATION_RATIO = 1 / BASE_BACKGROUND_NODE_COUNT;
 const SUBMIT_ACTIVATION_RATIO = 0.05;
 const STREAM_ACTIVATION_RATIO = 0.02;
-const ACTIVE_CONVERSATION_STORAGE_KEY = 'chat.activeConversationId';
 
 type ChatState = {
     messages: ChatMessage[];
@@ -37,7 +36,6 @@ type ChatState = {
     audio: AudioUiState;
     progressEvents: ChatProgressEvent[];
     contextStatusCollapsed: boolean;
-    activeConversationId: string | null;
 };
 
 class ChatStore {
@@ -57,8 +55,7 @@ class ChatStore {
         backgroundEventStrength: 0,
         audio: { state: 'idle', messageId: null },
         progressEvents: [],
-        contextStatusCollapsed: true,
-        activeConversationId: null
+        contextStatusCollapsed: true
     });
 
     private readonly audioController = createAudioStub((nextState) => {
@@ -66,13 +63,7 @@ class ChatStore {
     });
 
     private submitPulseTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    private constructor() {
-        if (browser) {
-            this.state.activeConversationId =
-                window.localStorage.getItem(ACTIVE_CONVERSATION_STORAGE_KEY) ?? null;
-        }
-    }
+    private constructor() {}
 
     static getInstance() {
         ChatStore.instance ??= new ChatStore();
@@ -130,7 +121,6 @@ class ChatStore {
         try {
             await streamChat({
                 message: prompt,
-                conversationId: this.state.activeConversationId,
                 locale: this.resolveLocale(),
                 onEvent: (event) => {
                     this.handleSseEvent(event, assistantId);
@@ -195,10 +185,6 @@ class ChatStore {
     private handleSseEvent(event: ChatSseEvent, assistantId: string) {
         switch (event.type) {
             case 'status': {
-                if (event.conversationId) {
-                    this.setActiveConversationId(event.conversationId);
-                }
-
                 if (event.status === 'collecting_context') {
                     this.pushProgress('status', 'Collecting context...');
                 }
@@ -234,9 +220,6 @@ class ChatStore {
                 break;
             }
             case 'done': {
-                if (event.conversationId) {
-                    this.setActiveConversationId(event.conversationId);
-                }
                 this.patchMessage(assistantId, (message) => {
                     message.status = 'done';
                 });
@@ -253,20 +236,6 @@ class ChatStore {
                 throw new Error(event.message);
             }
         }
-    }
-
-    private setActiveConversationId(value: string | null) {
-        this.state.activeConversationId = value;
-        if (!browser) {
-            return;
-        }
-
-        if (!value) {
-            window.localStorage.removeItem(ACTIVE_CONVERSATION_STORAGE_KEY);
-            return;
-        }
-
-        window.localStorage.setItem(ACTIVE_CONVERSATION_STORAGE_KEY, value);
     }
 
     private pushProgress(type: ChatProgressEvent['type'], text: string) {
