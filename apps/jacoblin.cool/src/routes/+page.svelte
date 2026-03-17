@@ -4,6 +4,7 @@
     import ResearchQuestionsSection from '$lib/components/home/ResearchQuestionsSection.svelte';
     import '$lib/components/home/home-wide-rails.css';
     import ChatPanel from '$lib/components/chat/ChatPanel.svelte';
+    import { siteConfig } from '$lib/config/site';
     import { trackDeepDivePromptClicked } from '$lib/services/analytics/ga';
     import { chatStore } from '$lib/stores/chat.svelte';
     import { engageHeroChat } from '$lib/utils/hero-chat-bridge';
@@ -35,6 +36,11 @@
         });
     };
 </script>
+
+<svelte:head>
+    <title>{siteConfig.metadata.homeTitle}</title>
+    <meta name="description" content={siteConfig.metadata.homeDescription} />
+</svelte:head>
 
 <section id="hero-chat" class={`hero-chat-shell ${isIdle ? '' : 'hero-chat-active'}`}>
     <div
