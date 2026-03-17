@@ -171,6 +171,19 @@ describe('streamChatTurn', () => {
                     .contents ?? []
             )
         ).toContain('What are you studying now?');
+        const systemInstructionText = JSON.stringify(
+            capturedRequests.find(({ url }) => url.includes(':generateContent'))?.body
+                .systemInstruction ?? {}
+        );
+        expect(systemInstructionText).toContain(
+            'Answer at the same level of abstraction as the user question.'
+        );
+        expect(systemInstructionText).toContain(
+            'Do not answer with collection names, category names, or taxonomy labels'
+        );
+        expect(systemInstructionText).toContain(
+            'When the user asks about what is recent, current, latest, or being worked on now'
+        );
         expect(
             JSON.stringify(
                 capturedRequests.find(({ url }) => url.includes(':streamGenerateContent'))?.body

@@ -76,6 +76,8 @@ const buildSiteIndexText = (registry: KnowledgeRegistry) => {
         `Published site knowledge index (version=${registry.version}, language=${registry.language}):`,
         '- Root collections:',
         ...collectionLines,
+        'The index and node titles are navigation metadata, not a user-facing answer format.',
+        'Do not answer from collection names or category labels alone when the user asks for concrete items such as projects, papers, tools, repositories, or examples.',
         'Use get_knowledge_node(id) for category-level detail and get_knowledge_item(id) for full item detail.'
     ].join('\n');
 };
@@ -167,7 +169,7 @@ export const createSiteToolRegistryFromRegistry = (
                 source: 'site',
                 name: 'get_knowledge_root',
                 description:
-                    'Read the top-level knowledge collections and item counts before choosing a specific node or item.',
+                    'Read the top-level knowledge collections and item counts for navigation before choosing a specific node or item. Do not use collection names alone as the final answer when the user asked for concrete items.',
                 inputSchema: z.object({}).strict(),
                 inputJsonSchema: z.toJSONSchema(z.object({}).strict())
             },
@@ -184,7 +186,7 @@ export const createSiteToolRegistryFromRegistry = (
                 source: 'site',
                 name: 'get_knowledge_node',
                 description:
-                    'Read one knowledge node by id, including child categories and immediate child items.',
+                    'Read one knowledge node by id, including child categories and immediate child items. Use this for navigation and scoping; prefer concrete knowledge items in the final answer when the user asked for examples, projects, papers, tools, or repositories.',
                 inputSchema: z
                     .object({
                         id: z.string().min(1)

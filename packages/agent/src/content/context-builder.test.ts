@@ -8,6 +8,12 @@ describe('createSiteToolRegistry', () => {
 
         expect(registry.siteIndexText).toContain('Published site knowledge index');
         expect(registry.siteIndexText).toContain('[research]');
+        expect(registry.siteIndexText).toContain(
+            'The index and node titles are navigation metadata'
+        );
+        expect(registry.siteIndexText).toContain(
+            'Do not answer from collection names or category labels alone'
+        );
         expect(registry.toolDefinitions.map((tool) => tool.name)).toEqual(
             expect.arrayContaining([
                 'get_knowledge_root',
