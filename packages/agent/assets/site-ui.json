@@ -50,12 +50,12 @@
             {
                 "id": "intro-work",
                 "label": "What are you studying now?",
-                "prompt": "What are your current research interests, and what problems are you trying to solve in the Agent era?"
+                "prompt": "What are your current research interests, and what problems are you trying to solve?"
             },
             {
                 "id": "research-focus",
                 "label": "Research interests",
-                "prompt": "What is your research focus around agent collaboration, HCI, and agent-driven software engineering?"
+                "prompt": "What is your research focus across your current and past work?"
             },
             {
                 "id": "dev-journey",

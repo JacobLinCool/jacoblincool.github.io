@@ -1,11 +1,54 @@
 {
     "items": {
+        "profile.engineering": {
+            "id": "profile.engineering",
+            "type": "profile",
+            "title": "Engineering Background",
+            "summary": "GitHub has been my main public engineering record since 2017, covering a much longer arc of building, experiments, and open-source work than my publication list alone.",
+            "tags": ["Profile", "GitHub", "Open Source"],
+            "attributes": {
+                "profileUrl": "https://github.com/JacobLinCool",
+                "username": "JacobLinCool",
+                "sinceYear": 2017,
+                "focusAreas": ["Open Source", "Developer Tools", "AI Agents", "Interfaces"]
+            },
+            "body": [
+                {
+                    "id": "long-term-record",
+                    "label": "Long-Term Record",
+                    "text": "If you want the longer arc of what I have built, GitHub is usually the better source than Google Scholar. It has been my main public engineering record since 2017 and shows projects, experiments, and shifts in interest across many years."
+                },
+                {
+                    "id": "builder-trajectory",
+                    "label": "Builder Trajectory",
+                    "text": "I got into programming early and kept using GitHub as the place where ideas became code, from small experiments and utilities to larger open-source tools and research-adjacent systems."
+                },
+                {
+                    "id": "current-style",
+                    "label": "Current Style",
+                    "text": "I still think through software by building. My work often sits between developer tools, agent workflows, interfaces, and practical systems that people can actually use."
+                }
+            ],
+            "links": [
+                {
+                    "id": "github-profile",
+                    "label": "GitHub",
+                    "url": "https://github.com/JacobLinCool",
+                    "kind": "github-profile"
+                }
+            ],
+            "relatedItemIds": [
+                "project-d1-manager",
+                "project-jacoblin-cool-site",
+                "rq-agent-software-engineering"
+            ]
+        },
         "profile.scholar": {
             "id": "profile.scholar",
             "type": "profile",
-            "title": "Scholar Profile",
-            "summary": "Graduate student working on HCI, AI agents, and software systems, with earlier publications in speech and language technology.",
-            "tags": ["Profile", "Scholar"],
+            "title": "Research Publication Snapshot",
+            "summary": "Google Scholar is the publication-facing view of my work: useful for papers and citations, but much narrower than the GitHub record of what I build.",
+            "tags": ["Profile", "Scholar", "Publications"],
             "attributes": {
                 "profileUrl": "https://scholar.google.com/citations?user=BdzYgY0AAAAJ",
                 "citations": 8,
@@ -23,6 +66,11 @@
                     "id": "orientation",
                     "label": "Research Orientation",
                     "text": "My current work asks how people should collaborate with increasingly capable agents, especially in software engineering and high-speed knowledge work."
+                },
+                {
+                    "id": "boundary",
+                    "label": "Boundary",
+                    "text": "Scholar is mainly the publication and citation view of my work. It does not capture the broader history of the software, tools, and experiments I have built over time."
                 }
             ],
             "links": [
@@ -34,6 +82,7 @@
                 }
             ],
             "relatedItemIds": [
+                "profile.engineering",
                 "rq-agent-collaboration",
                 "rq-agent-software-engineering",
                 "rq-software-evolution"
@@ -316,6 +365,51 @@
                 }
             ],
             "relatedItemIds": []
+        },
+        "project-jacoblin-cool-site": {
+            "id": "project-jacoblin-cool-site",
+            "type": "project",
+            "title": "jacoblin.cool",
+            "summary": "The repository for this personal site, combining a SvelteKit frontend, a structured knowledge bundle, and an authenticated chat backend that lets visitors interview me through an agent.",
+            "tags": ["Open Source", "Personal Site", "AI Agents"],
+            "attributes": {
+                "language": "TypeScript",
+                "stars": 0,
+                "updatedAt": "2026-03-17T10:13:15Z",
+                "repositoryFullName": "JacobLinCool/jacoblincool.github.io"
+            },
+            "body": [
+                {
+                    "id": "overview",
+                    "label": "Overview",
+                    "text": "This site is not just a static homepage. It is a SvelteKit application backed by a structured knowledge registry and a chat system that lets visitors ask questions about my work and get grounded answers."
+                },
+                {
+                    "id": "architecture",
+                    "label": "Architecture",
+                    "text": "The repository is a pnpm monorepo with the site app and a shared agent package. The frontend is built with SvelteKit, while the backend chat route streams answers from a verified knowledge bundle and live tool outputs."
+                },
+                {
+                    "id": "infrastructure",
+                    "label": "Infrastructure",
+                    "text": "The app uses Firebase authentication and Firestore-backed conversation state, and the chat runtime is designed to answer from site content first while still being able to fetch live GitHub details when needed."
+                }
+            ],
+            "links": [
+                {
+                    "id": "website",
+                    "label": "Visit site",
+                    "url": "https://jacoblin.cool",
+                    "kind": "website"
+                },
+                {
+                    "id": "repository",
+                    "label": "View repository",
+                    "url": "https://github.com/JacobLinCool/jacoblincool.github.io",
+                    "kind": "repository"
+                }
+            ],
+            "relatedItemIds": ["profile.engineering", "rq-agent-software-engineering"]
         }
     }
 }

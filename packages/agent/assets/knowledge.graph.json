@@ -1,5 +1,5 @@
 {
-    "version": "v3",
+    "version": "v4",
     "language": "en",
     "updatedAt": "2026-03-17T00:00:00.000Z",
     "rootNodeIds": ["profile", "research", "publications", "projects"],
@@ -8,10 +8,10 @@
             "id": "profile",
             "nodeType": "collection",
             "title": "Profile",
-            "summary": "Background and profile-level context for Jacob Lin.",
+            "summary": "Background, engineering trajectory, and research context for Jacob Lin.",
             "parentNodeId": null,
             "childNodeIds": [],
-            "childItemIds": ["profile.scholar"]
+            "childItemIds": ["profile.engineering", "profile.scholar"]
         },
         "research": {
             "id": "research",
@@ -92,7 +92,8 @@
             "childNodeIds": [
                 "projects.database-tools",
                 "projects.speech-and-ml",
-                "projects.visualization"
+                "projects.visualization",
+                "projects.personal-site"
             ],
             "childItemIds": []
         },
@@ -122,6 +123,15 @@
             "parentNodeId": "projects",
             "childNodeIds": [],
             "childItemIds": ["project-leetcode-stats-card"]
+        },
+        "projects.personal-site": {
+            "id": "projects.personal-site",
+            "nodeType": "category",
+            "title": "Personal Site and Chat System",
+            "summary": "The personal site, chat experience, and supporting agent runtime.",
+            "parentNodeId": "projects",
+            "childNodeIds": [],
+            "childItemIds": ["project-jacoblin-cool-site"]
         }
     }
 }
