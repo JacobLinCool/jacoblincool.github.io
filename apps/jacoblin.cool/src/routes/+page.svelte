@@ -5,7 +5,7 @@
     import '$lib/components/home/home-wide-rails.css';
     import ChatPanel from '$lib/components/chat/ChatPanel.svelte';
     import { siteConfig } from '$lib/config/site';
-    import { trackDeepDivePromptClicked } from '$lib/services/analytics/ga';
+    import { trackDeepDivePromptClicked } from '$lib/services/analytics/posthog';
     import { chatStore } from '$lib/stores/chat.svelte';
     import { engageHeroChat } from '$lib/utils/hero-chat-bridge';
     import type { PageData } from './$types';

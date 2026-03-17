@@ -4,7 +4,7 @@
     import MessageList from '$lib/components/chat/MessageList.svelte';
     import PromptChips from '$lib/components/chat/PromptChips.svelte';
     import TypingTagline from '$lib/components/chat/TypingTagline.svelte';
-    import { trackPromptChipClicked } from '$lib/services/analytics/ga';
+    import { trackPromptChipClicked } from '$lib/services/analytics/posthog';
     import { chatStore } from '$lib/stores/chat.svelte';
     import type { PromptChip } from '$lib/types/chat';
 

@@ -3,6 +3,7 @@ import { createSseResponse } from '$lib/server/chat/sse';
 import { streamChatTurn } from '$lib/server/chat/stream-chat';
 import { resolveLocale } from '$lib/server/content/locale';
 import { getAdminDb } from '$lib/server/firestore-admin';
+import { getPostHogClient } from '$lib/server/posthog';
 import { readRuntimeConfig } from '$lib/server/runtime-env';
 import { EXTERNAL_TOOL_CONFIG } from '$lib/server/tools/external-tool-config';
 import { json } from '@sveltejs/kit';
@@ -52,6 +53,17 @@ export const POST: RequestHandler = async ({ request, fetch, platform, url }) =>
 
     const db = getAdminDb(config);
     const requestId = createRequestId(request);
+
+    const posthog = getPostHogClient();
+    posthog.capture({
+        distinctId: user.uid,
+        event: 'chat_turn_submitted',
+        properties: {
+            is_anonymous: user.isAnonymous,
+            locale,
+            request_id: requestId
+        }
+    });
 
     return createSseResponse(
         async (send) => {

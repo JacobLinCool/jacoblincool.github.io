@@ -6,7 +6,7 @@ import {
     trackChatTurnStarted,
     trackContextStatusToggled,
     trackResponseCopied
-} from '$lib/services/analytics/ga';
+} from '$lib/services/analytics/posthog';
 import { createAudioStub } from '$lib/services/audio-stub';
 import { streamChat } from '$lib/services/chat-api';
 import { notificationStore } from '$lib/stores/notification.svelte';

@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { auth } from '$lib/firebase/client';
-import { setAnalyticsAuthState } from '$lib/services/analytics/ga';
+import { setAnalyticsAuthState } from '$lib/services/analytics/posthog';
 import { notificationStore } from '$lib/stores/notification.svelte';
 import {
     GoogleAuthProvider,
@@ -10,6 +10,7 @@ import {
     signOut,
     type User
 } from 'firebase/auth';
+import posthog from 'posthog-js';
 
 class UserStore {
     static instance: UserStore | null = null;
@@ -38,11 +39,16 @@ class UserStore {
         this.authUnsubscribe = onAuthStateChanged(auth, (user) => {
             this.state.user = user;
             this.state.loading = false;
-            setAnalyticsAuthState(!user ? 'signed_out' : user.isAnonymous ? 'anonymous' : 'google');
 
             if (user) {
+                setAnalyticsAuthState(user.isAnonymous ? 'anonymous' : 'google');
+                if (!user.isAnonymous) {
+                    posthog.identify(user.uid);
+                }
                 this.anonymousBootstrapAttempted = true;
             } else {
+                posthog.reset();
+                setAnalyticsAuthState('signed_out');
                 if (!this.anonymousBootstrapAttempted) {
                     this.anonymousBootstrapAttempted = true;
                     void signInAnonymously(auth).catch((error) => {

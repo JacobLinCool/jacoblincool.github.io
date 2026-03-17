@@ -48,7 +48,7 @@ export const privacyPolicyContent = {
     title: 'Privacy Information',
     summary:
         'This page explains what data this site stores, what limited analytics and operational signals it records, and which third-party services are involved in delivering the current site.',
-    updatedAt: 'March 17, 2026',
+    updatedAt: 'March 18, 2026',
     sectionLinks: [
         { id: 'overview', label: 'Overview' },
         { id: 'information-we-use', label: 'Information we use' },
@@ -92,7 +92,7 @@ export const privacyPolicyContent = {
             id: 'analytics-events',
             title: 'Production analytics events',
             description:
-                'Production deployments send limited Google Analytics 4 events such as page views, prompt-chip clicks, login interactions, chat start/completion states, context-status toggles, and copy actions. Raw chat content, raw assistant replies, Firebase UID values, and Google account profile fields are not sent to Google Analytics.'
+                'Production deployments send limited PostHog analytics and error events such as page views, prompt-chip clicks, login interactions, chat start/completion states, context-status toggles, copy actions, chat-submission telemetry, and captured exceptions. The codebase does not send raw chat content or raw assistant replies as PostHog event properties.'
         },
         {
             id: 'operational-logs',
@@ -118,7 +118,7 @@ export const privacyPolicyContent = {
         'To store conversations, replies, carry-over summaries, internal conversation state, and model usage metadata needed for the chat feature and conversation continuity to work.',
         'To generate chat responses and carry-over summaries through the configured model provider.',
         'To fetch and cache public profile metrics from GitHub and Hugging Face for the site UI and tool-assisted answers.',
-        'To measure high-level product usage in production through limited GA4 events rather than raw transcript collection.',
+        'To measure high-level product usage and exception telemetry in production through limited PostHog events rather than raw transcript collection.',
         'To monitor reliability and debug problems through structured backend logs and ordinary hosting-level request processing.',
         'To remember language preference and deliver the site through the configured runtime platform.'
     ],
@@ -163,14 +163,14 @@ export const privacyPolicyContent = {
                 'This service processes user-submitted chat data in order to produce answers.'
         },
         {
-            id: 'google-analytics',
-            name: 'Google Analytics',
+            id: 'posthog',
+            name: 'PostHog',
             purpose:
-                'Measures page views and a small set of high-level interaction events in production deployments.',
+                'Measures page views, high-level interaction events, chat-submission telemetry, and captured exceptions in production deployments.',
             possibleData:
-                'Page URLs, page titles, coarse interaction events, auth-state labels such as signed_out or anonymous, and derived response-length or latency bands.',
+                'Page URLs, page titles, coarse interaction events, auth-state labels such as signed_out or anonymous, Firebase-derived distinct IDs, request identifiers on selected server events, exception metadata, and derived response-length or latency bands.',
             processingScope:
-                'Used for product analytics in production. It is not used to send raw chat transcripts, raw assistant replies, Firebase UID values, or Google account profile fields.'
+                'Used for product analytics and exception telemetry in production. The current codebase does not send raw chat transcripts or raw assistant replies as PostHog event properties.'
         },
         {
             id: 'github-api',
@@ -215,15 +215,15 @@ export const privacyPolicyContent = {
     cookiesAndBrowserState: [
         'The current codebase uses a locale cookie named PARAGLIDE_LOCALE to remember language preference. It is not an advertising or retargeting cookie.',
         'If you use Google sign-in or anonymous auth, browser-side authentication persistence is handled through Firebase rather than a custom app-defined cookie designed for tracking.',
-        'When Google Analytics is enabled in production, Google may use its own browser storage or cookies to support page-view and event measurement.',
+        'The configured PostHog client may keep browser-side analytics persistence to support page-view measurement, anonymous analytics identity, and session continuity.',
         'The site does not currently use localStorage for locale persistence because the active Paraglide strategy is cookie-based.',
         'If you press the copy button on a response, the site writes that response text to your clipboard at your request. It does not silently mirror chat text into clipboard state.',
-        'The current codebase does not implement a separate consent banner or consent-gating flow for analytics cookies.'
+        'The current codebase does not implement a separate consent banner or consent-gating flow for analytics storage.'
     ],
     whatWeDoNotUse: [
         'The site does not currently ship advertising tags, retargeting pixels, or marketing beacons.',
-        'The site does not currently use Hotjar, FullStory, PostHog session replay, screen-recording tools, heatmap tools, or similar session-replay instrumentation.',
-        'Google Analytics is not used to send raw chat transcripts, raw assistant replies, Firebase UID values, or Google account profile fields.',
+        'The current codebase does not explicitly enable PostHog session replay, screen-recording tools, heatmap tools, or similar session-replay instrumentation.',
+        'The current analytics event helpers do not send raw chat transcripts or raw assistant replies as event properties.',
         'The site does not use live Google Scholar API access. Scholar references on the site are static content or ordinary external links.'
     ],
     updates: [

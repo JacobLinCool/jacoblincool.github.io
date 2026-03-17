@@ -1,7 +1,7 @@
 <script lang="ts">
     import { browser } from '$app/environment';
     import { ChevronDown, LogIn, LogOut, UserRound } from '@lucide/svelte';
-    import { trackLoginModalOpened } from '$lib/services/analytics/ga';
+    import { trackLoginModalOpened } from '$lib/services/analytics/posthog';
     import { uiStore } from '$lib/stores/ui.svelte';
     import { userStore } from '$lib/stores/user.svelte';
 

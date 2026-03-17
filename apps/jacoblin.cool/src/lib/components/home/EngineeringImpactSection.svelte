@@ -190,7 +190,7 @@
                 <p class="mt-1 text-xs text-zinc-400">{formatCount(metrics.topRepo.stars)} stars</p>
             </article>
         {:else}
-            {#each ['Followers', 'Public repositories', 'Total Stars', 'Most starred repository'] as label}
+            {#each ['Followers', 'Public repositories', 'Total Stars', 'Most starred repository'] as label (label)}
                 <article class="home-surface-metric home-divider-inline p-4">
                     <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">{label}</p>
                     <p class="mt-2 text-sm font-medium text-zinc-300">
