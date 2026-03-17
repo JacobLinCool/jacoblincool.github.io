@@ -108,3 +108,25 @@ export type HomeApiResponse = {
     homeUi: HomeUiConfig;
     chatConfig: ChatContentConfig;
 };
+
+export type HomeStaticPayload = {
+    contentVersion: string;
+    homePayload: Omit<HomeSectionPayload, 'metrics'>;
+    homeUi: HomeUiConfig;
+    chatConfig: ChatContentConfig;
+};
+
+export type HomeDynamicMetricsPayload = {
+    dynamicRevisions: Record<string, string>;
+    metrics: ProfileMetricsSnapshot;
+};
+
+export type HomeMetricsStreamResult =
+    | {
+          status: 'ready';
+          data: HomeDynamicMetricsPayload;
+      }
+    | {
+          status: 'error';
+          message: string;
+      };

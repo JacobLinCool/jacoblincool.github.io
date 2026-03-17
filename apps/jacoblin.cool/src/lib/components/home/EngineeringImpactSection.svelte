@@ -12,12 +12,16 @@
         section,
         projects,
         metrics,
+        metricsState = 'ready',
+        metricsMessage = null,
         onDeepDive,
         disabled = false
     }: {
         section: HomeSectionConfig;
         projects: FeaturedProject[];
-        metrics: ProfileMetricsSnapshot['github'];
+        metrics: ProfileMetricsSnapshot['github'] | null;
+        metricsState?: 'loading' | 'ready' | 'error';
+        metricsMessage?: string | null;
         onDeepDive: (targetItemId: string) => void | Promise<void>;
         disabled?: boolean;
     } = $props();
@@ -157,29 +161,51 @@
     </div>
 
     <div class="metric-strip mb-8 grid gap-4 sm:grid-cols-2 lg:mb-10 lg:grid-cols-4">
-        <article class="home-surface-metric home-divider-inline p-4">
-            <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">Followers</p>
-            <p class="mt-2 text-2xl font-semibold text-zinc-100">
-                {formatCount(metrics.followers)}
-            </p>
-        </article>
-        <article class="home-surface-metric home-divider-inline p-4">
-            <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">Public repositories</p>
-            <p class="mt-2 text-2xl font-semibold text-zinc-100">
-                {formatCount(metrics.publicRepos)}
-            </p>
-        </article>
-        <article class="home-surface-metric home-divider-inline p-4">
-            <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">Total Stars</p>
-            <p class="mt-2 text-2xl font-semibold text-zinc-100">
-                {formatCount(metrics.totalStars)}
-            </p>
-        </article>
-        <article class="home-surface-metric home-divider-inline p-4">
-            <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">Most starred repository</p>
-            <p class="mt-2 truncate text-sm font-semibold text-zinc-100">{metrics.topRepo.name}</p>
-            <p class="mt-1 text-xs text-zinc-400">{formatCount(metrics.topRepo.stars)} stars</p>
-        </article>
+        {#if metricsState === 'ready' && metrics}
+            <article class="home-surface-metric home-divider-inline p-4">
+                <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">Followers</p>
+                <p class="mt-2 text-2xl font-semibold text-zinc-100">
+                    {formatCount(metrics.followers)}
+                </p>
+            </article>
+            <article class="home-surface-metric home-divider-inline p-4">
+                <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">Public repositories</p>
+                <p class="mt-2 text-2xl font-semibold text-zinc-100">
+                    {formatCount(metrics.publicRepos)}
+                </p>
+            </article>
+            <article class="home-surface-metric home-divider-inline p-4">
+                <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">Total Stars</p>
+                <p class="mt-2 text-2xl font-semibold text-zinc-100">
+                    {formatCount(metrics.totalStars)}
+                </p>
+            </article>
+            <article class="home-surface-metric home-divider-inline p-4">
+                <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">
+                    Most starred repository
+                </p>
+                <p class="mt-2 truncate text-sm font-semibold text-zinc-100">
+                    {metrics.topRepo.name}
+                </p>
+                <p class="mt-1 text-xs text-zinc-400">{formatCount(metrics.topRepo.stars)} stars</p>
+            </article>
+        {:else}
+            {#each ['Followers', 'Public repositories', 'Total Stars', 'Most starred repository'] as label}
+                <article class="home-surface-metric home-divider-inline p-4">
+                    <p class="text-xs tracking-[0.18em] text-zinc-400 uppercase">{label}</p>
+                    <p class="mt-2 text-sm font-medium text-zinc-300">
+                        {metricsState === 'loading'
+                            ? 'Loading live metrics...'
+                            : 'Live metrics unavailable.'}
+                    </p>
+                    {#if metricsState === 'loading'}
+                        <div class="metric-placeholder mt-3"></div>
+                    {:else if metricsMessage}
+                        <p class="mt-2 text-xs leading-relaxed text-zinc-500">{metricsMessage}</p>
+                    {/if}
+                </article>
+            {/each}
+        {/if}
     </div>
 
     <div class="home-rail">
@@ -233,11 +259,29 @@
     </div>
 
     <p class="mt-6 text-xs text-zinc-500">
-        Metrics updated: {formatUtcDateTime(metrics.refreshedAt)}
+        {#if metricsState === 'ready' && metrics}
+            Metrics updated: {formatUtcDateTime(metrics.refreshedAt)}
+        {:else if metricsState === 'loading'}
+            Updating live metrics...
+        {:else}
+            Live metrics unavailable right now.
+        {/if}
     </p>
 </section>
 
 <style>
+    .metric-placeholder {
+        height: 0.95rem;
+        width: min(9rem, 70%);
+        border-radius: 999px;
+        background: linear-gradient(
+            90deg,
+            rgb(255 255 255 / 0.08),
+            rgb(255 255 255 / 0.18),
+            rgb(255 255 255 / 0.08)
+        );
+    }
+
     @media (min-width: 1280px) {
         .metric-strip {
             gap: 0;
