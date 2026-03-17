@@ -1,3 +1,4 @@
+import type { SnapshotStore } from '@jacoblincool/agent';
 import { FieldValue, type Firestore } from 'fires2rest';
 
 export type DynamicSource = 'github' | 'huggingface';
@@ -160,3 +161,9 @@ export const listDynamicSnapshots = async (db: Firestore, limit = 200) => {
 
     return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 };
+
+export const createFirestoreSnapshotStore = (db: Firestore): SnapshotStore => ({
+    get: (source, entityKey) => getDynamicSnapshot(db, source, entityKey),
+    set: (input) => upsertDynamicSnapshot(db, input),
+    markError: (source, entityKey, error) => markDynamicSnapshotError(db, source, entityKey, error)
+});
