@@ -1,7 +1,7 @@
 <script lang="ts">
+    import { resolveSpecialOccasion, type SpecialOccasion } from '@jacoblincool/agent';
     import { onMount } from 'svelte';
     import { Confetti } from 'svelte-confetti';
-    import { resolveSpecialOccasion, type SpecialOccasion } from '$lib/utils/special-occasion';
 
     const birthdayPalette = [
         '#fb7185',

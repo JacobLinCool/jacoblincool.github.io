@@ -13,6 +13,7 @@ import type {
     PublicationHighlight,
     ResearchQuestionCard
 } from '$lib/types/home';
+import { applySpecialOccasionPromptChips } from '@jacoblincool/agent';
 
 const invariant = (condition: unknown, message: string) => {
     if (!condition) {
@@ -145,6 +146,16 @@ export const getStaticHomeProjection = (): {
     homeUi: HomeUiConfig;
     chatConfig: ChatContentConfig;
 } => {
+    return getStaticHomeProjectionForDate(new Date());
+};
+
+export const getStaticHomeProjectionForDate = (
+    now: Date
+): {
+    homePayload: Omit<HomeSectionPayload, 'metrics'>;
+    homeUi: HomeUiConfig;
+    chatConfig: ChatContentConfig;
+} => {
     const registry = getStaticKnowledgeRegistry();
     const siteUi = getStaticSiteUiConfig();
 
@@ -194,7 +205,7 @@ export const getStaticHomeProjection = (): {
         },
         chatConfig: {
             taglines: siteUi.chat.taglines,
-            promptChips: siteUi.chat.promptChips,
+            promptChips: applySpecialOccasionPromptChips(siteUi.chat.promptChips, now),
             deepDivePromptsByItemId: siteUi.chat.deepDivePromptByItemId
         }
     };

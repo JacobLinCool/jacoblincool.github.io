@@ -184,6 +184,10 @@ describe('streamChatTurn', () => {
         expect(systemInstructionText).toContain(
             'When the user asks about what is recent, current, latest, or being worked on now'
         );
+        expect(systemInstructionText).toContain(
+            'Special occasions on this site follow the Asia/Taipei calendar.'
+        );
+        expect(systemInstructionText).toContain("Jacob's birthday");
         expect(
             JSON.stringify(
                 capturedRequests.find(({ url }) => url.includes(':streamGenerateContent'))?.body

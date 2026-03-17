@@ -32,6 +32,7 @@ import {
     summarizeGeminiUsage
 } from '$lib/server/telemetry/chat-logger';
 import type { ExternalToolConfig } from '$lib/server/tools/external-tool-config';
+import { buildSpecialOccasionSystemInstruction } from '@jacoblincool/agent';
 import type { Firestore } from 'fires2rest';
 
 type SendSseFn = (event: string, data: unknown) => void;
@@ -81,6 +82,7 @@ const buildSystemInstruction = ({
         'When the question is broad, give a small framing answer and at most 1 to 3 key points. Do not proactively enumerate every section, project, or publication unless asked.',
         'Prefer natural spoken phrasing over polished summaries. It is acceptable to sound partial, conversational, and incremental as long as the answer stays grounded and clear.',
         'After answering, ask at most one narrow follow-up question that stays on the same topic. Do not redirect the conversation into a broader framing unless the user asks for it.',
+        buildSpecialOccasionSystemInstruction(new Date()),
         locale === 'zh-tw'
             ? 'Reply in Traditional Chinese by default unless the user clearly uses another language.'
             : 'Reply in the user language when clear; otherwise default to English.',

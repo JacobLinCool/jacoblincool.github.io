@@ -1,0 +1,21 @@
+{
+    "version": "v1",
+    "timeZone": "Asia/Taipei",
+    "occasions": [
+        {
+            "id": "birthday",
+            "title": "Jacob's birthday",
+            "matcher": {
+                "kind": "month-day",
+                "month": 3,
+                "day": 17
+            },
+            "description": "March 17 is Jacob's birthday. On that day the site shows a brief celebration effect and swaps the first homepage prompt chip to ask what day it is today.",
+            "promptChip": {
+                "id": "occasion-birthday",
+                "label": "What Day Is Today?",
+                "prompt": "What day is it for you today, and how does the site mark it?"
+            }
+        }
+    ]
+}
