@@ -7,18 +7,32 @@ import { getStaticHomeProjection, getStaticScholarProfile } from '$lib/server/co
 import { getStaticKnowledgeRegistry } from '$lib/server/content/knowledge-registry';
 import type { RuntimeConfig } from '$lib/server/runtime-env';
 import { EXTERNAL_TOOL_CONFIG } from '$lib/server/tools/external-tool-config';
-import type { HomeApiResponse } from '$lib/types/home';
+import type {
+    HomeApiResponse,
+    HomeDynamicMetricsPayload,
+    HomeMetricsStreamResult,
+    HomeStaticPayload
+} from '$lib/types/home';
 import type { Firestore } from 'fires2rest';
 
-export const getHomeApiPayload = async (
+export const getHomeStaticPayload = (): HomeStaticPayload => {
+    const { homePayload, homeUi, chatConfig } = getStaticHomeProjection();
+    const registry = getStaticKnowledgeRegistry();
+
+    return {
+        contentVersion: registry.version,
+        homePayload,
+        homeUi,
+        chatConfig
+    };
+};
+
+export const getHomeMetricsPayload = async (
     db: Firestore,
     fetchFn: typeof fetch,
     config: RuntimeConfig
-): Promise<HomeApiResponse> => {
-    const [{ homePayload, homeUi, chatConfig }, scholar] = await Promise.all([
-        Promise.resolve(getStaticHomeProjection()),
-        Promise.resolve(getStaticScholarProfile())
-    ]);
+): Promise<HomeDynamicMetricsPayload> => {
+    const scholar = getStaticScholarProfile();
 
     const [githubSnapshot, huggingfaceSnapshot] = await Promise.all(
         getHomeDynamicTargets(config).map((target) =>
@@ -32,23 +46,58 @@ export const getHomeApiPayload = async (
         )
     );
 
-    const metrics = buildProfileMetrics(githubSnapshot, huggingfaceSnapshot, scholar);
-    const registry = getStaticKnowledgeRegistry();
-
     return {
-        contentVersion: registry.version,
         dynamicRevisions: {
             [`${githubSnapshot.source}:${githubSnapshot.entityKey}`]: githubSnapshot.revision,
             [`${huggingfaceSnapshot.source}:${huggingfaceSnapshot.entityKey}`]:
                 huggingfaceSnapshot.revision
         },
+        metrics: buildProfileMetrics(githubSnapshot, huggingfaceSnapshot, scholar)
+    };
+};
+
+export const streamHomeMetrics = (
+    db: Firestore,
+    fetchFn: typeof fetch,
+    config: RuntimeConfig
+): Promise<HomeMetricsStreamResult> =>
+    getHomeMetricsPayload(db, fetchFn, config)
+        .then((data) => ({
+            status: 'ready' as const,
+            data
+        }))
+        .catch((error) => {
+            console.error({
+                scope: 'home',
+                level: 'error',
+                event: 'home_metrics_stream_failed',
+                error: error instanceof Error ? error.message : 'Unknown home metrics failure'
+            });
+
+            return {
+                status: 'error' as const,
+                message: 'Live metrics are temporarily unavailable.'
+            };
+        });
+
+export const getHomeApiPayload = async (
+    db: Firestore,
+    fetchFn: typeof fetch,
+    config: RuntimeConfig
+): Promise<HomeApiResponse> => {
+    const [staticHome, dynamicHome] = await Promise.all([
+        Promise.resolve(getHomeStaticPayload()),
+        getHomeMetricsPayload(db, fetchFn, config)
+    ]);
+
+    return {
+        contentVersion: staticHome.contentVersion,
+        dynamicRevisions: dynamicHome.dynamicRevisions,
         homePayload: {
-            researchQuestions: homePayload.researchQuestions,
-            publications: homePayload.publications,
-            projects: homePayload.projects,
-            metrics
+            ...staticHome.homePayload,
+            metrics: dynamicHome.metrics
         },
-        homeUi,
-        chatConfig
+        homeUi: staticHome.homeUi,
+        chatConfig: staticHome.chatConfig
     };
 };

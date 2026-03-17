@@ -71,13 +71,26 @@
         disabled={ctaDisabled}
     />
 
-    <EngineeringImpactSection
-        section={data.home.homeUi.sections.projects}
-        projects={data.home.homePayload.projects}
-        metrics={data.home.homePayload.metrics.github}
-        onDeepDive={handleDeepDive}
-        disabled={ctaDisabled}
-    />
+    {#await data.homeMetrics}
+        <EngineeringImpactSection
+            section={data.home.homeUi.sections.projects}
+            projects={data.home.homePayload.projects}
+            metrics={null}
+            metricsState="loading"
+            onDeepDive={handleDeepDive}
+            disabled={ctaDisabled}
+        />
+    {:then homeMetrics}
+        <EngineeringImpactSection
+            section={data.home.homeUi.sections.projects}
+            projects={data.home.homePayload.projects}
+            metrics={homeMetrics.status === 'ready' ? homeMetrics.data.metrics.github : null}
+            metricsState={homeMetrics.status === 'ready' ? 'ready' : 'error'}
+            metricsMessage={homeMetrics.status === 'error' ? homeMetrics.message : null}
+            onDeepDive={handleDeepDive}
+            disabled={ctaDisabled}
+        />
+    {/await}
 </div>
 
 <style>
