@@ -10,19 +10,19 @@ Before using the runtime, build the package from the workspace root:
 pnpm --filter @jacoblincool/agent build
 ```
 
-Use the built runtime from `scripts/index.mjs`.
+Use the built runtime from `scripts/cli.mjs`.
 
 List available tools:
 
 ```bash
-node packages/agent/scripts/index.mjs list
+node scripts/cli.mjs list
 ```
 
 Execute a tool:
 
 ```bash
-node packages/agent/scripts/index.mjs exec get_knowledge_root
-node packages/agent/scripts/index.mjs exec get_knowledge_item --input '{"id":"project-d1-manager"}'
+node scripts/cli.mjs exec get_knowledge_root
+node scripts/cli.mjs exec get_knowledge_item --input '{"id":"project-d1-manager"}'
 ```
 
 Read [references/TOOL-CATALOG.md](references/TOOL-CATALOG.md) for the tool inventory and [references/LOCAL-USAGE.md](references/LOCAL-USAGE.md) for local build and import examples.
