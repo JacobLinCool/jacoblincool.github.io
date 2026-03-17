@@ -283,19 +283,19 @@
             "id": "project-d1-manager",
             "type": "project",
             "title": "d1-manager",
-            "summary": "A database workbench for Cloudflare D1 with schema browsing, query tools, and natural-language assistance for inspecting and debugging data.",
+            "summary": "A Cloudflare D1 workbench for browsing schema, editing rows, running SQL, and turning natural-language questions into executable queries.",
             "tags": ["Open Source", "Database Tools", "Cloudflare"],
             "attributes": {
                 "language": "Svelte",
-                "stars": 609,
-                "updatedAt": "2026-02-16T15:19:50Z",
+                "stars": 613,
+                "updatedAt": "2026-03-17T18:09:12Z",
                 "repositoryFullName": "JacobLinCool/d1-manager"
             },
             "body": [
                 {
                     "id": "overview",
                     "label": "Overview",
-                    "text": "I built d1-manager as a practical workbench for inspecting Cloudflare D1 databases, browsing schema, running queries, and debugging data issues more efficiently."
+                    "text": "I built d1-manager to make Cloudflare D1 easier to inspect and debug in practice, combining schema browsing, direct row editing, SQL execution, and semantic query support in one workflow."
                 }
             ],
             "links": [
@@ -341,19 +341,19 @@
             "id": "project-leetcode-stats-card",
             "type": "project",
             "title": "LeetCode-Stats-Card",
-            "summary": "A card generator that turns LeetCode activity into embeddable visuals for GitHub profiles and personal sites.",
+            "summary": "A Cloudflare-hosted card generator that turns LeetCode activity into customizable, embeddable visuals for GitHub profiles and personal sites.",
             "tags": ["Open Source", "Visualization", "Developer Tools"],
             "attributes": {
                 "language": "TypeScript",
-                "stars": 893,
-                "updatedAt": "2026-02-15T22:06:53Z",
+                "stars": 902,
+                "updatedAt": "2026-03-17T14:02:36Z",
                 "repositoryFullName": "JacobLinCool/LeetCode-Stats-Card"
             },
             "body": [
                 {
                     "id": "overview",
                     "label": "Overview",
-                    "text": "LeetCode-Stats-Card turns coding practice data into reusable visuals that can be embedded in GitHub profiles and personal sites."
+                    "text": "LeetCode-Stats-Card packages LeetCode activity as shareable cards with themes, font options, styling hooks, and optional extensions so people can embed a polished status view without maintaining their own renderer."
                 }
             ],
             "links": [
@@ -361,6 +361,93 @@
                     "id": "repository",
                     "label": "View repository",
                     "url": "https://github.com/JacobLinCool/LeetCode-Stats-Card",
+                    "kind": "repository"
+                }
+            ],
+            "relatedItemIds": []
+        },
+        "project-selflare": {
+            "id": "project-selflare",
+            "type": "project",
+            "title": "selflare",
+            "summary": "A CLI that compiles Cloudflare Workers into Cap'n Proto configs and ships them as minimal Docker deployments while preserving common platform bindings.",
+            "tags": ["Open Source", "Cloudflare", "Edge Runtime"],
+            "attributes": {
+                "language": "TypeScript",
+                "stars": 43,
+                "updatedAt": "2026-03-14T19:56:54Z",
+                "repositoryFullName": "JacobLinCool/selflare"
+            },
+            "body": [
+                {
+                    "id": "overview",
+                    "label": "Overview",
+                    "text": "I built selflare to run Cloudflare-style applications outside the managed platform, compiling workers into deployable configs and generating Docker setups that keep bindings like KV, D1, R2, durable objects, and Cache API usable locally."
+                }
+            ],
+            "links": [
+                {
+                    "id": "repository",
+                    "label": "View repository",
+                    "url": "https://github.com/JacobLinCool/selflare",
+                    "kind": "repository"
+                }
+            ],
+            "relatedItemIds": ["rq-agent-software-engineering"]
+        },
+        "project-gradio-rs": {
+            "id": "project-gradio-rs",
+            "type": "project",
+            "title": "gradio-rs",
+            "summary": "A Rust client and CLI for Gradio apps with API discovery, file uploads, queued jobs, and both blocking and async inference.",
+            "tags": ["Open Source", "Rust", "Machine Learning"],
+            "attributes": {
+                "language": "Rust",
+                "stars": 29,
+                "updatedAt": "2025-11-30T21:50:01Z",
+                "repositoryFullName": "JacobLinCool/gradio-rs"
+            },
+            "body": [
+                {
+                    "id": "overview",
+                    "label": "Overview",
+                    "text": "gradio-rs brings Gradio interactions into Rust with API inspection, upload handling, blocking and queued predictions, and a CLI so model demos can be driven from code or the terminal."
+                }
+            ],
+            "links": [
+                {
+                    "id": "repository",
+                    "label": "View repository",
+                    "url": "https://github.com/JacobLinCool/gradio-rs",
+                    "kind": "repository"
+                }
+            ],
+            "relatedItemIds": []
+        },
+        "project-rhythm-rs": {
+            "id": "project-rhythm-rs",
+            "type": "project",
+            "title": "rhythm-rs",
+            "summary": "A Rust rhythm-game workspace that separates engine timing, Taiko rules, chart parsing, and a playable game into reusable crates.",
+            "tags": ["Open Source", "Rust", "Game Development"],
+            "attributes": {
+                "language": "Rust",
+                "stars": 11,
+                "updatedAt": "2026-03-17T17:01:21Z",
+                "repositoryFullName": "JacobLinCool/rhythm-rs"
+            },
+            "body": [
+                {
+                    "id": "overview",
+                    "label": "Overview",
+                    "text": "I built rhythm-rs to explore rhythm-game systems in a modular way, splitting core timing and note logic, Taiko-specific behavior, TJA parsing, and the playable game into separate Rust crates."
+                }
+            ],
+            "links": [
+                {
+                    "id": "repository",
+                    "label": "View repository",
+                    "url": "https://github.com/JacobLinCool/rhythm-rs",
                     "kind": "repository"
                 }
             ],

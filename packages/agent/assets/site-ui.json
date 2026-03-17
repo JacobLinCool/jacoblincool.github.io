@@ -26,7 +26,7 @@
                 "id": "projects",
                 "rootNodeId": "projects",
                 "variant": "project-rail",
-                "maxItems": 3,
+                "maxItems": 5,
                 "eyebrow": "Side Projects",
                 "heading": "Open Source and Side Projects",
                 "description": "A mix of developer tools, ML experiments, and open-source utilities I have built over time. Some overlap with my research interests; many simply solve practical problems I care about.",
@@ -112,16 +112,34 @@
                 "prompt": "What problems were you trying to solve with d1-manager, and how did you design the interface for inspecting and querying Cloudflare D1 databases?"
             },
             {
-                "id": "project-smart-whisper",
-                "targetItemId": "project-smart-whisper",
-                "label": "Ask about smart-whisper",
-                "prompt": "How does smart-whisper wrap whisper.cpp for Node.js, and what engineering decisions mattered for making it practical?"
-            },
-            {
                 "id": "project-leetcode-card",
                 "targetItemId": "project-leetcode-stats-card",
                 "label": "Ask about LeetCode-Stats-Card",
                 "prompt": "How does LeetCode-Stats-Card turn practice data into reusable visuals, and what tradeoffs mattered in the design?"
+            },
+            {
+                "id": "project-selflare",
+                "targetItemId": "project-selflare",
+                "label": "Ask about selflare",
+                "prompt": "How does selflare turn Cloudflare Workers into Docker-friendly deployments, and what tradeoffs mattered when supporting bindings like KV, D1, R2, durable objects, and cache?"
+            },
+            {
+                "id": "project-gradio-rs",
+                "targetItemId": "project-gradio-rs",
+                "label": "Ask about gradio-rs",
+                "prompt": "Why did you build a Gradio client in Rust, and what API design decisions mattered for supporting uploads, blocking and non-blocking inference, and CLI workflows?"
+            },
+            {
+                "id": "project-rhythm-rs",
+                "targetItemId": "project-rhythm-rs",
+                "label": "Ask about rhythm-rs",
+                "prompt": "What were you exploring with rhythm-rs, and how did you split the engine, Taiko-specific logic, chart parsing, and playable game layers across the Rust workspace?"
+            },
+            {
+                "id": "project-smart-whisper",
+                "targetItemId": "project-smart-whisper",
+                "label": "Ask about smart-whisper",
+                "prompt": "How does smart-whisper wrap whisper.cpp for Node.js, and what engineering decisions mattered for making it practical?"
             }
         ]
     }

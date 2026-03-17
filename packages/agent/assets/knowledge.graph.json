@@ -91,8 +91,11 @@
             "parentNodeId": null,
             "childNodeIds": [
                 "projects.database-tools",
-                "projects.speech-and-ml",
                 "projects.visualization",
+                "projects.edge-runtime-tooling",
+                "projects.ml-clients",
+                "projects.game-systems",
+                "projects.speech-and-ml",
                 "projects.personal-site"
             ],
             "childItemIds": []
@@ -106,15 +109,6 @@
             "childNodeIds": [],
             "childItemIds": ["project-d1-manager"]
         },
-        "projects.speech-and-ml": {
-            "id": "projects.speech-and-ml",
-            "nodeType": "category",
-            "title": "Speech and ML Tooling",
-            "summary": "Runtime integrations for speech models and ML workflows.",
-            "parentNodeId": "projects",
-            "childNodeIds": [],
-            "childItemIds": ["project-smart-whisper"]
-        },
         "projects.visualization": {
             "id": "projects.visualization",
             "nodeType": "category",
@@ -123,6 +117,42 @@
             "parentNodeId": "projects",
             "childNodeIds": [],
             "childItemIds": ["project-leetcode-stats-card"]
+        },
+        "projects.edge-runtime-tooling": {
+            "id": "projects.edge-runtime-tooling",
+            "nodeType": "category",
+            "title": "Edge Runtime Tooling",
+            "summary": "Tooling for packaging and running Cloudflare-style edge applications beyond the managed platform.",
+            "parentNodeId": "projects",
+            "childNodeIds": [],
+            "childItemIds": ["project-selflare"]
+        },
+        "projects.ml-clients": {
+            "id": "projects.ml-clients",
+            "nodeType": "category",
+            "title": "ML Client Tooling",
+            "summary": "Client libraries and interfaces for interacting with machine learning services and demos.",
+            "parentNodeId": "projects",
+            "childNodeIds": [],
+            "childItemIds": ["project-gradio-rs"]
+        },
+        "projects.game-systems": {
+            "id": "projects.game-systems",
+            "nodeType": "category",
+            "title": "Game Systems",
+            "summary": "Engine and gameplay experiments that expose lower-level systems design choices.",
+            "parentNodeId": "projects",
+            "childNodeIds": [],
+            "childItemIds": ["project-rhythm-rs"]
+        },
+        "projects.speech-and-ml": {
+            "id": "projects.speech-and-ml",
+            "nodeType": "category",
+            "title": "Speech and ML Tooling",
+            "summary": "Runtime integrations for speech models and ML workflows.",
+            "parentNodeId": "projects",
+            "childNodeIds": [],
+            "childItemIds": ["project-smart-whisper"]
         },
         "projects.personal-site": {
             "id": "projects.personal-site",

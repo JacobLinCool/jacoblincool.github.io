@@ -7,7 +7,14 @@ describe('home adapter', () => {
 
         expect(projection.homePayload.researchQuestions).toHaveLength(3);
         expect(projection.homePayload.publications).toHaveLength(3);
-        expect(projection.homePayload.projects).toHaveLength(3);
+        expect(projection.homePayload.projects).toHaveLength(5);
+        expect(projection.homePayload.projects.map((project) => project.id)).toEqual([
+            'project-d1-manager',
+            'project-leetcode-stats-card',
+            'project-selflare',
+            'project-gradio-rs',
+            'project-rhythm-rs'
+        ]);
         expect(projection.homeUi.sections.research).toMatchObject({
             rootNodeId: 'research',
             variant: 'research-cards'
@@ -17,6 +24,10 @@ describe('home adapter', () => {
         ).toMatchObject({
             targetItemId: 'rq-agent-collaboration',
             label: 'Deep dive: Multi-human agent collaboration'
+        });
+        expect(projection.chatConfig.deepDivePromptsByItemId['project-selflare']).toMatchObject({
+            targetItemId: 'project-selflare',
+            label: 'Ask about selflare'
         });
     });
 
