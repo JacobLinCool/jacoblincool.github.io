@@ -58,8 +58,8 @@ export const getHomeMetricsPayload = async (
 
 export const streamHomeMetrics = (
     db: Firestore,
-    fetchFn: typeof fetch,
-    config: RuntimeConfig
+    config: RuntimeConfig,
+    fetchFn: typeof fetch = fetch
 ): Promise<HomeMetricsStreamResult> =>
     getHomeMetricsPayload(db, fetchFn, config)
         .then((data) => ({

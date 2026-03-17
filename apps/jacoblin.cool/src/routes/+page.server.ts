@@ -3,7 +3,7 @@ import { getAdminDb } from '$lib/server/firestore-admin';
 import { readRuntimeConfig } from '$lib/server/runtime-env';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = ({ fetch, platform }) => {
+export const load: PageServerLoad = ({ platform }) => {
     const config = readRuntimeConfig(
         (platform?.env ?? undefined) as Record<string, unknown> | undefined
     );
@@ -11,6 +11,6 @@ export const load: PageServerLoad = ({ fetch, platform }) => {
 
     return {
         home: getHomeStaticPayload(),
-        homeMetrics: streamHomeMetrics(db, fetch, config)
+        homeMetrics: streamHomeMetrics(db, config)
     };
 };
