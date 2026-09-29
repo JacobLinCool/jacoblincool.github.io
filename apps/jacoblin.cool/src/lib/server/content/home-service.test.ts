@@ -79,10 +79,10 @@ describe('home service', () => {
 
         const metrics = await streamHomeMetrics(
             db as never,
+            config,
             vi.fn(async () => {
                 throw new Error('Should not fetch when snapshots are fresh.');
-            }) as typeof fetch,
-            config
+            }) as typeof fetch
         );
 
         expect(metrics).toMatchObject({
@@ -126,7 +126,7 @@ describe('home service', () => {
             huggingfaceUser: 'JacobLinCoolMetricsFailure'
         };
 
-        const metrics = await streamHomeMetrics(db as never, fetchFn, isolatedConfig);
+        const metrics = await streamHomeMetrics(db as never, isolatedConfig, fetchFn);
 
         expect(metrics).toEqual({
             status: 'error',

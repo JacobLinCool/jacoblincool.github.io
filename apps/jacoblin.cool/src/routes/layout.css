@@ -47,6 +47,44 @@ canvas {
     display: block;
 }
 
+::selection {
+    background: #a7f3d0;
+    color: #052e16;
+}
+
+.reading-page {
+    max-width: 54rem;
+    margin-inline: auto;
+    padding-block: clamp(1rem, 4vw, 3rem);
+}
+.reading-header {
+    margin-bottom: clamp(2.5rem, 6vw, 4rem);
+}
+.reading-header h1 {
+    font-size: clamp(2.75rem, 6vw, 4.5rem);
+    line-height: 1.1;
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+}
+.reading-link {
+    color: #a7f3d0;
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+}
+.reading-link:hover {
+    color: #d1fae5;
+}
+.draft-label {
+    display: block;
+    width: fit-content;
+    border: 1px solid #78716c;
+    border-radius: 0.3rem;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    color: #fde68a;
+}
+
 * {
     scrollbar-width: thin;
     scrollbar-color: rgb(125 150 172 / 45%) transparent;

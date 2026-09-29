@@ -1,4 +1,5 @@
 export const siteConfig = {
+    origin: 'https://jacoblin.cool',
     identity: {
         name: 'Jacob Lin',
         shortName: 'Jacob',

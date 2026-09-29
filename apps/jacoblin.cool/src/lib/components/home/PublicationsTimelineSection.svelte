@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
     import { ChevronLeft, ChevronRight } from '@lucide/svelte';
     import { computeRailEdgeState, scrollRailByViewport } from '$lib/utils/rail-scroll';
     import { formatCount } from '$lib/utils/display-format';
@@ -15,12 +16,6 @@
         onAskPaper: (targetItemId: string) => void | Promise<void>;
         disabled?: boolean;
     } = $props();
-
-    const openExternal = (url: string) => {
-        if (typeof window !== 'undefined') {
-            window.open(url, '_blank', 'noopener,noreferrer');
-        }
-    };
 
     let railTrackRef: HTMLOListElement | null = null;
     let canScrollPrev = $state(false);
@@ -128,6 +123,9 @@
             <p class="text-sm text-zinc-300 sm:text-base">
                 {section.description}
             </p>
+            <a href={resolve('/publications')} class="reading-link w-fit text-sm"
+                >View all publications</a
+            >
         </div>
 
         <div class="home-rail-controls hidden xl:flex" aria-label="Publications rail controls">
@@ -216,13 +214,13 @@
                     </div>
 
                     <div class="mt-7 flex flex-wrap items-center gap-3">
-                        <button
-                            type="button"
+                        <a
+                            href={publication.url}
+                            rel="external"
                             class="inline-flex items-center rounded-xl border border-white/15 px-3 py-2 text-sm text-zinc-200 transition-colors duration-200 hover:border-white/35 hover:text-zinc-100"
-                            onclick={() => openExternal(publication.url)}
                         >
                             Open publication
-                        </button>
+                        </a>
                         <button
                             type="button"
                             class="inline-flex cursor-pointer items-center rounded-xl border border-emerald-300/35 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-100 transition-colors duration-200 hover:border-emerald-200/55 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"

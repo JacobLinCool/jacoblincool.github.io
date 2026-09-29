@@ -1,7 +1,7 @@
 {
-    "version": "v4",
+    "version": "v5",
     "language": "en",
-    "updatedAt": "2026-03-17T00:00:00.000Z",
+    "updatedAt": "2026-09-29T00:00:00.000Z",
     "rootNodeIds": ["profile", "research", "publications", "projects"],
     "nodes": {
         "profile": {
@@ -56,12 +56,16 @@
         "publications": {
             "id": "publications",
             "nodeType": "collection",
-            "title": "Previous Publications",
-            "summary": "Selected papers from earlier work in speech and language technology.",
+            "title": "Publications",
+            "summary": "Papers and preprints on model evaluation, agent-managed software, rhythm-game generation, and speech technology.",
             "parentNodeId": null,
             "childNodeIds": [
+                "publications.model-evaluation",
+                "publications.rhythm-generation",
+                "publications.agent-engineering",
                 "publications.speaking-assessment",
-                "publications.transcription-fidelity"
+                "publications.transcription-fidelity",
+                "publications.speech-recognition"
             ],
             "childItemIds": []
         },
@@ -72,7 +76,13 @@
             "summary": "Assessment systems, relevance, grammar, and multimodal scoring.",
             "parentNodeId": "publications",
             "childNodeIds": [],
-            "childItemIds": ["pub-si-2025-open-track", "pub-asa-multifaceted-2025"]
+            "childItemIds": [
+                "pub-si-2025-open-track",
+                "pub-asa-multifaceted-2025",
+                "pub-session-sla-2026",
+                "pub-opinion-augmentation-2025",
+                "pub-gept-assessment-2024"
+            ]
         },
         "publications.transcription-fidelity": {
             "id": "publications.transcription-fidelity",
@@ -162,6 +172,42 @@
             "parentNodeId": "projects",
             "childNodeIds": [],
             "childItemIds": ["project-jacoblin-cool-site"]
+        },
+        "publications.model-evaluation": {
+            "id": "publications.model-evaluation",
+            "nodeType": "category",
+            "title": "Model Evaluation",
+            "summary": "Task-conditioned model comparison and rubric-based grading.",
+            "parentNodeId": "publications",
+            "childNodeIds": [],
+            "childItemIds": ["pub-balance-of-benchmarks-2026", "pub-rubric-grading-2026"]
+        },
+        "publications.rhythm-generation": {
+            "id": "publications.rhythm-generation",
+            "nodeType": "category",
+            "title": "Rhythm-Game Generation",
+            "summary": "Evaluating generated rhythm-game charts across distinct quality dimensions.",
+            "parentNodeId": "publications",
+            "childNodeIds": [],
+            "childItemIds": ["pub-chartgeneval-2026"]
+        },
+        "publications.agent-engineering": {
+            "id": "publications.agent-engineering",
+            "nodeType": "category",
+            "title": "Agent-Managed Software",
+            "summary": "How generated repositories communicate design intent to downstream agents.",
+            "parentNodeId": "publications",
+            "childNodeIds": [],
+            "childItemIds": ["pub-build-and-find-2026"]
+        },
+        "publications.speech-recognition": {
+            "id": "publications.speech-recognition",
+            "nodeType": "category",
+            "title": "Speech Recognition",
+            "summary": "Automatic speech recognition systems and challenge submissions.",
+            "parentNodeId": "publications",
+            "childNodeIds": [],
+            "childItemIds": ["pub-formosa-asr-2023"]
         }
     }
 }

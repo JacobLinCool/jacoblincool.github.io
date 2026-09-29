@@ -6,7 +6,8 @@
     "scripts": {
         "format": "prettier --write .",
         "lint": "pnpm -r lint",
-        "test": "pnpm -r test"
+        "test": "pnpm -r test",
+        "blog:new": "pnpm --filter jacoblin.cool blog:new"
     },
     "devDependencies": {
         "prettier": "^3.8.1",

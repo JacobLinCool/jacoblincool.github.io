@@ -51,16 +51,17 @@
             "tags": ["Profile", "Scholar", "Publications"],
             "attributes": {
                 "profileUrl": "https://scholar.google.com/citations?user=BdzYgY0AAAAJ",
-                "citations": 8,
-                "hIndex": 2,
+                "citations": 18,
+                "hIndex": 3,
                 "i10Index": 0,
-                "topics": ["Human-Computer Interaction", "AI Agents", "Software Engineering"]
+                "topics": ["Human-Computer Interaction", "Speech Science", "Multimodality"],
+                "verifiedAt": "2026-09-29"
             },
             "body": [
                 {
                     "id": "current-position",
                     "label": "Current Position",
-                    "text": "I am a 1st year graduate student at NYCU, working across Human-Computer Interaction, AI agents, and software systems."
+                    "text": "I am a graduate student at NYCU, working across Human-Computer Interaction, AI agents, and software systems."
                 },
                 {
                     "id": "orientation",
@@ -71,6 +72,11 @@
                     "id": "boundary",
                     "label": "Boundary",
                     "text": "Scholar is mainly the publication and citation view of my work. It does not capture the broader history of the software, tools, and experiments I have built over time."
+                },
+                {
+                    "id": "publication-snapshot",
+                    "label": "Publication Snapshot",
+                    "text": "Google Scholar listed 11 publications, 18 citations, an h-index of 3, and an i10-index of 0 when checked on September 29, 2026. Titles and author lists were cross-checked against publisher and arXiv records; Balance of Benchmarks uses the updated arXiv v3 title and author list."
                 }
             ],
             "links": [
@@ -184,10 +190,11 @@
             "summary": "A shared-task system paper on spoken language assessment that combines complementary speech and multimodal signals in one evaluation pipeline.",
             "tags": ["SLA", "ASR", "Multimodal"],
             "attributes": {
-                "authors": "HY Lin, TH Lo, YH Fang, JK Lin, CC Wang, HC Lu, B Chen",
-                "venue": "arXiv:2506.05121",
+                "authors": "Hong-Yun Lin, Tien-Hong Lo, Yu-Hsuan Fang, Jhen-Ke Lin, Chung-Chun Wang, Hao-Chien Lu, Berlin Chen",
+                "venue": "SLaTE 2025",
                 "year": 2025,
-                "citations": 2
+                "citations": 5,
+                "verifiedAt": "2026-09-29"
             },
             "body": [
                 {
@@ -198,15 +205,21 @@
                 {
                     "id": "summary",
                     "label": "Summary",
-                    "text": "It documents the NTNU approach, task setup, and practical tradeoffs involved in building a competitive challenge submission."
+                    "text": "Combines wav2vec 2.0 and Phi-4 multimodal predictions through score fusion; the system placed second in the Speak & Improve 2025 SLA open track."
                 }
             ],
             "links": [
                 {
                     "id": "paper",
                     "label": "Open publication",
-                    "url": "https://arxiv.org/abs/2506.05121",
+                    "url": "https://www.isca-archive.org/slate_2025/lin25_slate.html",
                     "kind": "paper"
+                },
+                {
+                    "id": "preprint",
+                    "label": "arXiv",
+                    "url": "https://arxiv.org/abs/2506.05121",
+                    "kind": "preprint"
                 }
             ],
             "relatedItemIds": ["pub-asa-multifaceted-2025"]
@@ -218,10 +231,11 @@
             "summary": "A study of automated speaking assessment that brings together relevance and grammar signals instead of relying on a single coarse judgment.",
             "tags": ["Automated Speaking Assessment", "Grammar", "Relevance"],
             "attributes": {
-                "authors": "HC Lu, JK Lin, HY Lin, CC Wang, B Chen",
-                "venue": "arXiv:2506.16285",
+                "authors": "Hao-Chien Lu, Jhen-Ke Lin, Hong-Yun Lin, Chung-Chun Wang, Berlin Chen",
+                "venue": "SLaTE 2025",
                 "year": 2025,
-                "citations": 1
+                "citations": 1,
+                "verifiedAt": "2026-09-29"
             },
             "body": [
                 {
@@ -232,15 +246,21 @@
                 {
                     "id": "summary",
                     "label": "Summary",
-                    "text": "The experiments examine how richer linguistic structure can improve scoring reliability and make the model's reasoning easier to analyze."
+                    "text": "Integrates question, image, exemplar, and response relevance with detailed grammar-error features to improve content, language-use, and overall speaking scores."
                 }
             ],
             "links": [
                 {
                     "id": "paper",
                     "label": "Open publication",
-                    "url": "https://arxiv.org/abs/2506.16285",
+                    "url": "https://www.isca-archive.org/slate_2025/lu25_slate.html",
                     "kind": "paper"
+                },
+                {
+                    "id": "preprint",
+                    "label": "arXiv",
+                    "url": "https://arxiv.org/abs/2506.16285",
+                    "kind": "preprint"
                 }
             ],
             "relatedItemIds": ["pub-si-2025-open-track"]
@@ -252,10 +272,11 @@
             "summary": "A transcription study showing that hesitation should be modeled explicitly rather than collapsed away in end-to-end verbatim ASR systems.",
             "tags": ["Verbatim ASR", "Whisper", "Disfluency"],
             "attributes": {
-                "authors": "JK Lin, HC Lu, CC Wang, HY Lin, B Chen",
-                "venue": "arXiv:2506.04076",
+                "authors": "Jhen-Ke Lin, Hao-Chien Lu, Chung-Chun Wang, Hong-Yun Lin, Berlin Chen",
+                "venue": "SLaTE 2025",
                 "year": 2025,
-                "citations": 1
+                "citations": 4,
+                "verifiedAt": "2026-09-29"
             },
             "body": [
                 {
@@ -266,15 +287,21 @@
                 {
                     "id": "summary",
                     "label": "Summary",
-                    "text": "The results show that preserving disfluency as first-class information improves fidelity for realistic speech transcription tasks."
+                    "text": "Compares removed, generic, and acoustically precise hesitation annotations when fine-tuning Whisper for verbatim L2 speech transcription."
                 }
             ],
             "links": [
                 {
                     "id": "paper",
                     "label": "Open publication",
-                    "url": "https://arxiv.org/abs/2506.04076",
+                    "url": "https://www.isca-archive.org/slate_2025/lin25b_slate.html",
                     "kind": "paper"
+                },
+                {
+                    "id": "preprint",
+                    "label": "arXiv",
+                    "url": "https://arxiv.org/abs/2506.04076",
+                    "kind": "preprint"
                 }
             ],
             "relatedItemIds": []
@@ -497,6 +524,298 @@
                 }
             ],
             "relatedItemIds": ["profile.engineering", "rq-agent-software-engineering"]
+        },
+        "pub-balance-of-benchmarks-2026": {
+            "id": "pub-balance-of-benchmarks-2026",
+            "type": "publication",
+            "title": "Balance of Benchmarks: Semantic Density Reweighting for Task-Conditioned Model Comparison",
+            "summary": "A framework for comparing models using public benchmark scores while accounting for repeated capabilities, benchmark difficulty, and the target task.",
+            "tags": ["Model Evaluation", "Benchmarks"],
+            "attributes": {
+                "authors": "Jhen-Ke Lin, Hong-Yun Lin",
+                "venue": "arXiv:2608.30044 · Preprint",
+                "year": 2026,
+                "citations": 0,
+                "verifiedAt": "2026-09-29"
+            },
+            "body": [
+                {
+                    "id": "contribution",
+                    "label": "Contribution",
+                    "text": "Combines semantic density weighting, score equating, and task-relevant residual pooling; evaluates model comparisons on Artificial Analysis benchmarks and WildScores."
+                },
+                {
+                    "id": "summary",
+                    "label": "Summary",
+                    "text": "A framework for comparing models using public benchmark scores while accounting for repeated capabilities, benchmark difficulty, and the target task."
+                }
+            ],
+            "links": [
+                {
+                    "id": "paper",
+                    "label": "Open publication",
+                    "url": "https://arxiv.org/abs/2608.30044",
+                    "kind": "paper"
+                }
+            ],
+            "relatedItemIds": []
+        },
+        "pub-rubric-grading-2026": {
+            "id": "pub-rubric-grading-2026",
+            "type": "publication",
+            "title": "Grading Needs a Rubric, Not Intelligence",
+            "summary": "Studies when lower-cost language models can reliably grade open-ended exam answers using explicit rubrics.",
+            "tags": ["LLM Evaluation", "Grading"],
+            "attributes": {
+                "authors": "Jhen-Ke Lin",
+                "venue": "arXiv:2608.17938 · Preprint",
+                "year": 2026,
+                "citations": 0,
+                "verifiedAt": "2026-09-29"
+            },
+            "body": [
+                {
+                    "id": "contribution",
+                    "label": "Contribution",
+                    "text": "Separates one-time rubric extraction from repeated grading, and uses rubric ablations to examine the role of the official answer in grading reliability."
+                },
+                {
+                    "id": "summary",
+                    "label": "Summary",
+                    "text": "Studies when lower-cost language models can reliably grade open-ended exam answers using explicit rubrics."
+                }
+            ],
+            "links": [
+                {
+                    "id": "paper",
+                    "label": "Open publication",
+                    "url": "https://arxiv.org/abs/2608.17938",
+                    "kind": "paper"
+                }
+            ],
+            "relatedItemIds": []
+        },
+        "pub-chartgeneval-2026": {
+            "id": "pub-chartgeneval-2026",
+            "type": "publication",
+            "title": "ChartGenEval: Corruption-Tested Multi-Dimensional Feedback for Rhythm-Game Chart Generation",
+            "summary": "Evaluates generated rhythm-game charts through separate timing and chart-quality signals without requiring reproduction of an official note sequence.",
+            "tags": ["Rhythm Games", "Evaluation"],
+            "attributes": {
+                "authors": "Jhen-Ke Lin",
+                "venue": "arXiv:2607.12857 · Preprint",
+                "year": 2026,
+                "citations": 0,
+                "verifiedAt": "2026-09-29"
+            },
+            "body": [
+                {
+                    "id": "contribution",
+                    "label": "Contribution",
+                    "text": "Tests evaluation signals against controlled corruptions and reports a quality profile instead of collapsing distinct properties into one total score."
+                },
+                {
+                    "id": "summary",
+                    "label": "Summary",
+                    "text": "Evaluates generated rhythm-game charts through separate timing and chart-quality signals without requiring reproduction of an official note sequence."
+                }
+            ],
+            "links": [
+                {
+                    "id": "paper",
+                    "label": "Open publication",
+                    "url": "https://arxiv.org/abs/2607.12857",
+                    "kind": "paper"
+                }
+            ],
+            "relatedItemIds": ["project-rhythm-rs"]
+        },
+        "pub-build-and-find-2026": {
+            "id": "pub-build-and-find-2026",
+            "type": "publication",
+            "title": "BUILD-AND-FIND: An Effort-Aware Protocol for Evaluating Agent-Managed Codebases",
+            "summary": "Measures whether downstream agents can recover intended behavior and design decisions from generated repositories, and how much inspection that requires.",
+            "tags": ["AI Agents", "Software Engineering"],
+            "attributes": {
+                "authors": "Jhen-Ke Lin",
+                "venue": "arXiv:2605.06136 · Preprint",
+                "year": 2026,
+                "citations": 0,
+                "verifiedAt": "2026-09-29"
+            },
+            "body": [
+                {
+                    "id": "contribution",
+                    "label": "Contribution",
+                    "text": "Separates behavioral correctness from intent recovery, reporting accuracy, repeatability, implementation coverage, and inspection effort."
+                },
+                {
+                    "id": "summary",
+                    "label": "Summary",
+                    "text": "Measures whether downstream agents can recover intended behavior and design decisions from generated repositories, and how much inspection that requires."
+                }
+            ],
+            "links": [
+                {
+                    "id": "paper",
+                    "label": "Open publication",
+                    "url": "https://arxiv.org/abs/2605.06136",
+                    "kind": "paper"
+                }
+            ],
+            "relatedItemIds": ["rq-agent-software-engineering"]
+        },
+        "pub-session-sla-2026": {
+            "id": "pub-session-sla-2026",
+            "type": "publication",
+            "title": "Session-Level Spoken Language Assessment with a Multimodal Foundation Model via Multi-Target Learning",
+            "summary": "Assesses an entire spoken response session with a multimodal foundation model, jointly learning holistic and trait-level proficiency objectives.",
+            "tags": ["Speaking Assessment", "Multimodal"],
+            "attributes": {
+                "authors": "Hong-Yun Lin, Jhen-Ke Lin, Chung-Chun Wang, Hao-Chien Lu, Berlin Chen",
+                "venue": "ICASSP 2026",
+                "year": 2026,
+                "citations": 2,
+                "verifiedAt": "2026-09-29"
+            },
+            "body": [
+                {
+                    "id": "contribution",
+                    "label": "Contribution",
+                    "text": "Uses multi-target learning and a frozen Whisper speech prior for acoustic-aware calibration, evaluated on the Speak & Improve benchmark."
+                },
+                {
+                    "id": "summary",
+                    "label": "Summary",
+                    "text": "Assesses an entire spoken response session with a multimodal foundation model, jointly learning holistic and trait-level proficiency objectives."
+                }
+            ],
+            "links": [
+                {
+                    "id": "paper",
+                    "label": "Open publication",
+                    "url": "https://ieeexplore.ieee.org/document/11461430/",
+                    "kind": "paper"
+                },
+                {
+                    "id": "preprint",
+                    "label": "arXiv",
+                    "url": "https://arxiv.org/abs/2509.16025",
+                    "kind": "preprint"
+                }
+            ],
+            "relatedItemIds": ["pub-si-2025-open-track"]
+        },
+        "pub-opinion-augmentation-2025": {
+            "id": "pub-opinion-augmentation-2025",
+            "type": "publication",
+            "title": "A Novel Data Augmentation Approach for Automatic Speaking Assessment on Opinion Expressions",
+            "summary": "Addresses scarce labeled speaking-assessment data using proficiency-conditioned text generation and speaker-aware speech synthesis.",
+            "tags": ["Speaking Assessment", "Data Augmentation"],
+            "attributes": {
+                "authors": "Chung-Chun Wang, Jhen-Ke Lin, Hao-Chien Lu, Hong-Yun Lin, Berlin Chen",
+                "venue": "SLaTE 2025",
+                "year": 2025,
+                "citations": 1,
+                "verifiedAt": "2026-09-29"
+            },
+            "body": [
+                {
+                    "id": "contribution",
+                    "label": "Contribution",
+                    "text": "Reweights synthetic training examples with a dynamic importance loss and combines text and speech in a multimodal scoring model."
+                },
+                {
+                    "id": "summary",
+                    "label": "Summary",
+                    "text": "Addresses scarce labeled speaking-assessment data using proficiency-conditioned text generation and speaker-aware speech synthesis."
+                }
+            ],
+            "links": [
+                {
+                    "id": "paper",
+                    "label": "Open publication",
+                    "url": "https://www.isca-archive.org/slate_2025/wang25_slate.html",
+                    "kind": "paper"
+                },
+                {
+                    "id": "preprint",
+                    "label": "arXiv",
+                    "url": "https://arxiv.org/abs/2506.04077",
+                    "kind": "preprint"
+                }
+            ],
+            "relatedItemIds": []
+        },
+        "pub-gept-assessment-2024": {
+            "id": "pub-gept-assessment-2024",
+            "type": "publication",
+            "title": "Development of an English Oral Assessment System with the GEPT Dataset",
+            "summary": "An oral assessment system for the GEPT Intermediate picture-description task that considers acoustic features, content, and language use.",
+            "tags": ["Speaking Assessment", "GEPT"],
+            "attributes": {
+                "authors": "Hao-Chien Lu, Chung-Chun Wang, Jhen-Ke Lin, Berlin Chen",
+                "venue": "O-COCOSDA 2024",
+                "year": 2024,
+                "citations": 1,
+                "verifiedAt": "2026-09-29"
+            },
+            "body": [
+                {
+                    "id": "contribution",
+                    "label": "Contribution",
+                    "text": "Integrates grammatical error correction with image and question analysis to support multidimensional speaking assessment."
+                },
+                {
+                    "id": "summary",
+                    "label": "Summary",
+                    "text": "An oral assessment system for the GEPT Intermediate picture-description task that considers acoustic features, content, and language use."
+                }
+            ],
+            "links": [
+                {
+                    "id": "paper",
+                    "label": "Open publication",
+                    "url": "https://doi.org/10.1109/O-COCOSDA64382.2024.10800405",
+                    "kind": "paper"
+                }
+            ],
+            "relatedItemIds": []
+        },
+        "pub-formosa-asr-2023": {
+            "id": "pub-formosa-asr-2023",
+            "type": "publication",
+            "title": "The NTNU ASR System for Formosa Speech Recognition Challenge 2023",
+            "summary": "Describes the NTNU automatic speech recognition system submitted to the Formosa Speech Recognition Challenge 2023.",
+            "tags": ["ASR", "Speech Recognition"],
+            "attributes": {
+                "authors": "Hao-Chien Lu, Chung-Chun Wang, Jhen-Ke Lin, Tien-Hong Lo",
+                "venue": "ROCLING 2023",
+                "year": 2023,
+                "citations": 4,
+                "verifiedAt": "2026-09-29"
+            },
+            "body": [
+                {
+                    "id": "contribution",
+                    "label": "Contribution",
+                    "text": "Documents the challenge system in the proceedings of the 35th Conference on Computational Linguistics and Speech Processing."
+                },
+                {
+                    "id": "summary",
+                    "label": "Summary",
+                    "text": "Describes the NTNU automatic speech recognition system submitted to the Formosa Speech Recognition Challenge 2023."
+                }
+            ],
+            "links": [
+                {
+                    "id": "paper",
+                    "label": "Open publication",
+                    "url": "https://aclanthology.org/2023.rocling-1.52/",
+                    "kind": "paper"
+                }
+            ],
+            "relatedItemIds": []
         }
     }
 }

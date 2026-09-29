@@ -141,6 +141,21 @@ export const getStaticScholarProfile = (): ProfileMetricsSnapshot['scholar'] => 
     };
 };
 
+export const getPublications = (): PublicationHighlight[] => {
+    const registry = getStaticKnowledgeRegistry();
+    return collectDescendantItemIds(registry, 'publications')
+        .map((id) => toPublicationHighlight(requireRegistryItem(registry.itemsById, id)))
+        .sort((a, b) => b.year - a.year);
+};
+
+export const getScholarVerifiedDate = (): string => {
+    const registry = getStaticKnowledgeRegistry();
+    return getStringAttribute(
+        requireRegistryItem(registry.itemsById, registry.metricsProfileItemId),
+        'verifiedAt'
+    );
+};
+
 export const getStaticHomeProjection = (): {
     homePayload: Omit<HomeSectionPayload, 'metrics'>;
     homeUi: HomeUiConfig;
@@ -180,11 +195,11 @@ export const getStaticHomeProjectionForDate = (
             return toResearchQuestionCard(requireRegistryItem(registry.itemsById, itemId));
         });
 
-    const publications = collectDescendantItemIds(registry, publicationSection.rootNodeId)
+    const publications = getPublications()
         .slice(0, publicationSection.maxItems)
-        .map((itemId) => {
-            requireDeepDiveBinding(itemId);
-            return toPublicationHighlight(requireRegistryItem(registry.itemsById, itemId));
+        .map((publication) => {
+            requireDeepDiveBinding(publication.id);
+            return publication;
         });
 
     const projects = collectDescendantItemIds(registry, projectSection.rootNodeId)

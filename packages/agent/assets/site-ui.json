@@ -16,10 +16,10 @@
                 "id": "publications",
                 "rootNodeId": "publications",
                 "variant": "publication-rail",
-                "maxItems": 3,
-                "eyebrow": "Previous Publications",
-                "heading": "Selected Papers from Earlier Work",
-                "description": "Selected papers on speech assessment, transcription fidelity, and multimodal systems.",
+                "maxItems": 5,
+                "eyebrow": "Publications",
+                "heading": "Research, in Papers",
+                "description": "Recent work on model evaluation and agent-managed software, alongside research in rhythm games and speech technology.",
                 "ctaLabel": "Discuss this paper in chat"
             },
             {
@@ -42,7 +42,7 @@
             "I build tools, systems, and research prototypes",
             "I study how people work together with AI",
             "I also build open-source tools and ML projects",
-            "I am a 1st Year Graduate Student at NYCU",
+            "I am a Graduate Student at NYCU",
             "I like turning ideas into usable systems",
             "Nice to meet you!"
         ],
@@ -140,6 +140,54 @@
                 "targetItemId": "project-smart-whisper",
                 "label": "Ask about smart-whisper",
                 "prompt": "How does smart-whisper wrap whisper.cpp for Node.js, and what engineering decisions mattered for making it practical?"
+            },
+            {
+                "id": "paper-balance-of-benchmarks-2026",
+                "targetItemId": "pub-balance-of-benchmarks-2026",
+                "label": "Ask about Balance of Benchmarks",
+                "prompt": "Explain the motivation, method, evidence, and limitations of your paper “Balance of Benchmarks: Semantic Density Reweighting for Task-Conditioned Model Comparison”."
+            },
+            {
+                "id": "paper-rubric-grading-2026",
+                "targetItemId": "pub-rubric-grading-2026",
+                "label": "Ask about Grading Needs a Rubric, Not Intelligence",
+                "prompt": "Explain the motivation, method, evidence, and limitations of your paper “Grading Needs a Rubric, Not Intelligence”."
+            },
+            {
+                "id": "paper-chartgeneval-2026",
+                "targetItemId": "pub-chartgeneval-2026",
+                "label": "Ask about ChartGenEval",
+                "prompt": "Explain the motivation, method, evidence, and limitations of your paper “ChartGenEval: Corruption-Tested Multi-Dimensional Feedback for Rhythm-Game Chart Generation”."
+            },
+            {
+                "id": "paper-build-and-find-2026",
+                "targetItemId": "pub-build-and-find-2026",
+                "label": "Ask about BUILD-AND-FIND",
+                "prompt": "Explain the motivation, method, evidence, and limitations of your paper “BUILD-AND-FIND: An Effort-Aware Protocol for Evaluating Agent-Managed Codebases”."
+            },
+            {
+                "id": "paper-session-sla-2026",
+                "targetItemId": "pub-session-sla-2026",
+                "label": "Ask about Session-Level Spoken Language Assessment with a Multimodal Foundation Model via Multi-Target Learning",
+                "prompt": "Explain the motivation, method, evidence, and limitations of your paper “Session-Level Spoken Language Assessment with a Multimodal Foundation Model via Multi-Target Learning”."
+            },
+            {
+                "id": "paper-opinion-augmentation-2025",
+                "targetItemId": "pub-opinion-augmentation-2025",
+                "label": "Ask about A Novel Data Augmentation Approach for Automatic Speaking Assessment on Opinion Expressions",
+                "prompt": "Explain the motivation, method, evidence, and limitations of your paper “A Novel Data Augmentation Approach for Automatic Speaking Assessment on Opinion Expressions”."
+            },
+            {
+                "id": "paper-gept-assessment-2024",
+                "targetItemId": "pub-gept-assessment-2024",
+                "label": "Ask about Development of an English Oral Assessment System with the GEPT Dataset",
+                "prompt": "Explain the motivation, method, evidence, and limitations of your paper “Development of an English Oral Assessment System with the GEPT Dataset”."
+            },
+            {
+                "id": "paper-formosa-asr-2023",
+                "targetItemId": "pub-formosa-asr-2023",
+                "label": "Ask about The NTNU ASR System for Formosa Speech Recognition Challenge 2023",
+                "prompt": "Explain the motivation, method, evidence, and limitations of your paper “The NTNU ASR System for Formosa Speech Recognition Challenge 2023”."
             }
         ]
     }

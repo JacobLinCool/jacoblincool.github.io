@@ -29,3 +29,5 @@ vite.config.ts.timestamp-*
 
 .playwright-cli
 output/playwright
+
+*.shadow.md

@@ -1,5 +1,7 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
+    import { page } from '$app/state';
+    import { deLocalizeUrl } from '$lib/paraglide/runtime';
     import { Menu } from '@lucide/svelte';
     import UserMenu from '$lib/components/app/UserMenu.svelte';
     import { siteConfig } from '$lib/config/site';
@@ -7,12 +9,14 @@
 
     let {
         sidebarId = 'app-sidebar',
-        showSidebar = true
-    }: { sidebarId?: string; showSidebar?: boolean } = $props();
+        showSidebar = true,
+        showAccountMenu = true
+    }: { sidebarId?: string; showSidebar?: boolean; showAccountMenu?: boolean } = $props();
 
     const sidebarExpanded = $derived(
         showSidebar && (uiStore.state.isSidebarOpenDesktop || uiStore.state.isSidebarOpenMobile)
     );
+    const pathname = $derived(deLocalizeUrl(page.url).pathname);
 </script>
 
 <header class="sticky top-0 z-20 border-b border-white/8 bg-black/65">
@@ -42,6 +46,40 @@
             </a>
         </div>
 
-        <UserMenu />
+        <div class="flex items-center gap-2 sm:gap-5">
+            <nav aria-label="Main navigation" class="flex items-center gap-1 sm:gap-3">
+                <a
+                    href={resolve('/publications')}
+                    aria-current={pathname === '/publications' ? 'page' : undefined}
+                    class="nav-link">Publications</a
+                >
+                <a
+                    href={resolve('/blog')}
+                    aria-current={pathname.startsWith('/blog') ? 'page' : undefined}
+                    class="nav-link">Blog</a
+                >
+            </nav>
+            {#if showAccountMenu}<UserMenu />{/if}
+        </div>
     </div>
 </header>
+
+<style>
+    .nav-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding-inline: 0.4rem;
+        font-size: 0.8125rem;
+        color: #d4d4d8;
+        text-decoration: none;
+    }
+    .nav-link:hover,
+    .nav-link[aria-current='page'] {
+        color: #a7f3d0;
+    }
+    .nav-link[aria-current='page'] {
+        text-decoration: underline;
+        text-underline-offset: 0.4em;
+    }
+</style>
