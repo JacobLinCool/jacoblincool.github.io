@@ -4,11 +4,6 @@ import type { ChatPromptSubmissionMeta } from '$lib/types/chat';
 
 const HERO_CHAT_ANCHOR_ID = 'hero-chat';
 
-const wait = (ms: number) =>
-    new Promise<void>((resolve) => {
-        setTimeout(resolve, ms);
-    });
-
 export const engageHeroChat = async (
     prompt: string,
     metadata: ChatPromptSubmissionMeta = { source: 'chip' }
@@ -43,8 +38,6 @@ export const engageHeroChat = async (
                     block: 'start'
                 });
             }
-
-            await wait(prefersReducedMotion ? 24 : 460);
         }
     }
 

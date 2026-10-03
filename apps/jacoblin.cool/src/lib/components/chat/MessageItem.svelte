@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Copy, Square, Volume2 } from '@lucide/svelte';
+    import { Copy, RotateCcw, Square, Volume2 } from '@lucide/svelte';
     import { publicFeatureFlags } from '$lib/config/public-flags';
     import type { AudioUiState, ChatMessage } from '$lib/types/chat';
     import { renderChatMarkdown } from '$lib/utils/chat-markdown';
@@ -8,34 +8,43 @@
         message,
         audioState,
         onCopy,
-        onToggleAudio
+        onToggleAudio,
+        onRetry,
+        canRetry = false,
+        errorMessage
     }: {
         message: ChatMessage;
         audioState: AudioUiState;
         onCopy: (messageId: string) => void;
         onToggleAudio: (messageId: string) => void;
+        onRetry: (messageId: string) => void;
+        canRetry?: boolean;
+        errorMessage?: string;
     } = $props();
 
     const isAssistant = $derived(message.role === 'assistant');
-    const showActions = $derived(isAssistant && message.status === 'done');
+    const showActions = $derived(
+        isAssistant && message.status !== 'streaming' && Boolean(message.content)
+    );
     const isPlaying = $derived(
         audioState.state === 'playing' && audioState.messageId === message.id
     );
     const showAudioButton = $derived(showActions && publicFeatureFlags.chatAudioEnabled);
-    const displayContent = $derived(message.content || (isAssistant ? 'Thinking…' : ''));
+    const displayContent = $derived(message.content);
     const renderedContent = $derived(renderChatMarkdown(displayContent));
 </script>
 
 <li class={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}>
     <article
-        class={`rounded-3xl px-4 py-3 text-[15.5px] leading-[1.65] sm:text-[16px] ${
+        class={`min-w-0 rounded-3xl px-4 py-3 text-[15.5px] leading-[1.65] sm:text-[16px] ${
             isAssistant
                 ? 'max-w-[92%] border border-white/8 bg-zinc-800/68 text-zinc-100 sm:max-w-[72ch]'
                 : 'max-w-[90%] border border-sky-300/22 bg-sky-500/20 text-sky-50 sm:max-w-[78%]'
         }`}
     >
         <div
-            aria-live={isAssistant && message.status === 'streaming' ? 'polite' : 'off'}
+            aria-live={isAssistant ? 'polite' : 'off'}
+            aria-busy={message.status === 'streaming'}
             aria-atomic="false"
         >
             <div
@@ -55,6 +64,29 @@
                 </div>
             {/if}
         </div>
+
+        {#if message.status === 'error' || message.status === 'stopped'}
+            <div class={message.content ? 'mt-3 border-t border-white/10 pt-3' : ''}>
+                <p
+                    role={message.status === 'error' ? 'alert' : 'status'}
+                    class="text-sm text-zinc-300"
+                >
+                    {message.status === 'stopped'
+                        ? 'Response stopped.'
+                        : (errorMessage ?? 'The response could not be completed. Please retry.')}
+                </p>
+                {#if canRetry}
+                    <button
+                        type="button"
+                        class="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-sky-300/25 px-3 text-sm text-sky-100 hover:bg-sky-400/10"
+                        onclick={() => onRetry(message.id)}
+                    >
+                        <RotateCcw size={14} />
+                        Retry response
+                    </button>
+                {/if}
+            </div>
+        {/if}
 
         {#if showActions}
             <div class="mt-2 flex gap-2 border-t border-white/10 pt-2">
@@ -87,3 +119,12 @@
         {/if}
     </article>
 </li>
+
+<style>
+    .chat-message-markdown :global(table) {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+    }
+</style>

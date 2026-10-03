@@ -22,6 +22,7 @@ export type GeminiFunctionResponse = {
 
 export type GeminiPart = {
     text?: string;
+    thought?: boolean;
     thoughtSignature?: string;
     functionCall?: GeminiFunctionCall;
     functionResponse?: GeminiFunctionResponse;
@@ -49,6 +50,7 @@ type SharedGenerateArgs = {
     contents: GeminiContent[];
     functionDeclarations?: GeminiFunctionDeclaration[];
     toolMode?: 'AUTO' | 'NONE';
+    signal?: AbortSignal;
 };
 
 type StreamGenerateArgs = SharedGenerateArgs & {
@@ -86,65 +88,6 @@ const extractDataLines = (block: string) => {
 
 const cloneJson = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-const mergeUnknown = (base: unknown, incoming: unknown): unknown => {
-    if (Array.isArray(base) || Array.isArray(incoming)) {
-        return cloneJson(incoming);
-    }
-
-    if (
-        base &&
-        incoming &&
-        typeof base === 'object' &&
-        typeof incoming === 'object' &&
-        !Array.isArray(base) &&
-        !Array.isArray(incoming)
-    ) {
-        const next: Record<string, unknown> = {
-            ...(base as Record<string, unknown>)
-        };
-
-        for (const [key, value] of Object.entries(incoming as Record<string, unknown>)) {
-            const existing = next[key];
-            next[key] = existing === undefined ? cloneJson(value) : mergeUnknown(existing, value);
-        }
-
-        return next;
-    }
-
-    return cloneJson(incoming);
-};
-
-const mergeGeminiPart = (base: GeminiPart, incoming: GeminiPart): GeminiPart => {
-    const merged: GeminiPart = {
-        ...base
-    };
-
-    if (typeof incoming.text === 'string') {
-        merged.text = `${merged.text ?? ''}${incoming.text}`;
-    }
-
-    if (typeof incoming.thoughtSignature === 'string') {
-        merged.thoughtSignature = incoming.thoughtSignature;
-    }
-
-    if (incoming.functionCall) {
-        merged.functionCall = merged.functionCall
-            ? (mergeUnknown(merged.functionCall, incoming.functionCall) as GeminiFunctionCall)
-            : cloneJson(incoming.functionCall);
-    }
-
-    if (incoming.functionResponse) {
-        merged.functionResponse = merged.functionResponse
-            ? (mergeUnknown(
-                  merged.functionResponse,
-                  incoming.functionResponse
-              ) as GeminiFunctionResponse)
-            : cloneJson(incoming.functionResponse);
-    }
-
-    return merged;
-};
-
 export const mergeGeminiContent = (
     base: GeminiContent | null,
     incoming: GeminiContent | null | undefined
@@ -162,15 +105,25 @@ export const mergeGeminiContent = (
         parts: base.parts.map((part) => cloneJson(part))
     };
 
-    incoming.parts.forEach((part, index) => {
-        const existing = merged.parts[index];
-        if (!existing) {
-            merged.parts[index] = cloneJson(part);
-            return;
+    for (const part of incoming.parts) {
+        const previous = merged.parts.at(-1);
+        if (
+            previous &&
+            typeof part.text === 'string' &&
+            typeof previous.text === 'string' &&
+            !part.functionCall &&
+            !previous.functionCall &&
+            !part.thoughtSignature &&
+            !previous.thoughtSignature &&
+            part.thought === previous.thought
+        ) {
+            previous.text += part.text;
+        } else {
+            // GenerateContent emits complete function calls. Signed parts must retain
+            // their exact boundaries when replayed on the next tool round.
+            merged.parts.push(cloneJson(part));
         }
-
-        merged.parts[index] = mergeGeminiPart(existing, part);
-    });
+    }
 
     return merged;
 };
@@ -182,6 +135,7 @@ export const extractGeminiFunctionCalls = (content: GeminiContent | null | undef
 
 export const geminiContentToText = (content: GeminiContent | null | undefined) =>
     (content?.parts ?? [])
+        .filter((part) => !part.thought)
         .map((part) => part.text ?? '')
         .join('')
         .trim();
@@ -197,9 +151,7 @@ const buildGeminiUrl = (
     const baseUrl = config.geminiApiBaseUrl.replace(/\/+$/, '');
     const model = encodeURIComponent(config.geminiModel);
     const suffix = method === 'streamGenerateContent' ? '?alt=sse' : '';
-    const separator = suffix ? '&' : '?';
-
-    return `${baseUrl}/models/${model}:${method}${suffix}${separator}key=${encodeURIComponent(config.geminiApiKey)}`;
+    return `${baseUrl}/models/${model}:${method}${suffix}`;
 };
 
 const buildRequestBody = ({
@@ -247,7 +199,8 @@ export const generateGeminiContent = async ({
     systemInstruction,
     contents,
     functionDeclarations,
-    toolMode = 'AUTO'
+    toolMode = 'AUTO',
+    signal
 }: SharedGenerateArgs): Promise<{
     content: GeminiContent | null;
     finishReason: string | null;
@@ -255,7 +208,11 @@ export const generateGeminiContent = async ({
 }> => {
     const response = await fetchFn(buildGeminiUrl(config, 'generateContent'), {
         method: 'POST',
+        signal: signal
+            ? AbortSignal.any([signal, AbortSignal.timeout(60_000)])
+            : AbortSignal.timeout(60_000),
         headers: {
+            'x-goog-api-key': config.geminiApiKey!,
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(
@@ -270,8 +227,7 @@ export const generateGeminiContent = async ({
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Gemini request failed (${response.status}): ${errorText}`);
+        throw new Error(`Gemini request failed (${response.status}).`);
     }
 
     const payload = (await response.json()) as GeminiGenerateContentResponse;
@@ -291,6 +247,7 @@ export const streamGeminiContent = async ({
     contents,
     functionDeclarations,
     toolMode = 'NONE',
+    signal,
     onTextDelta
 }: StreamGenerateArgs): Promise<{
     content: GeminiContent | null;
@@ -299,7 +256,11 @@ export const streamGeminiContent = async ({
 }> => {
     const response = await fetchFn(buildGeminiUrl(config, 'streamGenerateContent'), {
         method: 'POST',
+        signal: signal
+            ? AbortSignal.any([signal, AbortSignal.timeout(60_000)])
+            : AbortSignal.timeout(60_000),
         headers: {
+            'x-goog-api-key': config.geminiApiKey!,
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(
@@ -314,8 +275,7 @@ export const streamGeminiContent = async ({
     });
 
     if (!response.ok || !response.body) {
-        const errorText = await response.text();
-        throw new Error(`Gemini stream request failed (${response.status}): ${errorText}`);
+        throw new Error(`Gemini stream request failed (${response.status}).`);
     }
 
     const reader = response.body.getReader();
@@ -326,53 +286,55 @@ export const streamGeminiContent = async ({
     let finishReason: string | null = null;
     let usage: Record<string, unknown> | null = null;
 
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-            break;
+    const processBlock = async (block: string) => {
+        const data = extractDataLines(block).join('\n');
+        if (!data || data === '[DONE]') return;
+        let parsed: GeminiGenerateContentResponse;
+        try {
+            parsed = JSON.parse(data) as GeminiGenerateContentResponse;
+        } catch {
+            throw new Error('Gemini returned malformed stream data.');
         }
+        if (!parsed || typeof parsed !== 'object' || 'error' in parsed) {
+            throw new Error('Gemini returned invalid stream data.');
+        }
+        if (parsed.usageMetadata) usage = parsed.usageMetadata;
+        const candidate = parsed.candidates?.[0];
+        if (!candidate) return;
+        if (candidate.finishReason) finishReason = candidate.finishReason;
+        mergedContent = mergeGeminiContent(mergedContent, candidate.content);
+        // Forward raw deltas: trimming accumulated text loses spaces at chunk boundaries.
+        for (const part of candidate.content?.parts ?? []) {
+            if (part.text && !part.thought) await onTextDelta(part.text);
+        }
+    };
 
-        buffer += decoder.decode(value, { stream: true });
-        const { completeBlocks, remainder } = parseEventBlocks(buffer);
-        buffer = remainder;
-
-        for (const block of completeBlocks) {
-            const dataLines = extractDataLines(block);
-            for (const dataLine of dataLines) {
-                if (!dataLine || dataLine === '[DONE]') {
-                    continue;
-                }
-
-                let parsed: GeminiGenerateContentResponse;
-                try {
-                    parsed = JSON.parse(dataLine) as GeminiGenerateContentResponse;
-                } catch {
-                    continue;
-                }
-
-                if (parsed.usageMetadata && typeof parsed.usageMetadata === 'object') {
-                    usage = parsed.usageMetadata;
-                }
-
-                const candidate = parsed.candidates?.[0];
-                if (!candidate) {
-                    continue;
-                }
-
-                if (candidate.finishReason) {
-                    finishReason = candidate.finishReason;
-                }
-
-                const priorText = geminiContentToText(mergedContent);
-                mergedContent = mergeGeminiContent(mergedContent, candidate.content);
-                const nextText = geminiContentToText(mergedContent);
-                const delta = nextText.slice(priorText.length);
-
-                if (delta) {
-                    await onTextDelta(delta);
-                }
+    try {
+        while (true) {
+            signal?.throwIfAborted();
+            const { done, value } = await reader.read();
+            signal?.throwIfAborted();
+            buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
+            // Normalize complete CRLF pairs, including pairs split across network chunks.
+            buffer = buffer.replace(/\r\n/g, '\n');
+            const { completeBlocks, remainder } = parseEventBlocks(buffer);
+            buffer = remainder;
+            for (const block of completeBlocks) await processBlock(block);
+            if (done) {
+                if (buffer.trim()) await processBlock(buffer);
+                break;
             }
         }
+        if (finishReason !== 'STOP') {
+            throw new Error(
+                finishReason
+                    ? `Gemini did not complete the response (${finishReason}).`
+                    : 'Gemini stream ended before completion.'
+            );
+        }
+    } finally {
+        await reader.cancel().catch(() => {});
+        reader.releaseLock();
     }
 
     return {

@@ -39,6 +39,10 @@ export type ConversationHandle = {
     exists: boolean;
 };
 
+export type CommittedConversationTurn = ConversationTurn & {
+    conversation: ConversationHandle;
+};
+
 export type StoredConversationMessage = {
     id: string;
     seq: number;
@@ -64,6 +68,7 @@ type CommitConversationTurnInput = ResolveCurrentConversationInput & {
     userText: string;
     assistantText: string;
     turnContextTokenCount: number;
+    signal?: AbortSignal;
     rollover?: {
         archivedReason: 'context_limit' | 'manual_reset';
         carryoverSummary: string | null;
@@ -77,6 +82,12 @@ const nowIso = () => new Date().toISOString();
 
 const conversationHeadPath = (ownerUid: string) => `conversation_heads/${ownerUid}`;
 const conversationPath = (conversationId: string) => `conversations/${conversationId}`;
+const committedTurnPath = (ownerUid: string, turnId: string) => {
+    if (!ownerUid || ownerUid.includes('/') || !turnId || turnId.includes('/')) {
+        throw new Error('Conversation owner and turn ids must be valid document ids.');
+    }
+    return `${conversationHeadPath(ownerUid)}/turns/${turnId}`;
+};
 
 const toLastTurnSeq = (raw: ConversationDoc | undefined) =>
     typeof raw?.lastTurnSeq === 'number' ? raw.lastTurnSeq : 0;
@@ -218,6 +229,46 @@ export class ConversationCommitConflictError extends Error {
     }
 }
 
+type ReadDocument = (path: string) => Promise<{ exists: boolean; data: () => unknown }>;
+
+const readCommittedTurn = async (
+    read: ReadDocument,
+    ownerUid: string,
+    turnId: string
+): Promise<CommittedConversationTurn | null> => {
+    const receiptSnapshot = await read(committedTurnPath(ownerUid, turnId));
+    if (!receiptSnapshot.exists) return null;
+
+    const receipt = receiptSnapshot.data() as { conversationId?: unknown } | undefined;
+    const conversationId = receipt?.conversationId;
+    if (typeof conversationId !== 'string' || !conversationId || conversationId.includes('/')) {
+        throw new Error('Committed conversation turn has an invalid receipt.');
+    }
+
+    const snapshot = await read(conversationPath(conversationId));
+    const conversation = snapshot.data() as ConversationDoc | undefined;
+    if (!snapshot.exists || conversation?.ownerUid !== ownerUid) {
+        throw new Error('Committed conversation turn could not be verified.');
+    }
+    const turns = normalizeTurns(conversation.turns).filter((turn) => turn.turnId === turnId);
+    if (turns.length !== 1) {
+        throw new Error('Committed conversation turn could not be verified.');
+    }
+
+    return {
+        ...turns[0],
+        conversation: createConversationHandle(conversationId, conversation, true)
+    };
+};
+
+/** Durable lookup survives conversation rollover without copying message contents. */
+export const findCommittedTurn = (
+    db: Firestore,
+    ownerUid: string,
+    turnId: string
+): Promise<CommittedConversationTurn | null> =>
+    readCommittedTurn((path) => db.doc(path).get(), ownerUid, turnId);
+
 export const resolveCurrentConversation = async (
     db: Firestore,
     input: ResolveCurrentConversationInput
@@ -250,8 +301,10 @@ export const resolveCurrentConversation = async (
 export const commitConversationTurn = async (
     db: Firestore,
     input: CommitConversationTurnInput
-): Promise<ConversationHandle> => {
+): Promise<ConversationHandle & { assistantText: string }> => {
+    input.signal?.throwIfAborted();
     const headRef = db.doc(conversationHeadPath(input.ownerUid));
+    const receiptRef = db.doc(committedTurnPath(input.ownerUid, input.turnId));
     const createNewConversation = !input.baseConversation.exists || Boolean(input.rollover);
     const nextConversationId =
         createNewConversation && input.baseConversation.exists
@@ -259,6 +312,22 @@ export const commitConversationTurn = async (
             : input.baseConversation.conversationId;
 
     return db.runTransaction(async (transaction) => {
+        input.signal?.throwIfAborted();
+        const committed = await readCommittedTurn(
+            (path) => transaction.get(db.doc(path)),
+            input.ownerUid,
+            input.turnId
+        );
+        input.signal?.throwIfAborted();
+        if (committed) {
+            if (committed.userText !== input.userText) {
+                throw new ConversationCommitConflictError(
+                    'This turn id belongs to another message.'
+                );
+            }
+            return { ...committed.conversation, assistantText: committed.assistantText };
+        }
+
         const timestamp = nowIso();
         const turn: ConversationTurn = {
             turnId: input.turnId,
@@ -298,6 +367,8 @@ export const commitConversationTurn = async (
                 lastTurnSeq: 1
             });
 
+            input.signal?.throwIfAborted();
+            transaction.set(receiptRef, { conversationId: nextConversationId });
             transaction.set(db.doc(conversationPath(nextConversationId)), createdDoc);
             transaction.set(
                 headRef,
@@ -309,7 +380,10 @@ export const commitConversationTurn = async (
                 { merge: true }
             );
 
-            return createConversationHandle(nextConversationId, createdDoc, true);
+            return {
+                ...createConversationHandle(nextConversationId, createdDoc, true),
+                assistantText: turn.assistantText
+            };
         }
 
         const currentConversationRef = db.doc(
@@ -333,16 +407,21 @@ export const commitConversationTurn = async (
                 updatedAt: timestamp
             };
 
+            input.signal?.throwIfAborted();
+            transaction.set(receiptRef, { conversationId: input.baseConversation.conversationId });
             transaction.set(currentConversationRef, updatedDoc, { merge: true });
 
-            return createConversationHandle(
-                input.baseConversation.conversationId,
-                {
-                    ...current,
-                    ...updatedDoc
-                },
-                true
-            );
+            return {
+                ...createConversationHandle(
+                    input.baseConversation.conversationId,
+                    {
+                        ...current,
+                        ...updatedDoc
+                    },
+                    true
+                ),
+                assistantText: turn.assistantText
+            };
         }
 
         const nextConversationRef = db.doc(conversationPath(nextConversationId));
@@ -358,6 +437,8 @@ export const commitConversationTurn = async (
             lastTurnSeq: 1
         });
 
+        input.signal?.throwIfAborted();
+        transaction.set(receiptRef, { conversationId: nextConversationId });
         transaction.set(
             currentConversationRef,
             {
@@ -381,7 +462,10 @@ export const commitConversationTurn = async (
             { merge: true }
         );
 
-        return createConversationHandle(nextConversationId, nextConversationDoc, true);
+        return {
+            ...createConversationHandle(nextConversationId, nextConversationDoc, true),
+            assistantText: turn.assistantText
+        };
     });
 };
 

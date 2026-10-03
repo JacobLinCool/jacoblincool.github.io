@@ -5,12 +5,14 @@ import { resolveLocale } from '$lib/server/content/locale';
 import { getAdminDb } from '$lib/server/firestore-admin';
 import { getPostHogClient } from '$lib/server/posthog';
 import { readRuntimeConfig } from '$lib/server/runtime-env';
+import { createChatErrorLogPayload, logChatError } from '$lib/server/telemetry/chat-logger';
 import { EXTERNAL_TOOL_CONFIG } from '$lib/server/tools/external-tool-config';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 type RequestBody = {
     message?: unknown;
+    turnId?: unknown;
     locale?: unknown;
 };
 
@@ -41,11 +43,22 @@ export const POST: RequestHandler = async ({ request, fetch, platform, url }) =>
         return json({ error: 'Invalid JSON payload.' }, { status: 400 });
     }
 
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        return json({ error: 'Expected a JSON object.' }, { status: 400 });
+    }
+
     const message = typeof body.message === 'string' ? body.message.trim() : '';
     if (!message) {
         return json({ error: 'message is required.' }, { status: 400 });
     }
 
+    if (message.length > 8_000) {
+        return json({ error: 'Message is too long (maximum 8,000 characters).' }, { status: 400 });
+    }
+    const turnId = typeof body.turnId === 'string' ? body.turnId : '';
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(turnId)) {
+        return json({ error: 'A valid turnId is required.' }, { status: 400 });
+    }
     const localeCandidate = typeof body.locale === 'string' ? body.locale : null;
     const locale = localeCandidate
         ? localeCandidate
@@ -55,7 +68,7 @@ export const POST: RequestHandler = async ({ request, fetch, platform, url }) =>
     const requestId = createRequestId(request);
 
     const posthog = getPostHogClient();
-    posthog.capture({
+    posthog?.capture({
         distinctId: user.uid,
         event: 'chat_turn_submitted',
         properties: {
@@ -66,7 +79,7 @@ export const POST: RequestHandler = async ({ request, fetch, platform, url }) =>
     });
 
     return createSseResponse(
-        async (send) => {
+        async (send, signal) => {
             try {
                 await streamChatTurn({
                     db,
@@ -74,6 +87,8 @@ export const POST: RequestHandler = async ({ request, fetch, platform, url }) =>
                     config,
                     externalToolConfig: EXTERNAL_TOOL_CONFIG,
                     requestId,
+                    turnId,
+                    signal,
                     user: {
                         uid: user.uid,
                         isAnonymous: user.isAnonymous
@@ -83,13 +98,19 @@ export const POST: RequestHandler = async ({ request, fetch, platform, url }) =>
                     send
                 });
             } catch (error) {
+                if (signal.aborted) return;
+                logChatError(
+                    'chat_stream_failed',
+                    createChatErrorLogPayload(error, { requestId, turnId })
+                );
                 send('error', {
                     type: 'error',
-                    message: error instanceof Error ? error.message : 'Chat stream failed.'
+                    message: 'The response could not be completed. Please retry.'
                 });
             }
         },
         {
+            signal: request.signal,
             headers: {
                 'x-request-id': requestId
             }

@@ -1,87 +1,63 @@
 type SendFn = (event: string, data: unknown) => void;
-
 const encoder = new TextEncoder();
 
-const serialize = (event: string, data: unknown) => {
-    const payload = typeof data === 'string' ? data : JSON.stringify(data);
-    return `event: ${event}\ndata: ${payload}\n\n`;
-};
-
-const isClosedControllerError = (error: unknown) =>
-    error instanceof TypeError && error.message.includes('Controller is already closed');
-
 export const createSseResponse = (
-    execute: (send: SendFn) => Promise<void>,
-    options?: {
-        headers?: HeadersInit;
-    }
+    execute: (send: SendFn, signal: AbortSignal) => Promise<void>,
+    options?: { headers?: HeadersInit; signal?: AbortSignal }
 ): Response => {
-    let streamController: ReadableStreamDefaultController<Uint8Array> | null = null;
+    const controller = new AbortController();
+    const signal = options?.signal
+        ? AbortSignal.any([controller.signal, options.signal])
+        : controller.signal;
+    let streamController: ReadableStreamDefaultController<Uint8Array>;
+    let heartbeat: ReturnType<typeof setInterval> | undefined;
     let closed = false;
     let cancelled = false;
 
-    const abort = () => {
-        cancelled = true;
-    };
-
     const close = () => {
-        if (closed || cancelled || !streamController) {
-            return;
-        }
-
+        clearInterval(heartbeat);
+        signal.removeEventListener('abort', close);
+        if (closed) return;
         closed = true;
-
-        try {
-            streamController.close();
-        } catch (error) {
-            if (!isClosedControllerError(error)) {
-                throw error;
-            }
-        }
+        if (!cancelled) streamController.close();
     };
-
     const stream = new ReadableStream<Uint8Array>({
-        start(controller) {
-            streamController = controller;
+        start(output) {
+            streamController = output;
+            signal.addEventListener('abort', close, { once: true });
+            if (signal.aborted) {
+                close();
+                return;
+            }
             const send: SendFn = (event, data) => {
-                if (closed || cancelled) {
-                    return;
-                }
-
-                const activeController = streamController;
-                if (!activeController) {
-                    return;
-                }
-
-                const payload = encoder.encode(serialize(event, data));
-
-                try {
-                    activeController.enqueue(payload);
-                } catch (error) {
-                    if (!isClosedControllerError(error)) {
-                        throw error;
-                    }
-
-                    abort();
-                }
+                if (closed) return;
+                const payload = typeof data === 'string' ? data : JSON.stringify(data);
+                output.enqueue(encoder.encode(`event: ${event}\ndata: ${payload}\n\n`));
             };
-
-            void execute(send)
-                .catch((error) => {
-                    send('error', {
-                        type: 'error',
-                        message: error instanceof Error ? error.message : 'Unknown stream failure'
-                    });
+            heartbeat = setInterval(() => {
+                if (!closed) output.enqueue(encoder.encode(': keepalive\n\n'));
+            }, 15_000);
+            void Promise.resolve()
+                .then(() => {
+                    signal.throwIfAborted();
+                    return execute(send, signal);
                 })
-                .finally(() => {
-                    close();
-                });
+                .catch((error) => {
+                    if (!signal.aborted)
+                        send('error', {
+                            type: 'error',
+                            message:
+                                error instanceof Error ? error.message : 'Unknown stream failure'
+                        });
+                })
+                .finally(close);
         },
         cancel() {
-            abort();
+            cancelled = true;
+            controller.abort();
+            close();
         }
     });
-
     return new Response(stream, {
         headers: {
             'Content-Type': 'text/event-stream; charset=utf-8',

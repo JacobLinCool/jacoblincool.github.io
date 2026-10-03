@@ -80,7 +80,9 @@
     let animationFrameId: number | null = null;
     let resizeObserver: ResizeObserver | null = null;
     let pendingResizeFrame: number | null = null;
-    let propagationTimers: ReturnType<typeof setTimeout>[] = [];
+    // Timer handles are internal bookkeeping, not rendered state.
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
+    const propagationTimers = new Set<ReturnType<typeof setTimeout>>();
     let reduceMotionMedia: MediaQueryList | null = null;
     let prefersReducedMotion = false;
 
@@ -99,7 +101,7 @@
         for (const timer of propagationTimers) {
             clearTimeout(timer);
         }
-        propagationTimers = [];
+        propagationTimers.clear();
     };
 
     const detectMobileDevice = () => {
@@ -232,17 +234,13 @@
                     worldWidth,
                     worldHeight
                 );
-                distances.push({ index: j, distance });
+                if (distance <= maxDistance) distances.push({ index: j, distance });
             }
 
             distances.sort((left, right) => left.distance - right.distance);
 
             let linked = 0;
             for (const candidate of distances) {
-                if (candidate.distance > maxDistance) {
-                    break;
-                }
-
                 const a = Math.min(i, candidate.index);
                 const b = Math.max(i, candidate.index);
                 const key = `${a}-${b}`;
@@ -383,19 +381,20 @@
             const hopEnergy = Math.pow(PROPAGATION_HOP_DECAY, hop);
             const delayMs = hop * PROPAGATION_HOP_DELAY_MS;
             const timer = setTimeout(() => {
+                propagationTimers.delete(timer);
                 for (const targetIndex of nextFrontier) {
                     const variance = 0.85 + Math.random() * 0.3;
                     energizeNode(targetIndex, hopEnergy * variance);
                 }
             }, delayMs);
 
-            propagationTimers = [...propagationTimers, timer];
+            propagationTimers.add(timer);
             frontier = nextFrontier;
         }
     };
 
     const activateByRatio = (ratio: number) => {
-        if (!graph) {
+        if (!graph || prefersReducedMotion || document.hidden) {
             return;
         }
 
@@ -620,6 +619,8 @@
     };
 
     const animationLoop = (timestamp: number) => {
+        animationFrameId = null;
+        if (document.hidden || prefersReducedMotion) return;
         if (!context || !graph) {
             animationFrameId = requestAnimationFrame(animationLoop);
             return;
@@ -642,6 +643,19 @@
     const handleResize = () => {
         syncEnvironment();
         syncCanvasSize();
+        if (prefersReducedMotion) renderGraph();
+    };
+
+    const syncAnimation = () => {
+        if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+        lastFrameTime = 0;
+        if (document.hidden || prefersReducedMotion) {
+            clearPropagationTimers();
+            if (!document.hidden) renderGraph();
+            return;
+        }
+        animationFrameId = requestAnimationFrame(animationLoop);
     };
 
     $effect(() => {
@@ -673,12 +687,14 @@
             prefersReducedMotion = event.matches;
             const residualEnergy = calculateResidualEnergy(graph);
             rebuildGraph(isMobileDevice ? dynamicNodeCount : DESKTOP_NODE_COUNT, residualEnergy);
+            syncAnimation();
         };
         reduceMotionMedia.addEventListener('change', onReducedMotionChange);
 
         syncEnvironment();
         syncCanvasSize();
-        animationFrameId = requestAnimationFrame(animationLoop);
+        syncAnimation();
+        document.addEventListener('visibilitychange', syncAnimation);
 
         resizeObserver = new ResizeObserver(() => {
             if (pendingResizeFrame !== null) {
@@ -695,6 +711,7 @@
 
         return () => {
             reduceMotionMedia?.removeEventListener('change', onReducedMotionChange);
+            document.removeEventListener('visibilitychange', syncAnimation);
             window.removeEventListener('resize', handleResize);
             resizeObserver?.disconnect();
             if (pendingResizeFrame !== null) {

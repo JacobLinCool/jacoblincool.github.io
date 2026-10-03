@@ -48,7 +48,7 @@ export const privacyPolicyContent = {
     title: 'Privacy Information',
     summary:
         'This page explains what data this site stores, what limited analytics and operational signals it records, and which third-party services are involved in delivering the current site.',
-    updatedAt: 'March 18, 2026',
+    updatedAt: 'October 4, 2026',
     sectionLinks: [
         { id: 'overview', label: 'Overview' },
         { id: 'information-we-use', label: 'Information we use' },
@@ -161,6 +161,16 @@ export const privacyPolicyContent = {
                 'Current prompt, recent conversation context, carry-over summary text, and the site context needed to answer your question.',
             processingScope:
                 'This service processes user-submitted chat data in order to produce answers.'
+        },
+        {
+            id: 'typesafe',
+            name: 'TypeSafe AI (Jev)',
+            purpose:
+                'Selects response tone, depth, and relevant site information before the assistant answers.',
+            possibleData:
+                'Your submitted message, a bounded portion of recent conversation, carry-over summary, and public site information used to select context.',
+            processingScope:
+                'Processes submitted chat context for classification. Draft text is not sent while you type.'
         },
         {
             id: 'posthog',

@@ -14,7 +14,9 @@
         "test": "pnpm --filter @jacoblincool/agent build && vitest run",
         "test:watch": "vitest",
         "blog:new": "node scripts/new-post.mjs",
-        "dev:site": "pnpm --filter @jacoblincool/agent build && vite dev"
+        "dev:site": "pnpm --filter @jacoblincool/agent build && vite dev",
+        "chat:evaluate": "pnpm --filter @jacoblincool/agent build && node scripts/evaluate-chat-prompts.mjs",
+        "chat:scroll": "node scripts/inspect-chat-scroll.mjs"
     },
     "devDependencies": {
         "@eslint/compat": "^2.0.2",

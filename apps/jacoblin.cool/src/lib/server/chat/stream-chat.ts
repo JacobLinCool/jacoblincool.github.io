@@ -5,6 +5,7 @@ import {
     loadConversationMemory,
     shouldRollOverConversation
 } from '$lib/server/chat/conversation-memory';
+import { buildDynamicPrompt } from '$lib/server/chat/prompt-engine';
 import {
     createChatToolRegistry,
     toGeminiFunctionResponsePart,
@@ -12,16 +13,14 @@ import {
 } from '$lib/server/chat/tool-registry';
 import {
     extractGeminiFunctionCalls,
-    geminiContentToText,
-    generateGeminiContent,
     streamGeminiContent,
     type GeminiContent
 } from '$lib/server/llm/gemini';
 import {
     commitConversationTurn,
     ConversationCommitConflictError,
-    resolveCurrentConversation,
-    type ConversationHandle
+    findCommittedTurn,
+    resolveCurrentConversation
 } from '$lib/server/repos/conversation-repository';
 import type { RuntimeConfig } from '$lib/server/runtime-env';
 import {
@@ -32,7 +31,6 @@ import {
     summarizeGeminiUsage
 } from '$lib/server/telemetry/chat-logger';
 import type { ExternalToolConfig } from '$lib/server/tools/external-tool-config';
-import { buildSpecialOccasionSystemInstruction } from '@jacoblincool/agent';
 import type { Firestore } from 'fires2rest';
 
 type SendSseFn = (event: string, data: unknown) => void;
@@ -43,6 +41,8 @@ type StreamChatInput = {
     config: RuntimeConfig;
     externalToolConfig: ExternalToolConfig;
     requestId: string;
+    turnId: string;
+    signal?: AbortSignal;
     user: {
         uid: string;
         isAnonymous: boolean;
@@ -54,45 +54,8 @@ type StreamChatInput = {
 
 const MAX_TOOL_ROUNDS_PER_TURN = 8;
 
-const createTurnId = () => `turn-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-const createTraceId = () => `trace-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-const createContextBundleId = () => `ctx-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-
-const buildSystemInstruction = ({
-    locale,
-    siteIndexText,
-    carryoverSummary
-}: {
-    locale: string;
-    siteIndexText: string;
-    carryoverSummary: string | null;
-}) =>
-    [
-        'You are Jacob Lin website assistant.',
-        'Answer only from verified site knowledge and tool outputs from this turn.',
-        'Start from the published site index, then call site tools when the user needs section-level or item-level detail.',
-        'Answer at the same level of abstraction as the user question. If the user asks for concrete things such as projects, papers, tools, repositories, examples, or things Jacob has built, answer with concrete named items first.',
-        'Use internal site structure only to locate information. Do not answer with collection names, category names, or taxonomy labels unless the user explicitly asks about structure or categories.',
-        "Prefer site tools for stable framing. Use GitHub tools when the user asks about Jacob's longer engineering history, repository or source-code details, or project discovery. Use other live tools only for freshness or profile metrics that are not fully covered by the site bundle.",
-        'When the user asks about what is recent, current, latest, or being worked on now, prefer the most recent grounded information available. Use live tools when recency matters and the site bundle is not enough.',
-        'If a tool says information is missing or disabled, explain that boundary directly instead of guessing.',
-        'Treat the conversation like a user interview with Jacob. Answer as the interviewee, not as a report generator.',
-        'Do not dump everything at once. Reveal information progressively: one layer first, then let the user steer deeper with follow-up questions.',
-        'Keep answers compact by default: usually 2 to 4 short sentences or one short paragraph. Avoid long bullet lists unless the user explicitly asks for a full breakdown.',
-        'When the question is broad, give a small framing answer and at most 1 to 3 key points. Do not proactively enumerate every section, project, or publication unless asked.',
-        'Prefer natural spoken phrasing over polished summaries. It is acceptable to sound partial, conversational, and incremental as long as the answer stays grounded and clear.',
-        'After answering, ask at most one narrow follow-up question that stays on the same topic. Do not redirect the conversation into a broader framing unless the user asks for it.',
-        buildSpecialOccasionSystemInstruction(new Date()),
-        locale === 'zh-tw'
-            ? 'Reply in Traditional Chinese by default unless the user clearly uses another language.'
-            : 'Reply in the user language when clear; otherwise default to English.',
-        carryoverSummary
-            ? `Conversation carryover from earlier chapters:\n${carryoverSummary}`
-            : '',
-        siteIndexText
-    ]
-        .filter(Boolean)
-        .join('\n\n');
+const createTraceId = () => `trace-${crypto.randomUUID()}`;
+const createContextBundleId = () => `ctx-${crypto.randomUUID()}`;
 
 const buildToolEventPayload = (tool: ChatToolSource, target: string, label: string) => ({
     type: 'tool_call',
@@ -137,6 +100,8 @@ export const streamChatTurn = async ({
     config,
     externalToolConfig,
     requestId,
+    turnId,
+    signal,
     user,
     locale,
     message,
@@ -147,15 +112,46 @@ export const streamChatTurn = async ({
         throw new Error('Message cannot be empty.');
     }
 
-    const turnId = createTurnId();
     const traceId = createTraceId();
     const turnStartedAt = Date.now();
     const userContextTokens = estimateTextTokens(trimmed);
+    signal?.throwIfAborted();
+    send('status', { type: 'status', status: 'analyzing_request' });
+    // Carry cancellation through model requests and live tool fetches alike.
+    const turnFetch: typeof fetch = (input, init) =>
+        fetchFn(input, {
+            ...init,
+            signal:
+                signal && init?.signal
+                    ? AbortSignal.any([signal, init.signal])
+                    : (signal ?? init?.signal)
+        });
+    const previous = await findCommittedTurn(db, user.uid, turnId);
+    if (previous) {
+        if (previous.userText !== trimmed)
+            throw new Error('This turn id belongs to another message.');
+        signal?.throwIfAborted();
+        const registry = createChatToolRegistry({
+            db,
+            fetchFn: turnFetch,
+            config,
+            externalToolConfig
+        });
+        send('answer_delta', { type: 'answer_delta', delta: previous.assistantText });
+        send('status', { type: 'status', status: 'completed' });
+        send('done', {
+            type: 'done',
+            contentVersion: registry.contentVersion,
+            dynamicRevisions: {}
+        });
+        return;
+    }
     const conversation = await resolveCurrentConversation(db, {
         ownerUid: user.uid,
         ownerType: user.isAnonymous ? 'anonymous' : 'google',
         locale
     });
+    const memory = await loadConversationMemory(db, conversation);
 
     logChatInfo('chat_turn_started', {
         requestId,
@@ -194,8 +190,9 @@ export const streamChatTurn = async ({
 
         const carryoverSummary = await generateCarryoverSummary({
             db,
-            fetchFn,
+            fetchFn: turnFetch,
             config,
+            signal,
             locale,
             conversation
         });
@@ -214,7 +211,7 @@ export const streamChatTurn = async ({
     const dynamicRevisions: Record<string, string> = {};
 
     const pushStatus = (
-        status: 'collecting_context' | 'generating_answer' | 'completed',
+        status: 'analyzing_request' | 'collecting_context' | 'generating_answer' | 'completed',
         detail?: string
     ) => {
         send('status', {
@@ -225,21 +222,54 @@ export const streamChatTurn = async ({
     };
 
     try {
-        pushStatus('collecting_context');
+        signal?.throwIfAborted();
 
         const toolRegistry = createChatToolRegistry({
             db,
-            fetchFn,
+            fetchFn: turnFetch,
             config,
             externalToolConfig
         });
 
-        const memory = await loadConversationMemory(db, conversation);
-        const systemInstruction = buildSystemInstruction({
+        if (!config.jevApiKey) throw new Error('TYPESAFE_API_KEY is required for chat.');
+        const classificationStartedAt = Date.now();
+        const prompt = await buildDynamicPrompt({
+            fetchFn: turnFetch,
+            apiKey: config.jevApiKey,
+            model: config.jevModel,
             locale,
+            message: trimmed,
+            recentMessages: memory.recentMessages,
             siteIndexText: toolRegistry.siteIndexText,
-            carryoverSummary: rolloverPlan?.carryoverSummary ?? memory.carryoverSummary
+            carryoverSummary: rolloverPlan?.carryoverSummary ?? memory.carryoverSummary,
+            signal
         });
+        const systemInstruction = prompt.systemInstruction;
+        const responsePolicy = prompt.responsePolicy;
+        const answerConfig =
+            responsePolicy.maxOutputTokens === null
+                ? config
+                : {
+                      ...config,
+                      geminiMaxOutputTokens: Math.min(
+                          config.geminiMaxOutputTokens,
+                          responsePolicy.maxOutputTokens
+                      )
+                  };
+        logChatInfo('chat_prompt_selected', {
+            requestId,
+            traceId,
+            turnId,
+            promptVersion: prompt.promptVersion,
+            selectedItemIds: prompt.selectedItemIds,
+            decisions: prompt.decisions,
+            classification: prompt.classification,
+            responseMode: responsePolicy.mode,
+            toolsAllowed: responsePolicy.allowTools,
+            maxOutputTokens: answerConfig.geminiMaxOutputTokens,
+            latencyMs: Date.now() - classificationStartedAt
+        });
+        if (responsePolicy.includeKnowledge) pushStatus('collecting_context');
 
         const bundleId = createContextBundleId();
         logChatInfo('chat_context_frozen', {
@@ -260,138 +290,180 @@ export const streamChatTurn = async ({
             ...(rolloverPlan ? [] : memory.contents),
             toUserPromptContent(trimmed)
         ];
-        let finalCandidateText: string | null = null;
+        let assistantText = '';
+        let completion: Awaited<ReturnType<typeof streamGeminiContent>> | null = null;
+        let firstDeltaAt: number | null = null;
+        let hasRoundText = false;
+        const onTextDelta = async (delta: string) => {
+            signal?.throwIfAborted();
+            if (firstDeltaAt === null) firstDeltaAt = Date.now();
+            if (!hasRoundText && assistantText) delta = `\n\n${delta}`;
+            hasRoundText = true;
+            assistantText += delta;
+            send('answer_delta', { type: 'answer_delta', delta });
+        };
 
         let toolRounds = 0;
         let toolCallsCount = 0;
-        while (toolRounds < MAX_TOOL_ROUNDS_PER_TURN) {
-            const toolRound = await generateGeminiContent({
-                fetchFn,
-                config,
+        while (true) {
+            signal?.throwIfAborted();
+            hasRoundText = false;
+            pushStatus('generating_answer');
+            completion = await streamGeminiContent({
+                fetchFn: turnFetch,
+                config: answerConfig,
                 systemInstruction,
                 contents: workingContents,
-                functionDeclarations: toolRegistry.toolDeclarations,
-                toolMode: 'AUTO'
+                ...(responsePolicy.allowTools
+                    ? { functionDeclarations: toolRegistry.toolDeclarations }
+                    : {}),
+                toolMode:
+                    responsePolicy.allowTools && toolRounds < MAX_TOOL_ROUNDS_PER_TURN
+                        ? 'AUTO'
+                        : 'NONE',
+                signal,
+                onTextDelta
             });
-
-            const functionCalls = extractGeminiFunctionCalls(toolRound.content);
-            if (functionCalls.length === 0) {
-                finalCandidateText = geminiContentToText(toolRound.content);
-                break;
+            if (
+                !responsePolicy.allowTools &&
+                completion.content?.parts.some((part) => part.functionCall)
+            ) {
+                throw new Error('Model requested a tool disabled by the response policy.');
             }
+            const functionCalls = extractGeminiFunctionCalls(completion.content);
+            if (functionCalls.length === 0) break;
+            if (toolRounds >= MAX_TOOL_ROUNDS_PER_TURN) {
+                throw new Error('Model exceeded the tool-call limit.');
+            }
+            if (responsePolicy.includeKnowledge) pushStatus('collecting_context');
 
             toolRounds += 1;
 
-            if (toolRound.content) {
-                workingContents.push(toolRound.content);
+            if (completion.content) {
+                workingContents.push(completion.content);
             }
 
-            const functionResponseParts = [];
-            for (const call of functionCalls) {
-                toolCallsCount += 1;
-                const pendingPreview = buildPendingToolCallPreview(call.name ?? 'unknown_tool', {
-                    ...(call.args ?? {})
-                });
-                const pendingSource: ChatToolSource = call.name?.startsWith('get_github_')
-                    ? 'github'
-                    : call.name?.startsWith('get_huggingface_')
-                      ? 'huggingface'
-                      : 'site';
-                const toolStartedAt = Date.now();
-
-                send(
-                    'tool_call',
-                    buildToolEventPayload(
-                        pendingSource,
-                        pendingPreview.target,
-                        pendingPreview.label
-                    )
-                );
-
-                logChatInfo('chat_tool_call_started', {
-                    requestId,
-                    traceId,
-                    turnId,
-                    conversationId: baseConversationId,
-                    toolRound: toolRounds,
-                    toolIndex: toolCallsCount,
-                    tool: pendingSource,
-                    toolName: call.name ?? 'unknown_tool',
-                    target: pendingPreview.target,
-                    label: pendingPreview.label
-                });
-
-                const toolResult = await toolRegistry.executeTool(call.name ?? '', call.args ?? {});
-                if (!toolResult) {
-                    const toolLatencyMs = Date.now() - toolStartedAt;
-                    functionResponseParts.push(
-                        toGeminiFunctionResponsePart(call.name ?? 'unknown_tool', {
-                            ok: false,
-                            error: `Unknown tool: ${call.name ?? 'unknown'}`
-                        })
+            const functionResponseParts = await Promise.all(
+                functionCalls.map(async (call) => {
+                    signal?.throwIfAborted();
+                    const toolIndex = ++toolCallsCount;
+                    const pendingPreview = buildPendingToolCallPreview(
+                        call.name ?? 'unknown_tool',
+                        {
+                            ...(call.args ?? {})
+                        }
                     );
-                    logChatWarn('chat_tool_call_failed', {
+                    const pendingSource: ChatToolSource = call.name?.startsWith('get_github_')
+                        ? 'github'
+                        : call.name?.startsWith('get_huggingface_')
+                          ? 'huggingface'
+                          : 'site';
+                    const toolStartedAt = Date.now();
+
+                    send(
+                        'tool_call',
+                        buildToolEventPayload(
+                            pendingSource,
+                            pendingPreview.target,
+                            pendingPreview.label
+                        )
+                    );
+
+                    logChatInfo('chat_tool_call_started', {
                         requestId,
                         traceId,
                         turnId,
                         conversationId: baseConversationId,
                         toolRound: toolRounds,
-                        toolIndex: toolCallsCount,
+                        toolIndex,
                         tool: pendingSource,
                         toolName: call.name ?? 'unknown_tool',
                         target: pendingPreview.target,
-                        latencyMs: toolLatencyMs,
-                        ok: false,
-                        error: `Unknown tool: ${call.name ?? 'unknown'}`
+                        label: pendingPreview.label
                     });
-                    continue;
-                }
 
-                if (toolResult.revision) {
-                    dynamicRevisions[`${toolResult.tool}:${toolResult.target}`] =
-                        toolResult.revision;
-                }
+                    const toolResult = await toolRegistry.executeTool(
+                        call.name ?? '',
+                        call.args ?? {}
+                    );
+                    if (!toolResult) {
+                        const toolLatencyMs = Date.now() - toolStartedAt;
+                        logChatWarn('chat_tool_call_failed', {
+                            requestId,
+                            traceId,
+                            turnId,
+                            conversationId: baseConversationId,
+                            toolRound: toolRounds,
+                            toolIndex,
+                            tool: pendingSource,
+                            toolName: call.name ?? 'unknown_tool',
+                            target: pendingPreview.target,
+                            latencyMs: toolLatencyMs,
+                            ok: false,
+                            error: `Unknown tool: ${call.name ?? 'unknown'}`
+                        });
+                        return {
+                            ...toGeminiFunctionResponsePart(call.name ?? 'unknown_tool', {
+                                ok: false,
+                                error: `Unknown tool: ${call.name ?? 'unknown'}`
+                            }),
+                            ...(call.id ? { id: call.id } : {})
+                        };
+                    }
 
-                const toolLatencyMs = Date.now() - toolStartedAt;
+                    if (toolResult.revision) {
+                        dynamicRevisions[`${toolResult.tool}:${toolResult.target}`] =
+                            toolResult.revision;
+                    }
 
-                send('tool_result', {
-                    type: 'tool_result',
-                    tool: toolResult.tool,
-                    target: toolResult.target,
-                    label: toolResult.label,
-                    result: toolResult.payload.ok === false ? 'failed' : 'success',
-                    revision: toolResult.revision,
-                    error:
-                        toolResult.payload.ok === false
-                            ? String(toolResult.payload.error ?? 'Tool failed.')
-                            : undefined
-                });
+                    const toolLatencyMs = Date.now() - toolStartedAt;
 
-                const toolSucceeded = toolResult.payload.ok !== false;
-                logChatInfo(toolSucceeded ? 'chat_tool_call_succeeded' : 'chat_tool_call_failed', {
-                    requestId,
-                    traceId,
-                    turnId,
-                    conversationId: baseConversationId,
-                    toolRound: toolRounds,
-                    toolIndex: toolCallsCount,
-                    tool: toolResult.tool,
-                    toolName: call.name ?? 'unknown_tool',
-                    target: toolResult.target,
-                    latencyMs: toolLatencyMs,
-                    ok: toolSucceeded,
-                    revision: toolResult.revision ?? null,
-                    refsCount: toolResult.refs.length,
-                    error:
-                        toolResult.payload.ok === false
-                            ? String(toolResult.payload.error ?? 'Tool failed.')
-                            : null
-                });
+                    send('tool_result', {
+                        type: 'tool_result',
+                        tool: toolResult.tool,
+                        target: toolResult.target,
+                        label: toolResult.label,
+                        result: toolResult.payload.ok === false ? 'failed' : 'success',
+                        revision: toolResult.revision,
+                        error:
+                            toolResult.payload.ok === false
+                                ? String(toolResult.payload.error ?? 'Tool failed.')
+                                : undefined
+                    });
 
-                functionResponseParts.push(
-                    toGeminiFunctionResponsePart(call.name ?? 'unknown_tool', toolResult.payload)
-                );
-            }
+                    const toolSucceeded = toolResult.payload.ok !== false;
+                    logChatInfo(
+                        toolSucceeded ? 'chat_tool_call_succeeded' : 'chat_tool_call_failed',
+                        {
+                            requestId,
+                            traceId,
+                            turnId,
+                            conversationId: baseConversationId,
+                            toolRound: toolRounds,
+                            toolIndex,
+                            tool: toolResult.tool,
+                            toolName: call.name ?? 'unknown_tool',
+                            target: toolResult.target,
+                            latencyMs: toolLatencyMs,
+                            ok: toolSucceeded,
+                            revision: toolResult.revision ?? null,
+                            refsCount: toolResult.refs.length,
+                            error:
+                                toolResult.payload.ok === false
+                                    ? String(toolResult.payload.error ?? 'Tool failed.')
+                                    : null
+                        }
+                    );
+
+                    return {
+                        ...toGeminiFunctionResponsePart(
+                            call.name ?? 'unknown_tool',
+                            toolResult.payload
+                        ),
+                        ...(call.id ? { id: call.id } : {})
+                    };
+                })
+            );
 
             if (functionResponseParts.length > 0) {
                 workingContents.push({
@@ -414,51 +486,27 @@ export const streamChatTurn = async ({
             });
         }
 
-        pushStatus('generating_answer');
-
-        let assistantText = '';
-
-        const completion = await streamGeminiContent({
-            fetchFn,
-            config,
-            systemInstruction,
-            contents: workingContents,
-            onTextDelta: async (delta) => {
-                assistantText += delta;
-
-                send('answer_delta', {
-                    type: 'answer_delta',
-                    delta
-                });
-            }
-        });
-
-        if (!assistantText.trim()) {
-            const fallbackText = finalCandidateText || geminiContentToText(completion.content);
-            if (!fallbackText) {
-                throw new Error('Gemini returned an empty response.');
-            }
-            assistantText = fallbackText;
-            send('answer_delta', {
-                type: 'answer_delta',
-                delta: fallbackText
-            });
-        }
+        if (!assistantText.trim()) throw new Error('Gemini returned an empty response.');
+        signal?.throwIfAborted();
 
         const assistantContextTokens = estimateTextTokens(assistantText);
         const turnContextTokenCount = userContextTokens + assistantContextTokens;
 
-        const committedConversation: ConversationHandle = await commitConversationTurn(db, {
+        const committedConversation = await commitConversationTurn(db, {
             ownerUid: user.uid,
             ownerType: user.isAnonymous ? 'anonymous' : 'google',
             locale,
             baseConversation: conversation,
+            signal,
             turnId,
             userText: trimmed,
             assistantText,
             turnContextTokenCount,
             rollover: rolloverPlan
         });
+        if (committedConversation.assistantText !== assistantText) {
+            throw new ConversationCommitConflictError();
+        }
         contextTokenCount = committedConversation.contextTokenCount;
 
         pushStatus('completed');
@@ -489,8 +537,9 @@ export const streamChatTurn = async ({
             responseChars: assistantText.length,
             estimatedAssistantTokens: assistantContextTokens,
             conversationContextTokens: contextTokenCount,
-            finishReason: completion.finishReason,
-            geminiUsage: summarizeGeminiUsage(completion.usage),
+            timeToFirstDeltaMs: firstDeltaAt === null ? null : firstDeltaAt - turnStartedAt,
+            finishReason: completion?.finishReason,
+            geminiUsage: summarizeGeminiUsage(completion?.usage),
             dynamicRevisionCount: Object.keys(dynamicRevisions).length
         });
 
@@ -500,6 +549,7 @@ export const streamChatTurn = async ({
             dynamicRevisions
         });
     } catch (error) {
+        if (signal?.aborted) throw error;
         if (error instanceof ConversationCommitConflictError) {
             logChatWarn('chat_turn_commit_conflict', {
                 requestId,

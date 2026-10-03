@@ -4,7 +4,7 @@ export type ChatMessage = {
     id: string;
     role: ChatRole;
     content: string;
-    status: 'streaming' | 'done';
+    status: 'streaming' | 'done' | 'error' | 'stopped';
     createdAt: number;
 };
 
@@ -37,7 +37,7 @@ export type ChatProgressEvent = {
 
 export type ChatSseStatusEvent = {
     type: 'status';
-    status: 'collecting_context' | 'generating_answer' | 'completed';
+    status: 'analyzing_request' | 'collecting_context' | 'generating_answer' | 'completed';
     detail?: string | null;
 };
 

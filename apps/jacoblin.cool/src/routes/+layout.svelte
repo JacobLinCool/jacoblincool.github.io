@@ -12,11 +12,23 @@
     import { onMount } from 'svelte';
     import './layout.css';
     import favicon from '$lib/assets/favicon.png?url';
-    import { page } from '$app/state';
+    import { navigating, page } from '$app/state';
     import { resolve } from '$app/paths';
     import { deLocalizeUrl } from '$lib/paraglide/runtime';
 
     let { children } = $props();
+
+    let showNavigation = $state(false);
+    $effect(() => {
+        if (!navigating.to) {
+            showNavigation = false;
+            return;
+        }
+        const timer = setTimeout(() => {
+            showNavigation = true;
+        }, 140);
+        return () => clearTimeout(timer);
+    });
 
     const sidebarId = 'app-sidebar';
     const showSidebar = false;
@@ -51,6 +63,12 @@
 
 <svelte:head>
     <link rel="icon" href={favicon} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    />
     <meta name="theme-color" content="#010204" />
     <link
         rel="alternate"
@@ -59,6 +77,11 @@
         href={resolve('/blog/rss.xml')}
     />
 </svelte:head>
+
+{#if showNavigation}
+    <div class="navigation-progress" role="progressbar" aria-label="Loading page"></div>
+    <span role="status" class="sr-only">Loading page…</span>
+{/if}
 
 <div class="app-shell">
     <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -80,13 +103,7 @@
             {/if}
             <main
                 id="main-content"
-                class={`app-main min-h-0 min-w-0 flex-1 ${
-                    isHome
-                        ? activeChat
-                            ? 'app-main-active overflow-y-auto'
-                            : 'overflow-y-auto'
-                        : ''
-                }`}
+                class={`app-main min-h-0 min-w-0 flex-1 ${isHome ? 'overflow-y-auto' : ''}`}
             >
                 <div
                     class={`app-content mx-auto box-border w-full max-w-245 px-4 lg:px-8 ${
@@ -105,3 +122,36 @@
     {#if isHome}<LoginModal />{/if}
     <Notifications />
 </div>
+
+<style>
+    .navigation-progress {
+        position: fixed;
+        inset: 0 0 auto;
+        z-index: 100;
+        height: 2px;
+        overflow: hidden;
+        background: rgb(125 211 252 / 15%);
+    }
+    .navigation-progress::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: #7dd3fc;
+        transform-origin: left;
+        animation: navigation-loading 1.2s ease-in-out infinite;
+    }
+    @keyframes navigation-loading {
+        from {
+            transform: translateX(-100%) scaleX(0.35);
+        }
+        to {
+            transform: translateX(100%) scaleX(0.65);
+        }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .navigation-progress::after {
+            animation: none;
+            transform: none;
+        }
+    }
+</style>

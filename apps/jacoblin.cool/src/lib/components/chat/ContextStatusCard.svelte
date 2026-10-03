@@ -27,11 +27,15 @@
             aria-label={collapsed ? 'Expand context status' : 'Collapse context status'}
         >
             <div class="min-w-0 space-y-1">
-                <p class="text-[11px] tracking-[0.15em] text-zinc-400 uppercase">Context status</p>
                 <p
-                    class={`leading-relaxed text-zinc-200 ${collapsed ? 'line-clamp-1 text-[13px]' : 'line-clamp-1 text-[13px]'}`}
+                    class="flex items-center gap-2 text-[13px] leading-relaxed text-zinc-200"
+                    role="status"
                 >
-                    {latestEventText}
+                    <span
+                        class="loading loading-xs shrink-0 loading-spinner text-sky-300"
+                        aria-hidden="true"
+                    ></span>
+                    <span>{latestEventText}</span>
                 </p>
             </div>
             <span class="mt-0.5 shrink-0 text-zinc-400">

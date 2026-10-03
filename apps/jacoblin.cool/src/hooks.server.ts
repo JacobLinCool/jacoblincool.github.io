@@ -1,3 +1,4 @@
+import { dev } from '$app/environment';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 import { getPostHogClient } from '$lib/server/posthog';
 import type { Handle, HandleServerError } from '@sveltejs/kit';
@@ -52,9 +53,10 @@ const handlePostHogProxy: Handle = async ({ event, resolve }) => {
 export const handle: Handle = sequence(handlePostHogProxy, handleParaglide);
 
 export const handleError: HandleServerError = async ({ error, status, message }) => {
+    if (dev) console.error(error);
     const posthog = getPostHogClient();
 
-    posthog.capture({
+    posthog?.capture({
         distinctId: 'server',
         event: 'server_error',
         properties: {

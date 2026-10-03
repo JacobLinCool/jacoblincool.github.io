@@ -1,79 +1,77 @@
 import { browser } from '$app/environment';
-import { auth } from '$lib/firebase/client';
-import { setAnalyticsAuthState } from '$lib/services/analytics/posthog';
-import { notificationStore } from '$lib/stores/notification.svelte';
 import {
-    GoogleAuthProvider,
-    onAuthStateChanged,
-    signInAnonymously,
-    signInWithPopup,
-    signOut,
-    type User
-} from 'firebase/auth';
-import posthog from 'posthog-js';
+    identifyAnalyticsUser,
+    resetAnalyticsUser,
+    setAnalyticsAuthState
+} from '$lib/services/analytics/posthog';
+import { loadAuthClient } from '$lib/services/auth-session';
+import { notificationStore } from '$lib/stores/notification.svelte';
+import type { User } from 'firebase/auth';
 
 class UserStore {
     static instance: UserStore | null = null;
-    state = $state<{
-        user: User | null;
-        loading: boolean;
-    }>({
-        user: null,
-        loading: true
-    });
-
-    private authUnsubscribe: (() => void) | null = null;
-    private anonymousBootstrapAttempted = false;
+    state = $state<{ user: User | null; loading: boolean }>({ user: null, loading: true });
+    private observerPromise: Promise<void> | null = null;
 
     static getInstance() {
         UserStore.instance ??= new UserStore();
         return UserStore.instance;
     }
 
+    /** The account observer lives for the browser session, including route changes. */
+    private observeAuth() {
+        this.observerPromise ??= Promise.all([loadAuthClient(), import('firebase/auth')])
+            .then(([{ auth }, { onAuthStateChanged }]) => {
+                onAuthStateChanged(auth, (user) => {
+                    const previousUser = this.state.user;
+                    if (
+                        previousUser &&
+                        !previousUser.isAnonymous &&
+                        previousUser.uid !== user?.uid
+                    ) {
+                        resetAnalyticsUser();
+                    }
+                    this.state.user = user;
+                    this.state.loading = false;
+                    setAnalyticsAuthState(
+                        user ? (user.isAnonymous ? 'anonymous' : 'google') : 'signed_out'
+                    );
+                    if (user && !user.isAnonymous) identifyAnalyticsUser(user.uid);
+                });
+            })
+            .catch((error) => {
+                this.observerPromise = null;
+                this.state.loading = false;
+                throw error;
+            });
+        return this.observerPromise;
+    }
+
     init() {
-        if (!browser || this.authUnsubscribe) {
-            return () => undefined;
-        }
+        if (!browser) return;
+        // A failed passive restoration can be retried by chat/account intent.
+        void this.observeAuth().catch(() => undefined);
+    }
 
-        this.state.loading = true;
-        this.authUnsubscribe = onAuthStateChanged(auth, (user) => {
-            this.state.user = user;
-            this.state.loading = false;
-
-            if (user) {
-                setAnalyticsAuthState(user.isAnonymous ? 'anonymous' : 'google');
-                if (!user.isAnonymous) {
-                    posthog.identify(user.uid);
-                }
-                this.anonymousBootstrapAttempted = true;
-            } else {
-                posthog.reset();
-                setAnalyticsAuthState('signed_out');
-                if (!this.anonymousBootstrapAttempted) {
-                    this.anonymousBootstrapAttempted = true;
-                    void signInAnonymously(auth).catch((error) => {
-                        notificationStore.error(
-                            error instanceof Error
-                                ? error.message
-                                : 'Unable to initialize anonymous auth.'
-                        );
-                    });
-                }
-            }
-        });
-
-        return () => {
-            this.authUnsubscribe?.();
-            this.authUnsubscribe = null;
-        };
+    prepare() {
+        this.init();
     }
 
     async signInWithGoogle() {
-        const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
+        await this.observeAuth();
+        const [{ auth }, { GoogleAuthProvider, signInWithPopup }] = await Promise.all([
+            loadAuthClient(),
+            import('firebase/auth')
+        ]);
+        await signInWithPopup(auth, new GoogleAuthProvider());
     }
 
     async signOut() {
+        await this.observeAuth();
+        const [{ auth }, { signOut }] = await Promise.all([
+            loadAuthClient(),
+            import('firebase/auth')
+        ]);
         await signOut(auth);
         notificationStore.info('Signed out.');
     }

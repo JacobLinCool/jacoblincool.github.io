@@ -91,6 +91,8 @@
         type="button"
         class="inline-flex h-9 items-center gap-1 rounded-full border border-white/12 bg-white/3 px-1 text-zinc-200 transition hover:border-white/20 hover:bg-white/6"
         onclick={() => uiStore.toggleUserMenu()}
+        onpointerenter={() => userStore.prepare()}
+        onfocus={() => userStore.prepare()}
         aria-haspopup="menu"
         aria-expanded={uiStore.state.isUserMenuOpen}
         aria-label="Open account menu"

@@ -12,6 +12,8 @@ const config: RuntimeConfig = {
     firestoreClientEmail: null,
     firestorePrivateKey: null,
     firestoreEmulatorHost: '127.0.0.1:8080',
+    jevApiKey: 'test-jev-key',
+    jevModel: 'jev-latest',
     geminiApiBaseUrl: 'https://example.invalid/v1beta',
     geminiApiKey: 'test-key',
     geminiModel: 'gemini-3.1-flash-lite-preview',
@@ -41,51 +43,27 @@ const createSseResponse = (blocks: string[]) =>
     );
 
 describe('mergeGeminiContent', () => {
-    it('merges text deltas and function call args across chunks', () => {
+    it('preserves complete tool calls and signed text parts across chunks', () => {
         const base: GeminiContent = {
             role: 'model',
             parts: [
+                { text: 'Thinking', thought: true, thoughtSignature: 'sig-a' },
                 {
-                    text: 'Hello',
-                    functionCall: {
-                        name: 'get_knowledge_item',
-                        args: {
-                            id: 'project-d1-manager'
-                        }
-                    }
+                    functionCall: { name: 'get_knowledge_item', args: { id: 'paper-a' } },
+                    thoughtSignature: 'sig-b'
                 }
             ]
         };
-
-        const merged = mergeGeminiContent(base, {
+        const next: GeminiContent = {
             role: 'model',
             parts: [
-                {
-                    text: ' world',
-                    functionCall: {
-                        args: {
-                            includeStats: true
-                        }
-                    }
-                }
+                { functionCall: { name: 'get_knowledge_item', args: { id: 'paper-b' } } },
+                { text: 'Answer', thoughtSignature: 'sig-c' },
+                { text: 'more', thoughtSignature: 'sig-d' }
             ]
-        });
-
-        expect(merged).toEqual({
-            role: 'model',
-            parts: [
-                {
-                    text: 'Hello world',
-                    functionCall: {
-                        name: 'get_knowledge_item',
-                        args: {
-                            id: 'project-d1-manager',
-                            includeStats: true
-                        }
-                    }
-                }
-            ]
-        });
+        };
+        expect(mergeGeminiContent(base, next)?.parts).toEqual([...base.parts, ...next.parts]);
+        expect(base.parts).toHaveLength(2);
     });
 });
 
@@ -137,5 +115,53 @@ describe('streamGeminiContent', () => {
         expect(response.usage).toEqual({
             outputTokenCount: 2
         });
+    });
+});
+
+describe('Gemini stream integrity', () => {
+    const stream = (blocks: string[], onTextDelta = vi.fn(async () => {})) =>
+        streamGeminiContent({
+            fetchFn: vi.fn(async () => createSseResponse(blocks)) as typeof fetch,
+            config,
+            systemInstruction: 'Grounded.',
+            contents: [{ role: 'user', parts: [{ text: 'Hi' }] }],
+            onTextDelta
+        });
+    it('preserves whitespace across deltas and flushes a final CRLF event without a blank line', async () => {
+        const onTextDelta = vi.fn(async () => {});
+        const chunk = (text: string, stop = false) =>
+            `data: ${JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text }] }, ...(stop ? { finishReason: 'STOP' } : {}) }] })}`;
+        await stream([chunk('Hello ') + '\r', '\n\r\n' + chunk('world', true)], onTextDelta);
+        expect(onTextDelta.mock.calls).toEqual([['Hello '], ['world']]);
+    });
+    it('never exposes thought parts', async () => {
+        const onTextDelta = vi.fn(async () => {});
+        await stream(
+            [
+                `data: ${JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ thought: true, text: 'Private thought' }, { text: 'Answer' }] }, finishReason: 'STOP' }] })}\n\n`
+            ],
+            onTextDelta
+        );
+        expect(onTextDelta).toHaveBeenCalledExactlyOnceWith('Answer');
+    });
+    it('rejects malformed and incomplete streams instead of silently saving partial answers', async () => {
+        await expect(stream(['data: {broken}\n\n'])).rejects.toThrow('malformed');
+        await expect(stream(['data: {}\n\n'])).rejects.toThrow('before completion');
+    });
+    it('uses the API-key header and excludes secrets from error messages', async () => {
+        const fetchFn = vi.fn<typeof fetch>(
+            async () => new Response('private upstream details', { status: 503 })
+        );
+        await expect(
+            streamGeminiContent({
+                fetchFn,
+                config,
+                systemInstruction: '',
+                contents: [],
+                onTextDelta: async () => {}
+            })
+        ).rejects.toThrow('Gemini stream request failed (503).');
+        expect(String(fetchFn.mock.calls[0][0])).not.toContain('test-key');
+        expect(fetchFn.mock.calls[0][1]?.headers).toMatchObject({ 'x-goog-api-key': 'test-key' });
     });
 });

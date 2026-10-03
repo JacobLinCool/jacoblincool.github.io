@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
-import posthog from 'posthog-js';
+import { PUBLIC_POSTHOG_HOST, PUBLIC_POSTHOG_PROJECT_TOKEN } from '$env/static/public';
+import type { PostHog } from 'posthog-js';
 
 export type AnalyticsAuthState = 'signed_out' | 'anonymous' | 'google';
 export type AnalyticsPromptSource = 'composer' | 'chip' | 'deep_dive';
@@ -10,15 +11,46 @@ type AnalyticsEventProperties = Record<string, string | number | boolean | undef
 
 let currentAuthState: AnalyticsAuthState = 'signed_out';
 
-const captureEvent = (name: string, properties: AnalyticsEventProperties = {}) => {
-    if (!browser) {
-        return;
-    }
+let analyticsPromise: Promise<PostHog> | null = null;
 
-    posthog.capture(name, {
-        auth_state: currentAuthState,
-        ...properties
-    });
+export const initializeAnalytics = () => {
+    if (!PUBLIC_POSTHOG_PROJECT_TOKEN.trim()) return Promise.resolve(null);
+    analyticsPromise ??= import('posthog-js')
+        .then(({ default: posthog }) => {
+            posthog.init(PUBLIC_POSTHOG_PROJECT_TOKEN, {
+                api_host: '/ingest',
+                ui_host: PUBLIC_POSTHOG_HOST,
+                defaults: '2026-01-30',
+                capture_exceptions: true
+            });
+            return posthog;
+        })
+        .catch((error) => {
+            analyticsPromise = null;
+            throw error;
+        });
+    return analyticsPromise;
+};
+
+const withAnalytics = (action: (client: PostHog) => void) => {
+    if (!browser) return;
+    // Analytics is best effort and must never block an interaction or surface as a chat error.
+    void initializeAnalytics()
+        .then((client) => {
+            if (client) action(client);
+        })
+        .catch(() => undefined);
+};
+
+export const identifyAnalyticsUser = (uid: string) =>
+    withAnalytics((client) => client.identify(uid));
+export const resetAnalyticsUser = () => withAnalytics((client) => client.reset());
+export const captureClientError = (error: unknown) =>
+    withAnalytics((client) => client.captureException(error));
+
+const captureEvent = (name: string, properties: AnalyticsEventProperties = {}) => {
+    const eventProperties = { auth_state: currentAuthState, ...properties };
+    withAnalytics((client) => client.capture(name, eventProperties));
 };
 
 export const setAnalyticsAuthState = (authState: AnalyticsAuthState) => {

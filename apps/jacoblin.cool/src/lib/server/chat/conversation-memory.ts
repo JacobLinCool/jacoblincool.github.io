@@ -104,13 +104,15 @@ export const generateCarryoverSummary = async ({
     fetchFn,
     config,
     locale,
-    conversation
+    conversation,
+    signal
 }: {
     db: Firestore;
     fetchFn: typeof fetch;
     config: RuntimeConfig;
     locale: string;
     conversation: ConversationHandle;
+    signal?: AbortSignal;
 }) => {
     const allMessages = await listConversationMessages(db, conversation.conversationId);
     const finalizedMessages = allMessages.filter((message) => message.final);
@@ -122,6 +124,7 @@ export const generateCarryoverSummary = async ({
     const completion = await generateGeminiContent({
         fetchFn,
         config,
+        signal,
         systemInstruction:
             'You write precise carryover notes for multi-turn conversations. Produce only the note itself.',
         contents: [

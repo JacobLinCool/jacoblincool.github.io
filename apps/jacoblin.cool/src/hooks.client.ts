@@ -1,21 +1,19 @@
-import { PUBLIC_POSTHOG_HOST, PUBLIC_POSTHOG_PROJECT_TOKEN } from '$env/static/public';
+import { captureClientError, initializeAnalytics } from '$lib/services/analytics/posthog';
 import type { HandleClientError } from '@sveltejs/kit';
-import posthog from 'posthog-js';
 
-export async function init() {
-    posthog.init(PUBLIC_POSTHOG_PROJECT_TOKEN, {
-        api_host: '/ingest',
-        ui_host: PUBLIC_POSTHOG_HOST,
-        defaults: '2026-01-30',
-        capture_exceptions: true
-    });
+export function init() {
+    const initialize = () => {
+        void initializeAnalytics().catch(() => undefined);
+    };
+    // Let the page hydrate before parsing the analytics SDK. An interaction can initialize it earlier.
+    if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(initialize, { timeout: 2000 });
+    } else {
+        setTimeout(initialize, 1000);
+    }
 }
 
-export const handleError: HandleClientError = async ({ error, status, message }) => {
-    posthog.captureException(error);
-
-    return {
-        message,
-        status
-    };
+export const handleError: HandleClientError = ({ error, status, message }) => {
+    captureClientError(error);
+    return { message, status };
 };

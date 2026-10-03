@@ -5,11 +5,13 @@
     let {
         chips,
         disabled = false,
-        onSelect
+        onSelect,
+        onPrepare
     }: {
         chips: PromptChip[];
         disabled?: boolean;
         onSelect: (chip: PromptChip) => void;
+        onPrepare: () => void;
     } = $props();
 </script>
 
@@ -20,6 +22,8 @@
                 type="button"
                 class="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/10 bg-zinc-900/72 px-3 text-xs text-zinc-300 transition hover:border-white/18 hover:bg-zinc-800/80 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
                 onclick={() => onSelect(chip)}
+                onpointerenter={onPrepare}
+                onfocus={onPrepare}
                 {disabled}
             >
                 {#if index === 0}

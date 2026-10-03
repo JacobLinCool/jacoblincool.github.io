@@ -8,8 +8,10 @@ import {
     trackResponseCopied
 } from '$lib/services/analytics/posthog';
 import { createAudioStub } from '$lib/services/audio-stub';
-import { streamChat } from '$lib/services/chat-api';
+import { prepareChat, streamChat } from '$lib/services/chat-api';
+import { chatErrorMessage } from '$lib/services/chat-errors';
 import { notificationStore } from '$lib/stores/notification.svelte';
+import { userStore } from '$lib/stores/user.svelte';
 import type { BackgroundEventType } from '$lib/types/background';
 import type {
     AudioUiState,
@@ -76,6 +78,10 @@ class ChatStore {
     private currentTurnStartedAt: number | null = null;
     private currentTurnPromptSource: ChatPromptSubmissionMeta['source'] = 'composer';
     private currentTurnToolCallCount = 0;
+    private activeController: AbortController | null = null;
+    private lastTurnId = '';
+    private pendingDelta = '';
+    private pendingDeltaFrame: ReturnType<typeof setTimeout> | null = null;
     private constructor() {}
 
     static getInstance() {
@@ -112,24 +118,64 @@ class ChatStore {
         await this.submitPrompt(prompt, metadata);
     }
 
+    prepare() {
+        userStore.init();
+        // Best-effort preparation is retried by the actual send path, which reports failures.
+        void prepareChat().catch(() => undefined);
+    }
+
+    stopResponse() {
+        this.activeController?.abort();
+        this.state.composerFocusRequest += 1;
+    }
+
+    async retryMessage(messageId: string) {
+        if (this.state.isStreaming) return;
+        const index = this.state.messages.findIndex((message) => message.id === messageId);
+        const assistant = this.state.messages[index];
+        const user = this.state.messages[index - 1];
+        if (
+            index !== this.state.messages.length - 1 ||
+            !assistant ||
+            !['error', 'stopped'].includes(assistant.status) ||
+            user?.role !== 'user'
+        )
+            return;
+        this.state.messages = this.state.messages.slice(0, index);
+        await this.runTurn(user.content, { source: 'composer' }, this.lastTurnId);
+    }
+
     async submitPrompt(
         rawPrompt: string,
         metadata: ChatPromptSubmissionMeta = { source: 'composer' }
     ) {
         const prompt = rawPrompt.trim();
-        if (!prompt || this.state.isStreaming) {
+        if (!prompt || this.state.isStreaming) return;
+        if (prompt.length > 8_000) {
+            notificationStore.error('Please keep your message within 8,000 characters.');
             return;
         }
 
-        if (this.state.conversationStage === 'idle') {
-            this.state.conversationStage = 'active';
-        }
-
+        this.state.conversationStage = 'active';
         this.pushMessage('user', prompt, 'done');
-        this.state.progressEvents = [this.createProgressEvent('status', 'Collecting context...')];
-        this.state.contextStatusCollapsed = true;
         this.state.composer = '';
         this.state.typingStrength = 0;
+        await this.runTurn(prompt, metadata);
+    }
+
+    private async runTurn(
+        prompt: string,
+        metadata: ChatPromptSubmissionMeta,
+        turnId: string = crypto.randomUUID()
+    ) {
+        userStore.init();
+        this.lastTurnId = turnId;
+        this.state.composerFocusRequest += 1;
+        const controller = new AbortController();
+        this.activeController = controller;
+        this.state.isStreaming = true;
+        this.state.progressEvents = [this.createProgressEvent('status', 'Connecting…')];
+        this.state.contextStatusCollapsed = true;
         this.audioController.stop();
         this.currentTurnStartedAt = Date.now();
         this.currentTurnPromptSource = metadata.source;
@@ -137,57 +183,64 @@ class ChatStore {
         trackChatTurnStarted(metadata.source);
         this.triggerSubmitPulse();
         this.emitBackgroundEvent('submit', SUBMIT_ACTIVATION_RATIO);
-
         const assistantId = this.pushMessage('assistant', '', 'streaming');
-        this.state.isStreaming = true;
 
         try {
             await streamChat({
+                turnId,
                 message: prompt,
                 locale: this.resolveLocale(),
-                onEvent: (event) => {
-                    this.handleSseEvent(event, assistantId);
-                }
+                signal: controller.signal,
+                onEvent: (event) => this.handleSseEvent(event, assistantId)
             });
-
+            this.flushDelta(assistantId);
             this.patchMessage(assistantId, (message) => {
                 message.status = 'done';
             });
-
-            const assistantMessage = this.state.messages.find(
-                (message) => message.id === assistantId
-            );
+            const assistant = this.state.messages.find((message) => message.id === assistantId);
             trackChatTurnCompleted({
                 promptSource: this.currentTurnPromptSource,
                 latencyMs: this.currentTurnLatencyMs(),
-                responseChars: assistantMessage?.content.length ?? 0,
+                responseChars: assistant?.content.length ?? 0,
                 toolCallsCount: this.currentTurnToolCallCount
             });
         } catch (error) {
+            this.flushDelta(assistantId);
+            const stopped = controller.signal.aborted;
             this.patchMessage(assistantId, (message) => {
-                message.content =
-                    message.content.trim() ||
-                    'I hit a temporary issue while collecting verified context. Please try again.';
-                message.status = 'done';
+                message.status = stopped ? 'stopped' : 'error';
             });
-            trackChatTurnFailed({
-                promptSource: this.currentTurnPromptSource,
-                latencyMs: this.currentTurnLatencyMs(),
-                toolCallsCount: this.currentTurnToolCallCount
-            });
-            this.pushProgress(
-                'error',
-                error instanceof Error ? error.message : 'Unable to stream response.'
-            );
-            notificationStore.error(
-                error instanceof Error ? error.message : 'Unable to stream response.'
-            );
+            if (stopped) {
+                this.pushProgress('status', 'Response stopped.');
+            } else {
+                trackChatTurnFailed({
+                    promptSource: this.currentTurnPromptSource,
+                    latencyMs: this.currentTurnLatencyMs(),
+                    toolCallsCount: this.currentTurnToolCallCount
+                });
+                this.pushProgress('error', chatErrorMessage(error));
+            }
         } finally {
+            this.activeController = null;
             this.state.isStreaming = false;
-            this.state.composerFocusRequest += 1;
             this.currentTurnStartedAt = null;
             this.currentTurnToolCallCount = 0;
         }
+    }
+
+    private flushDelta(assistantId: string) {
+        if (this.pendingDeltaFrame !== null) {
+            clearTimeout(this.pendingDeltaFrame);
+            this.pendingDeltaFrame = null;
+        }
+        if (!this.pendingDelta) return;
+        const delta = this.pendingDelta;
+        this.pendingDelta = '';
+        this.patchMessage(assistantId, (message) => {
+            message.content += delta;
+        });
+        this.state.interactionTick += 1;
+        this.emitBackgroundEvent('stream', STREAM_ACTIVATION_RATIO);
     }
 
     async copyMessage(messageId: string) {
@@ -227,6 +280,10 @@ class ChatStore {
     private handleSseEvent(event: ChatSseEvent, assistantId: string) {
         switch (event.type) {
             case 'status': {
+                if (event.status === 'analyzing_request') {
+                    this.pushProgress('status', 'Understanding your question…');
+                }
+
                 if (event.status === 'collecting_context') {
                     this.pushProgress('status', 'Collecting context...');
                 }
@@ -255,27 +312,18 @@ class ChatStore {
                 break;
             }
             case 'answer_delta': {
-                this.patchMessage(assistantId, (message) => {
-                    message.content += event.delta;
-                });
-                this.state.interactionTick += 1;
-                this.emitBackgroundEvent('stream', STREAM_ACTIVATION_RATIO);
+                this.pendingDelta += event.delta;
+                // Keep Markdown parsing and layout bounded even for very small token chunks.
+                if (this.pendingDeltaFrame === null) {
+                    this.pendingDeltaFrame = setTimeout(() => this.flushDelta(assistantId), 32);
+                }
                 break;
             }
             case 'done': {
-                this.patchMessage(assistantId, (message) => {
-                    message.status = 'done';
-                });
+                this.flushDelta(assistantId);
                 break;
             }
             case 'error': {
-                this.pushProgress('error', event.message);
-                this.patchMessage(assistantId, (message) => {
-                    if (!message.content.trim()) {
-                        message.content = event.message;
-                    }
-                    message.status = 'done';
-                });
                 throw new Error(event.message);
             }
         }
@@ -352,12 +400,7 @@ class ChatStore {
     }
 
     private createMessageId() {
-        const randomPart =
-            typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-                ? crypto.randomUUID()
-                : Math.random().toString(36).slice(2, 12);
-
-        return `msg-${randomPart}`;
+        return `msg-${crypto.randomUUID()}`;
     }
 
     private currentTurnLatencyMs() {

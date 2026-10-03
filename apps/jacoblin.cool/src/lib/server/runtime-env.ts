@@ -7,6 +7,8 @@ export type RuntimeConfig = {
     firestoreClientEmail: string | null;
     firestorePrivateKey: string | null;
     firestoreEmulatorHost: string | null;
+    jevApiKey: string | null;
+    jevModel: string;
     geminiApiBaseUrl: string;
     geminiApiKey: string | null;
     geminiModel: string;
@@ -80,6 +82,8 @@ export const readRuntimeConfig = (platformEnv?: EnvLike): RuntimeConfig => {
                 readString('GOOGLE_PRIVATE_KEY', platformEnv)
         ),
         firestoreEmulatorHost: readString('FIRESTORE_EMULATOR_HOST', platformEnv),
+        jevApiKey: readString('TYPESAFE_API_KEY', platformEnv),
+        jevModel: readString('JEV_MODEL', platformEnv) ?? 'jev-latest',
         geminiApiBaseUrl:
             readString('GEMINI_API_BASE_URL', platformEnv) ??
             'https://generativelanguage.googleapis.com/v1beta',
